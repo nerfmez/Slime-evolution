@@ -1,0 +1,9 @@
+# Open-water pond textures
+
+Replaces `public/assets/pond-painted.png` and `public/assets/pond-northern.png` using the built-in image editing tool, one edit per original asset. Generated outputs preserve the original 1536×1024 and 1024×1536 canvases. Tree-canopy reflections have been removed from the water. Shoreline, lilies, stones and existing ripple landmarks remain in place.
+
+Trees restored to the nine SCENERY positions from commit bbf369b, before reflection-driven repositioning. The added understory, its assets, shadows and contact animation have been removed. Earlier meadow grass, shoreline tufts, tree recoil and periodic water refraction remain.
+
+## Prompt used for each original texture
+
+Use case: precise-object-edit. Edit target: the supplied existing watercolor game pond texture. REMOVE ONLY the dark tree-canopy reflections INSIDE the water: all hanging rounded leaf/branch silhouettes intruding from the top and left shores into the water (also bottom left small canopy reflection). Replace those silhouettes with seamless open teal/sage watercolor water matching adjacent water brushwork and brightness. No tree or bush reflection silhouettes should remain. Keep natural shallow-water gradients and subtle generic water texture. Strict invariants: exact same canvas, aspect ratio, pond location, outline, scale, all shoreline grass, reeds, soil, flowers, rocks, lily pads, their shadows, white lily flower if present, existing circular ripple rings at their EXACT positions, and solid magenta background #ff00ff. Do not redraw or move the shore, change palette of stones or vegetation, add new objects, add trees, add extra ripple circles, crop or resize the composition. This is a minimal inpainting edit of water only, production replacement texture with collision geometry already matching the current shoreline. Output the single edited image in the same dimensions/aspect ratio.

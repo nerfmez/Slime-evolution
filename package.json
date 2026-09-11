@@ -1,0 +1,13 @@
+{
+  "name": "slime-web-trial",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node node_modules/vite/bin/vite.js",
+    "build": "node node_modules/vite/bin/vite.js build"
+  },
+  "devDependencies": {
+    "vite": "8.0.13"
+  }
+}
