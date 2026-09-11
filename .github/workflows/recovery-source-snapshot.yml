@@ -1,0 +1,20 @@
+name: Recovery source snapshot
+on:
+  push:
+    branches: ['preview/migration-playable']
+    paths: ['.github/workflows/recovery-source-snapshot.yml']
+permissions:
+  contents: read
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+      - name: Package tracked source only
+        run: git archive --format=zip --output="$RUNNER_TEMP/slime-web-source.zip" HEAD
+      - uses: actions/upload-artifact@v4
+        with:
+          name: slime-web-source-recovery
+          path: ${{ runner.temp }}/slime-web-source.zip
+          retention-days: 7
