@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#e5e7ce"><title>Slime Evolution · Preview</title>
+<style id="preview-shell-style">*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;font-family:system-ui,sans-serif;background:#e5e7ce;color:#273b33}#preview-boot{position:fixed;inset:0;z-index:99999;display:grid;place-items:center;background:#e5e7ce;padding:24px}.preview-card{max-width:480px;width:100%;padding:30px;border-radius:22px;background:#faf8ed;border:1px solid #cbd0b8;box-shadow:0 16px 60px #344c3420}.preview-card h1{font-size:27px;margin:0 0 12px}.preview-card p{line-height:1.7;font-size:15px}.preview-card small{color:#647365;line-height:1.6}.preview-card button{padding:12px 18px;border:0;background:#3d644d;color:white;border-radius:10px;font:inherit;cursor:pointer}#preview-progress{height:5px;background:#dce1cd;border-radius:9px;margin:22px 0;overflow:hidden}#preview-progress i{display:block;height:100%;background:#64806a;width:8%;transition:width .2s}#preview-note{position:fixed;z-index:9998;bottom:max(8px,env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);max-width:min(82vw,590px);font:12px/1.5 system-ui,sans-serif;border:1px solid #919b75;border-radius:12px;padding:7px 11px;background:#fbf5dbed;color:#37472c;text-align:center;box-shadow:0 2px 10px #0001;pointer-events:auto}#preview-note button{font:inherit;border:0;text-decoration:underline;background:none;color:inherit;padding:0 4px;cursor:pointer}#preview-report{position:fixed;inset:0;z-index:10001;background:#111a;padding:22px;display:grid;place-items:center}#preview-report[hidden]{display:none!important}#preview-report .preview-card{max-height:80vh;overflow:auto}#preview-report li{font-size:13px;line-height:1.65;overflow-wrap:anywhere}#preview-boot[hidden]{display:none!important}</style></head><body>
+<div id="preview-boot"><div class="preview-card"><h1>Slime Evolution 🌿</h1><p id="preview-state">กำลังโหลดโค้ดเกมจาก GitHub…</p><div id="preview-progress"><i></i></div><p>รุ่นทดสอบระหว่างย้ายไฟล์ ใช้ระบบและผังฉากเดิม ภาพที่ยังขาดจะแสดงเป็นภาพชั่วคราว</p><small>แยกจากเว็บเดิมและ branch main · ไม่ย้ายหรือล้างค่าเซฟเดิม</small><p id="preview-error" hidden></p><button id="preview-retry" hidden onclick="location.reload()">ลองเปิดอีกครั้ง</button></div></div>
+<script>
+(async()=>{
+'use strict';
+const REV='e4fb0498c75902c09abee058c674401e8ccdaf5e';
+const RAW=`https://raw.githubusercontent.com/nerfmez/Slime-evolution/${REV}/`;
+const CDN=`https://cdn.jsdelivr.net/gh/nerfmez/Slime-evolution@${REV}/`;
+const boot=document.getElementById('preview-boot');
+const state=document.getElementById('preview-state');
+const progress=document.querySelector('#preview-progress i');
+const shell=document.getElementById('preview-shell-style').textContent;
+const sourceCache=new Map(), moduleCache=new Map(), missing=new Set(), urls=[];
+let loaded=0,ready=false;
+const report=window.__SLIME_PREVIEW__={sourceRevision:REV,mode:'missing-assets-preview',missing:[],loadedModules:[],status:'loading',deviceFPSVerified:false};
+const nativeFetch=window.fetch.bind(window);
+function markMissing(name){missing.add(name);report.missing=[...missing];}
+function explainError(error){report.status='error';report.error=String(error?.message||error);boot.hidden=false;state.textContent='ยังเปิดเกมไม่สำเร็จ';const out=boot.querySelector('#preview-error');out.hidden=false;out.textContent=report.error;boot.querySelector('#preview-retry').hidden=false;}
+async function requestText(path){
+ let last;
+ for(const base of [RAW,CDN]){
+  const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),18000);
+  try{const r=await nativeFetch(base+path,{signal:controller.signal,credentials:'omit'});if(!r.ok)throw Error(`${path}: HTTP ${r.status}`);const text=await r.text();if(!text.trim())throw Error(`${path}: empty file`);return text;}
+  catch(e){last=e;}finally{clearTimeout(timer);}
+ }
+ throw Error(`โหลด ${path} จาก GitHub ไม่สำเร็จ: ${last?.message||last}`);
+}
+function source(path){if(!sourceCache.has(path))sourceCache.set(path,requestText(path));return sourceCache.get(path);}
+function textureCanvas(name){
+ markMissing(name);
+ const c=document.createElement('canvas');c.width=256;c.height=256;const x=c.getContext('2d');
+ if(name.includes('/vfx/'))return c;
+ if(name.includes('grass-original')||name.includes('grass-painted')){
+  x.fillStyle='#496f42';x.beginPath();x.moveTo(88,256);x.quadraticCurveTo(128,122,72,4);x.quadraticCurveTo(158,92,151,256);x.fill();
+  x.fillStyle='#76964d';x.beginPath();x.moveTo(118,256);x.quadraticCurveTo(165,174,207,52);x.quadraticCurveTo(204,176,162,256);x.fill();return c;
+ }
+ if(name.includes('tree-reference')){
+  x.fillStyle='#77664b';x.fillRect(112,154,29,102);
+  for(const [cx,cy,rx,ry,color] of [[124,101,82,83,'#527658'],[75,111,54,61,'#64865a'],[172,111,55,60,'#64865a'],[112,69,57,58,'#7c985f']]){x.fillStyle=color;x.beginPath();x.ellipse(cx,cy,rx,ry,0,0,Math.PI*2);x.fill();}return c;
+ }
+ const terrain=window.__SLIME_PREVIEW_TERRAIN__;
+ if(name.includes('pond-painted')||name.includes('pond-northern')){
+  const which=name.includes('northern')?'north':'pond',w=which==='north'?1024:1536,h=which==='north'?1536:1024;
+  const polys=terrain?.WATER_OUTLINES?.[which]||[];
+  x.lineJoin='round';x.lineCap='round';
+  for(const pts of polys){x.beginPath();pts.forEach(([px,py],i)=>i?x.lineTo(px/w*256,py/h*256):x.moveTo(px/w*256,py/h*256));x.closePath();x.lineWidth=11;x.strokeStyle='#a1ad77';x.stroke();x.fillStyle='#8fb5a5';x.fill();x.lineWidth=2;x.strokeStyle='#718e6e';x.stroke();}return c;
+ }
+ if(name.includes('clearing-painted')){
+  const mask=terrain?.ZONE_MASKS?.soil;
+  if(mask){const rows=mask.length;for(let j=0;j<rows;j++)for(let i=0;i<mask[j].length;i++){let k=Number(mask[j][i])/9;if(k<=0)continue;x.fillStyle=`rgba(185,160,114,${Math.min(.85,k*.85)})`;x.fillRect(i*256/mask[j].length,j*256/rows,256/mask[j].length+1,256/rows+1);}}
+  return c;
+ }
+ if(name.includes('meadow-pigment')){x.fillStyle='#a2b282';x.fillRect(0,0,256,256);return c;}
+ x.fillStyle='#b8bc8b';x.fillRect(0,0,256,256);return c;
+}
+window.__slimePreviewTexture=async(gl,path,mipmaps=true)=>{
+ const c=textureCanvas(String(path));const t=gl.createTexture();gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,t);
+ gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,c);if(mipmaps)gl.generateMipmap(gl.TEXTURE_2D);
+ gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,mipmaps?gl.LINEAR_MIPMAP_LINEAR:gl.LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
+ gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);return t;
+};
+const enemyStub=`import {geometry} from './gl.js';
+export async function loadEnemyAsset(gl,key){
+ window.__SLIME_PREVIEW__.missing.push('enemies/'+key+'.bin (temporary geometry)');
+ const sizes={thorn:[.30,.59],moss:[.47,.90],petal:[.28,.65],crystal:[.37,.79]}, [radius,height]=sizes[key]||[.3,.6];
+ const p=[],n=[],uv=[],idx=[],sides=12,rows=8;
+ for(let j=0;j<=rows;j++){const t=j/rows*Math.PI;for(let k=0;k<=sides;k++){const a=k/sides*Math.PI*2,s=Math.sin(t),co=Math.cos(t);p.push(radius*s*Math.cos(a),.03+(co+1)*height/2,radius*s*Math.sin(a));n.push(s*Math.cos(a),co,s*Math.sin(a));uv.push(k/sides,j/rows);if(j<rows&&k<sides){const q=j*(sides+1)+k;idx.push(q,q+sides+1,q+1,q+1,q+sides+1,q+sides+2);}}}
+ const mesh=geometry(gl,p,n,uv,idx);gl.bindVertexArray(mesh.vao);for(const [slot,buffer] of [[3,mesh.buffers[0]],[4,mesh.buffers[1]]]){gl.bindBuffer(gl.ARRAY_BUFFER,buffer);gl.enableVertexAttribArray(slot);gl.vertexAttribPointer(slot,3,gl.FLOAT,false,0,0);}gl.bindVertexArray(null);
+ const colors={thorn:[180,108,72,255],moss:[131,157,106,255],petal:[209,166,176,255],crystal:[129,159,188,255]},tex=gl.createTexture();gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,tex);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,1,1,0,gl.RGBA,gl.UNSIGNED_BYTE,new Uint8Array(colors[key]||[170,170,150,255]));gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.NEAREST);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.NEAREST);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
+ return {mesh,frames:[mesh],tex,duration:1,height};
+}`;
+function patch(path,text){
+ if(path==='gl.js'){
+  const start=text.indexOf('export async function loadTexture(');if(start<0)throw Error('gl.js changed: texture hook not found');
+  return text.slice(0,start)+`export async function loadTexture(gl,url,mipmaps=true){return window.__slimePreviewTexture(gl,url,mipmaps);}`;
+ }
+ if(path==='enemy-assets.js')return enemyStub;
+ if(path==='thorn-sprite.js')return `export async function createThornSprite(){return null;} export function thornSpriteCell(){return 0;}`;
+ if(path==='terrain.js')return text+`\nwindow.__SLIME_PREVIEW_TERRAIN__={WATER_OUTLINES,ZONE_MASKS};\n`;
+ return text;
+}
+async function moduleURL(path,stack=[]){
+ if(stack.includes(path))throw Error(`Circular module dependency: ${[...stack,path].join(' -> ')}`);
+ if(moduleCache.has(path))return moduleCache.get(path);
+ const job=(async()=>{
+  let code=patch(path,await source(path));
+  const regex=/(?:\bfrom\s*|\bimport\s*(?:\(\s*)?)["'](\.{1,2}\/[^"']+)["']/g;
+  const deps=[...code.matchAll(regex)].map(m=>m[1]);
+  const replacements=await Promise.all([...new Set(deps)].map(async spec=>{
+   const child=new URL(spec,'https://source.invalid/'+path).pathname.slice(1);
+   return [spec,await moduleURL(child,[...stack,path])];
+  }));
+  for(const [a,b] of replacements){code=code.split("'"+a+"'").join("'"+b+"'").split('"'+a+'"').join('"'+b+'"');}
+  code+='\n//# sourceURL=slime-preview/'+path;
+  const url=URL.createObjectURL(new Blob([code],{type:'text/javascript'}));urls.push(url);loaded++;report.loadedModules.push(path);progress.style.width=Math.min(94,10+loaded*2)+'%';state.textContent=`กำลังเตรียมระบบเกม · ${loaded} โมดูล`;return url;
+ })();moduleCache.set(path,job);return job;
+}
+try{
+ const [html,css]=await Promise.all([source('index.html'),source('style.css')]);
+ const parsed=new DOMParser().parseFromString(html,'text/html');parsed.querySelectorAll('script').forEach(el=>el.remove());
+ parsed.querySelectorAll('link[rel="stylesheet"]').forEach(el=>el.remove());
+ const title=parsed.querySelector('title');document.title=(title?.textContent||'Slime Evolution')+' · Asset Preview';
+ document.body.replaceChildren(...[...parsed.body.childNodes].map(n=>document.importNode(n,true)),boot);
+ const style=document.createElement('style');style.textContent=css+'\n'+shell;document.head.append(style);
+ const note=document.createElement('div');note.id='preview-note';note.innerHTML='รุ่นทดสอบ · ภาพฉากและมอนชั่วคราว · เอฟเฟกต์ยังไม่ครบ <button type="button">รายละเอียด</button>';document.body.append(note);
+ const panel=document.createElement('div');panel.id='preview-report';panel.hidden=true;panel.innerHTML='<div class="preview-card"><h2>ระหว่างย้าย Assets</h2><p>ใช้โค้ดเกม ผังแผนที่ การชน หญ้า และสไลม์จาก GitHub ชุดเดิม ภาพต้นไม้และพื้นใช้ภาพชั่วคราว มอนใช้รูปทรงแทน ไม่ใช่การออกแบบใหม่</p><p>สกิลยังทำดาเมจ แต่ภาพเอฟเฟกต์ที่ขาดถูกซ่อนไว้ เมนูตรวจเฟรมยังไม่มีภาพ จึงยังไม่ใช้ตัดสินความสวยหรือประสิทธิภาพจริง</p><small>Source '+REV.slice(0,7)+' · ไม่แก้ branch main หรือเว็บเดิม</small><h3>รายการที่ใช้ตัวแทน</h3><ul></ul><button type="button">กลับเข้าเกม</button></div>';document.body.append(panel);
+ note.querySelector('button').onclick=()=>{panel.querySelector('ul').replaceChildren(...[...new Set(report.missing)].map(s=>{const li=document.createElement('li');li.textContent=s;return li;}));panel.hidden=false;};panel.querySelector('button').onclick=()=>panel.hidden=true;
+ document.addEventListener('click',e=>{const a=e.target.closest?.('a');if(a&&/review\/|slime-motion\.html/.test(a.getAttribute('href')||'')){e.preventDefault();note.querySelector('button').click();}},true);
+ window.addEventListener('error',e=>{if(!ready)explainError(e.error||e.message);});
+ const main=await moduleURL('main.js');await import(main);
+ progress.style.width='100%';state.textContent='กำลังเปิดฉาก WebGL 2…';
+ const begin=performance.now();
+ const check=setInterval(()=>{
+  const error=document.getElementById('error');
+  if(error&&!error.hidden&&error.textContent.trim()){clearInterval(check);explainError(error.textContent);return;}
+  const frames=Number(document.getElementById('stats')?.dataset.frames||0);
+  if(frames>1){clearInterval(check);ready=true;report.status='ready';boot.hidden=true;return;}
+  if(performance.now()-begin>45000){clearInterval(check);explainError('ฉากยังไม่เริ่มเรนเดอร์ โปรดลองเปิดใน Safari หรือ Chrome รุ่นที่รองรับ WebGL 2');}
+ },200);
+}catch(e){console.error(e);explainError(e);}
+})();
+</script></body></html>
