@@ -1,0 +1,81 @@
+name: Migration preview browser check
+on:
+  push:
+    branches: ['preview/migration-playable']
+    paths: ['migration-preview.html', '.github/workflows/migration-preview-check.yml']
+permissions:
+  contents: write
+jobs:
+  browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.16.0'
+      - name: Install isolated browser tooling
+        run: |
+          mkdir -p "$RUNNER_TEMP/slime-preview-qa"
+          cd "$RUNNER_TEMP/slime-preview-qa"
+          npm init -y
+          npm install --save-exact playwright@1.55.0
+          npx playwright install --with-deps chromium
+      - name: Verify deployed game, controls and rendering
+        env:
+          QA_OUT: ${{ github.workspace }}/preview-validation
+        run: |
+          cat > "$RUNNER_TEMP/slime-preview-qa/check.mjs" <<'JS'
+          import { chromium } from 'playwright';
+          import fs from 'node:fs/promises';
+          const out=process.env.QA_OUT;
+          await fs.mkdir(out,{recursive:true});
+          const result={url:'https://slime-evolution-preview.vercel.app/',checkedAt:new Date().toISOString(),checks:{},consoleErrors:[],pageErrors:[],failedRequests:[],note:'Software-rendered Chromium check only; not device FPS or visual approval.'};
+          const browser=await chromium.launch({headless:true,args:['--no-sandbox','--disable-dev-shm-usage','--use-gl=angle','--use-angle=swiftshader','--enable-unsafe-swiftshader']});
+          const page=await browser.newPage({viewport:{width:1024,height:768},hasTouch:true,deviceScaleFactor:1});
+          page.on('pageerror',e=>result.pageErrors.push(e.message));
+          page.on('console',m=>{if(m.type()==='error')result.consoleErrors.push(m.text());});
+          page.on('requestfailed',r=>result.failedRequests.push({url:r.url(),error:r.failure()?.errorText}));
+          try {
+            const response=await page.goto(result.url,{waitUntil:'domcontentloaded',timeout:90000});
+            result.httpStatus=response?.status();
+            await page.waitForFunction(()=>['ready','error'].includes(window.__SLIME_PREVIEW__?.status),{},{timeout:150000});
+            result.preview=await page.evaluate(()=>window.__SLIME_PREVIEW__);
+            result.checks.gameReady=result.preview.status==='ready';
+            if(result.checks.gameReady){
+              result.before=await page.locator('#stats').evaluate(e=>({...e.dataset}));
+              await page.keyboard.down('ArrowRight');await page.waitForTimeout(1200);await page.keyboard.up('ArrowRight');await page.waitForTimeout(700);
+              result.after=await page.locator('#stats').evaluate(e=>({...e.dataset}));
+              result.checks.framesAdvance=Number(result.after.frames)>Number(result.before.frames);
+              result.checks.playerMoves=result.after.player!==result.before.player;
+              await page.locator('#settings').click();result.checks.settingsOpen=await page.locator('#panel').isVisible();await page.locator('#close').click();
+              await page.locator('#preview-note button').click();result.checks.previewDisclosure=await page.locator('#preview-report').isVisible();await page.locator('#preview-report button').click();
+              await page.screenshot({path:out+'/landscape.png'});
+              await page.setViewportSize({width:768,height:1024});await page.waitForTimeout(900);
+              result.checks.portraitCanvas=await page.locator('#world').evaluate(e=>e.width>0&&e.height>0);
+              await page.screenshot({path:out+'/portrait.png'});
+            } else {await page.screenshot({path:out+'/error.png'});}
+          } catch(e){result.error=e.message;try{await page.screenshot({path:out+'/error.png'});}catch{}}
+          result.success=Object.values(result.checks).length>=6&&Object.values(result.checks).every(Boolean)&&result.pageErrors.length===0;
+          await fs.writeFile(out+'/latest.json',JSON.stringify(result,null,2));
+          console.log(JSON.stringify(result,null,2));await browser.close();
+          if(!result.success)process.exitCode=1;
+          JS
+          node "$RUNNER_TEMP/slime-preview-qa/check.mjs"
+      - name: Preserve read-only test evidence on preview branch
+        if: always()
+        run: |
+          if [ -f preview-validation/latest.json ]; then
+            git config user.name 'Slime preview checks'
+            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+            git add preview-validation/latest.json
+            git diff --cached --quiet || git commit -m 'Record preview browser verification [skip ci]'
+            git push origin HEAD:preview/migration-playable
+          fi
+      - name: Save browser screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: slime-preview-browser-evidence
+          path: preview-validation/
+          retention-days: 7
