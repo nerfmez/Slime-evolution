@@ -27,7 +27,8 @@ test('Petal Alpha enters five-second wing dive and takes +50% damage while flyin
  const w=world(),e=w.makeEnemy('petal',4,0,{elite:true});w.enemies=[e];e.skillCooldown=0;
  w.update(.05,player,40);assert.equal(e.skillKind,'petal_swoop');assert(e.skillWindup>0);
  for(let i=0;i<11;i++)w.update(.05,player,40);
- assert.equal(e.flying,true);assert(e.skillDash>4);assert(e.grassRadius>e.radius);
+ assert.equal(e.flying,true);assert.equal(e.animState,'flight');assert(e.skillDash>4);assert(e.grassRadius>e.radius);
+ const flightAnim=e.anim;w.update(.05,player,40);assert(e.anim>flightAnim,'flight animation clock must advance while Petal Alpha is diving');
  const c=new FireCombat(),before=e.hp;c.hit(e,10,0,0);assert.equal(before-e.hp,15);
 });
 

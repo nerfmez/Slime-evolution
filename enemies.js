@@ -120,7 +120,7 @@ export class EnemyWorld{
    for(let i=1;i<=7;i++){const t=i/7;this.effects.push({x:lerp(e.x,e.skillTargetX,t),z:lerp(e.z,e.skillTargetZ,t),r:.34+.12*t,kind,color:e.skillColor,age:0,life:.48});}
    this.blast(e.skillTargetX,e.skillTargetZ,e.skillRadius,e.damage*1.48,kind,e.skillColor);e.skillKind='';return;
   }
-  if(kind==='petal_swoop'){e.skillDash=5.0;e.flying=true;e.grassRadius=e.radius*1.90;e.animState='flight';return;}
+  if(kind==='petal_swoop'){e.skillDash=5.0;e.flying=true;e.grassRadius=e.radius*1.90;e.anim=0;e.animState='flight';return;}
   if(kind==='crystal_burst'){this.blast(e.skillTargetX,e.skillTargetZ,e.skillRadius,e.damage*1.34,kind,e.skillColor);e.skillKind='';return;}
   if(kind==='vine_lunge'){
    const dx=e.skillTargetX-e.x,dz=e.skillTargetZ-e.z,d=Math.hypot(dx,dz)||1;e.skillDirX=dx/d;e.skillDirZ=dz/d;e.skillDash=clamp(d/8.8,.42,.92);this.effects.push({x:e.x,z:e.z,r:2.4,kind,color:e.skillColor,age:0,life:.35});e.animState='run';return;
@@ -139,6 +139,7 @@ export class EnemyWorld{
   if(e.recovery>0){e.recovery=Math.max(0,e.recovery-dt);return true;}
   if(e.skillWindup>0){e.skillWindup=Math.max(0,e.skillWindup-dt);if(e.skillWindup<=0)this.executeSkill(e);return true;}
   if(e.skillDash>0){
+   if(e.skillKind==='petal_swoop'){e.anim+=dt;e.walkBlend=1;e.animState='flight';}
    const speed=e.skillKind==='vine_lunge'?8.8:e.skillKind==='petal_swoop'?e.speed*2:e.speed*2.35,step=speed*dt,dx=e.skillDirX*step,dz=e.skillDirZ*step;
    if(enemyCanStand(e.x+dx,e.z+dz,e.radius)){e.x+=dx;e.z+=dz;}else{e.skillDash=0;}
    e.yaw=Math.atan2(e.skillDirX,e.skillDirZ);e.skillDash=Math.max(0,e.skillDash-dt);
