@@ -26,6 +26,12 @@ function clamp(v,a,b){return Math.max(a,Math.min(b,v));}
 function lerp(a,b,t){return a+(b-a)*t;}
 function eliteKillsPerSpawn(time){const p=clamp(time/300,0,1);return clamp(Math.round(lerp(24,9,Math.pow(p,.82))),9,24);}
 function skillColor(kind){return SKILL_COLORS[kind]||[1,.78,.38];}
+function petalSwoopGrassRadius(e){
+ // Godot v100 main.gd: base monster radius -> 1.32 fast-motion widening -> 1.70 Wing Dive airflow, capped at 2.70.
+ const sourceRadius=Math.min(2.70,clamp(.78+e.radius*.52,.90,1.85)*1.32*1.70);
+ // grass-bend.js adds .36 to an actor's grassRadius, so store the core radius here.
+ return Math.max(e.radius,sourceRadius-.36);
+}
 
 export class EnemyWorld{
  constructor(){
@@ -121,7 +127,7 @@ export class EnemyWorld{
    for(let i=1;i<=7;i++){const t=i/7;this.effects.push({x:lerp(e.x,e.skillTargetX,t),z:lerp(e.z,e.skillTargetZ,t),r:.34+.12*t,kind,color:e.skillColor,age:0,life:.48});}
    this.blast(e.skillTargetX,e.skillTargetZ,e.skillRadius,e.damage*1.48,kind,e.skillColor);e.skillKind='';return;
   }
-  if(kind==='petal_swoop'){e.skillDash=5.0;e.flying=true;e.grassRadius=e.radius*1.90;e.animState='flight';e.swoopTrailClock=0;e.swoopLastX=e.x;e.swoopLastZ=e.z;return;}
+  if(kind==='petal_swoop'){e.skillDash=5.0;e.flying=true;e.grassRadius=petalSwoopGrassRadius(e);e.animState='flight';e.swoopTrailClock=0;e.swoopLastX=e.x;e.swoopLastZ=e.z;return;}
   if(kind==='crystal_burst'){this.blast(e.skillTargetX,e.skillTargetZ,e.skillRadius,e.damage*1.34,kind,e.skillColor);e.skillKind='';return;}
   if(kind==='vine_lunge'){
    const dx=e.skillTargetX-e.x,dz=e.skillTargetZ-e.z,d=Math.hypot(dx,dz)||1;e.skillDirX=dx/d;e.skillDirZ=dz/d;e.skillDash=clamp(d/8.8,.42,.92);this.effects.push({x:e.x,z:e.z,r:2.4,kind,color:e.skillColor,age:0,life:.35});e.animState='run';return;
@@ -146,9 +152,16 @@ export class EnemyWorld{
   if(e.recovery>0){e.recovery=Math.max(0,e.recovery-dt);return true;}
   if(e.skillWindup>0){if(e.skillKind==='petal_swoop'){e.flying=true;e.animState='flight';e.anim+=dt;e.walkBlend=1;}e.skillWindup=Math.max(0,e.skillWindup-dt);if(e.skillWindup<=0)this.executeSkill(e);return true;}
   if(e.skillDash>0){
-   if(e.skillKind==='petal_swoop'){e.anim+=dt;e.walkBlend=1;e.animState='flight';}
+   if(e.skillKind==='petal_swoop'){
+    // Godot v100 retargets WING DIVE every physics tick instead of locking the launch direction.
+    const sx=player[0]-e.x,sz=player[2]-e.z,sd=Math.hypot(sx,sz);if(sd>.000001){e.skillDirX=sx/sd;e.skillDirZ=sz/sd;}
+    e.anim+=dt;e.walkBlend=1;e.animState='flight';e.grassRadius=petalSwoopGrassRadius(e);
+   }
    const speed=e.skillKind==='vine_lunge'?8.8:e.skillKind==='petal_swoop'?e.speed*2:e.speed*2.35,step=speed*dt,dx=e.skillDirX*step,dz=e.skillDirZ*step;
-   if(enemyCanStand(e.x+dx,e.z+dz,e.radius)){e.x+=dx;e.z+=dz;}else{e.skillDash=0;}
+   if(enemyCanStand(e.x+dx,e.z+dz,e.radius)){e.x+=dx;e.z+=dz;}else if(e.skillKind==='petal_swoop'){
+    // Godot move_and_slide keeps the five-second flight alive and slides along blockers.
+    let moved=false;if(enemyCanStand(e.x+dx,e.z,e.radius)){e.x+=dx;moved=true;}if(enemyCanStand(e.x,e.z+dz,e.radius)){e.z+=dz;moved=true;}
+   }else{e.skillDash=0;}
    if(e.skillKind==='petal_swoop')this.emitPetalSwoopTrail(e);
    e.yaw=Math.atan2(e.skillDirX,e.skillDirZ);e.skillDash=Math.max(0,e.skillDash-dt);
    if(Math.hypot(e.x-player[0],e.z-player[2])<e.radius+.35&&e.attack<=0){this.damage(e.damage);e.attack=.65;}

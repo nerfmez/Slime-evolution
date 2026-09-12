@@ -46,3 +46,14 @@ test('boss cycles close-range attacks, uses long-range Vine Lunge, armor and rer
  const c=new FireCombat();c.cards=[];c.opening=false;const hp=vine.hp;c.hit(vine,100,0,0);assert.equal(hp-vine.hp,72);
  const elite=far.makeEnemy('thorn',2,0,{elite:true});far.defeated=[elite];const rerolls=c.rerolls;c.update(.05,far,player);assert.equal(c.rerolls,rerolls+1);assert.equal(c.souls[0].value,6);
 });
+
+test('Petal Alpha Wing Dive retargets a moving player and opens the source-width grass corridor',()=>{
+ const w=world(),e=w.makeEnemy('petal',4,0,{elite:true});w.enemies=[e];e.skillCooldown=0;
+ w.update(.05,player,40);for(let i=0;i<11;i++)w.update(.05,player,40);
+ assert.equal(e.flying,true);assert(e.skillDash>4);
+ const sourceVisibleRadius=e.grassRadius+.36;
+ assert(sourceVisibleRadius>2.0&&sourceVisibleRadius<=2.70,'Wing Dive must widen grass to the Godot source-scale corridor');
+ const movingPlayer=[0,0,4],beforeZ=e.z;w.update(.05,movingPlayer,40);
+ assert(e.skillDirZ>.45,'Wing Dive must retarget toward the moving player every update');
+ assert(e.z>beforeZ,'retargeted flight must actually move toward the new player position');
+});
