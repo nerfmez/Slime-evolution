@@ -1,0 +1,34 @@
+name: Recovery asset access check
+on:
+  push:
+    branches: ['preview/migration-playable']
+    paths: ['.github/workflows/recovery-asset-access.yml']
+permissions:
+  contents: read
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Check known published runtime files
+        run: |
+          python3 - <<'PY'
+          import urllib.request,json,hashlib,os
+          from concurrent.futures import ThreadPoolExecutor
+          os.makedirs('asset-check',exist_ok=True)
+          base='https://slime-web-trial.ballboy-lnw.chatgpt.site/'
+          paths=['','assets/grass-original.png','assets/pond-painted.png','assets/enemies/thorn.bin']
+          def check(path):
+            try:
+              with urllib.request.urlopen(urllib.request.Request(base+path,headers={'User-Agent':'Slime-Recovery-Check/1.0'}),timeout=25) as r:
+                b=r.read();typ=r.headers.get('content-type','')
+                return {'path':path,'status':r.status,'type':typ,'bytes':len(b),'sha256':hashlib.sha256(b).hexdigest(),'preview':b[:120].decode('utf-8','replace') if 'text' in typ else b[:16].hex()}
+            except Exception as e:return {'path':path,'error':str(e)}
+          report=list(ThreadPoolExecutor(max_workers=4).map(check,paths))
+          text=json.dumps(report,indent=2);print(text);open('asset-check/report.json','w').write(text)
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: recovery-asset-access
+          path: asset-check/
+          retention-days: 3
