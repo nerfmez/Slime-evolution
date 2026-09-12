@@ -380,6 +380,7 @@ else if(kind==30.){float shade=dot(normalize(vNormal),normalize(SUN_DIRECTION));
 else if(kind==31.){float r=length(vUV*2.-1.);if(r>1.)discard;float n=noise(vWorld.xz*6.+vec2(time*1.5,-time*2.));c=mix(enemySkillColor*.62,min(vec3(1.),enemySkillColor*1.28+.08),n);alpha=(1.-smoothstep(.55,1.,r))*fade*.76;}
 else if(kind==32.){float light=dot(normalize(vNormal),normalize(SUN_DIRECTION));c=mix(vec3(.15,.52,.60),vec3(.70,.98,.90),smoothstep(-.5,.7,light));alpha=fade;}
 else if(kind==33.){float r=length(vUV*2.-1.);alpha=(1.-smoothstep(.025,.11,abs(r-.78)))*fade*.8;c=enemySkillColor;}
+else if(kind==34.){vec2 q=vUV*2.-1.;float along=vUV.y;float bend=.12*sin(along*8.+time*11.);float outer=1.-smoothstep(.16,.34,abs(q.x-bend));float core=1.-smoothstep(.035,.15,abs(q.x+bend*.35));float bars=0.;for(int i=0;i<3;i++){float p=.30+float(i)*.22;float by=1.-smoothstep(.025,.075,abs(along-p));float bx=1.-smoothstep(.20,.72,abs(q.x));bars=max(bars,by*bx);}float taper=smoothstep(0.,.10,along)*(1.-smoothstep(.86,1.,along));c=mix(enemySkillColor*1.05,vec3(1.,.965,.85),max(core,bars*.82));alpha=max(outer*.62,core*.90);alpha=max(alpha,bars*.58);alpha*=taper*fade;if(alpha<.02)discard;}
 else if(kind==27.){
  float light=dot(normalize(vNormal),normalize(SUN_DIRECTION));
  c=mix(enemySkillColor*.48,min(vec3(1.),enemySkillColor*1.18+.10),smoothstep(-.45,.8,light));

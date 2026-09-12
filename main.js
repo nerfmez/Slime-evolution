@@ -381,7 +381,7 @@ function renderScene(){
   uniform(gl,prog,'enemyLift',e.isBoss?.48:e.type==='moss'?.22:e.type==='crystal'?.25:e.flying?.08:.18);
   uniform(gl,prog,'enemyPalette',e.isBoss?4:e.type==='moss'?1:e.type==='crystal'?2:e.type==='petal'?3:0);
   uniform(gl,prog,'enemyElite',e.isElite?1:0);uniform(gl,prog,'enemyBoss',e.isBoss?1:0);uniform(gl,prog,'enemyHit',e.hit>0?1:0);
-  const texture=e.isElite&&asset.eliteTex?asset.eliteTex:asset.tex,scale=e.scale||1,y=e.flying?.55:.015;
+  const texture=e.isElite&&asset.eliteTex?asset.eliteTex:asset.tex,flightPulse=e.flying?1.05+Math.sin(e.anim*46)*.045:1,scale=(e.scale||1)*flightPulse,y=e.flying?(e.skillWindup>0?.36:.55):.015;
   drawModel(asset,model(e.x,y,e.z,scale,scale,scale,e.yaw),0,texture);
  }
  uniform(gl,prog,'enemyElite',0);uniform(gl,prog,'enemyBoss',0);
@@ -403,7 +403,7 @@ function renderScene(){
  if(!proofCamera){
   gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);gl.depthMask(false);
   for(const e of visibleEnemies)if(e.skillWindup>0&&e.skillRadius>0){const targeted=['moss_pillar_line','crystal_burst','vine_lunge'].includes(e.skillKind),x=targeted?e.skillTargetX:e.x,z=targeted?e.skillTargetZ:e.z;uniform(gl,prog,'enemySkillColor',e.skillColor||[1,.78,.38]);draw(quad,33,model(x,.025,z,e.skillRadius,1,e.skillRadius),Math.min(1,.35+e.skillWindup));}
-  for(const fx of enemyWorld.effects)if(tileVisible(fx.x,fx.z,fx.r+.5)){uniform(gl,prog,'enemySkillColor',fx.color||[1,.78,.38]);draw(quad,31,model(fx.x,.04,fx.z,fx.r,1,fx.r),Math.max(0,Math.min(1,fx.life/.42)));}
+  for(const fx of enemyWorld.effects)if(tileVisible(fx.x,fx.z,fx.r+.5)){uniform(gl,prog,'enemySkillColor',fx.color||[1,.78,.38]);if(fx.kind==='petal_swoop_trail'){const dx=fx.x1-fx.x0,dz=fx.z1-fx.z0,len=Math.max(.16,Math.hypot(dx,dz)),yaw=Math.atan2(dx,dz);draw(quad,34,model(fx.x,.14,fx.z,.24,1,len*.72,yaw),Math.max(0,Math.min(1,fx.life/.34)));}else draw(quad,31,model(fx.x,.04,fx.z,fx.r,1,fx.r),Math.max(0,Math.min(1,fx.life/.42)));}
   gl.depthMask(true);gl.disable(gl.BLEND);
   for(const b of enemyWorld.bullets){uniform(gl,prog,'enemySkillColor',b.color||[.45,.78,.95]);const scale=b.kind==='seed_volley'?1.65:1;draw(crystalShard,27,model(b.x,b.kind==='seed_volley'?.52:.40,b.z,scale,scale,scale,Math.atan2(b.vx,b.vz)),1);}
   gl.enable(gl.BLEND);gl.depthMask(false);

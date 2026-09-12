@@ -73,7 +73,7 @@ export class EnemyWorld{
  }
  makeEnemy(type,x,z,{elite=false,boss=false}={}){
   const s=this.stats(type,elite,boss),id=++this.serial;
-  return {id,type,assetType:s.assetType,name:s.name,x,z,yaw:0,hp:s.hp,maxHp:s.maxHp??s.hp,radius:s.radius,scale:s.scale,speed:s.speed,damage:s.damage,stride:s.stride||0,isElite:s.isElite,isBoss:s.isBoss,walkBlend:0,walkPhase:id*.61803398875,anim:this.random(),attack:this.random()*1.5,windup:0,hit:0,burnTime:0,burnDamage:0,burnTick:.28,skillKind:'',skillLabel:'',skillWindup:0,skillCooldown:elite?1.4:boss?.9:0,skillRadius:0,skillTargetX:x,skillTargetZ:z,skillDirX:0,skillDirZ:0,skillDash:0,skillColor:[1,.78,.38],flying:false,grassRadius:s.radius,recovery:0,bossCycle:0,animState:'walk'};
+  return {id,type,assetType:s.assetType,name:s.name,x,z,yaw:0,hp:s.hp,maxHp:s.maxHp??s.hp,radius:s.radius,scale:s.scale,speed:s.speed,damage:s.damage,stride:s.stride||0,isElite:s.isElite,isBoss:s.isBoss,walkBlend:0,walkPhase:id*.61803398875,anim:this.random(),attack:this.random()*1.5,windup:0,hit:0,burnTime:0,burnDamage:0,burnTick:.28,skillKind:'',skillLabel:'',skillWindup:0,skillCooldown:elite?1.4:boss?.9:0,skillRadius:0,skillTargetX:x,skillTargetZ:z,skillDirX:0,skillDirZ:0,skillDash:0,skillColor:[1,.78,.38],flying:false,grassRadius:s.radius,recovery:0,bossCycle:0,animState:'walk',swoopTrailClock:0,swoopLastX:x,swoopLastZ:z};
  }
  spawnAt(x,z,type,opts={}){
   const spec=this.stats(type,!!opts.elite,!!opts.boss);if(!enemyCanStand(x,z,spec.radius))return null;
@@ -100,6 +100,7 @@ export class EnemyWorld{
  skillTargeted(kind){return ['moss_pillar_line','crystal_burst','vine_lunge'].includes(kind);}
  startSkill(e,kind,windup,radius,player){
   const dx=player[0]-e.x,dz=player[2]-e.z,d=Math.hypot(dx,dz)||1;e.skillKind=kind;e.skillLabel=SKILL_LABELS[kind]||kind.toUpperCase();e.skillWindup=windup;e.skillRadius=radius;e.skillTargetX=player[0];e.skillTargetZ=player[2];e.skillDirX=dx/d;e.skillDirZ=dz/d;e.skillColor=skillColor(kind);e.animState=e.isBoss?(kind==='vine_lunge'?'charge':kind==='root_slam'?'push':'spell'):'walk';
+  if(kind==='petal_swoop'){e.flying=true;e.anim=0;e.animState='flight';e.swoopTrailClock=0;e.swoopLastX=e.x;e.swoopLastZ=e.z;}
   const cooldown={charge:4.6,moss_pillar_line:4.25,petal_swoop:2.20,crystal_burst:3.8,vine_lunge:4.10,root_slam:3.55,seed_volley:3.40,bloom_burst:4.00}[kind]||4.2;e.skillCooldown=cooldown;
  }
  blast(x,z,radius,damage,kind,color=skillColor(kind)){
@@ -120,7 +121,7 @@ export class EnemyWorld{
    for(let i=1;i<=7;i++){const t=i/7;this.effects.push({x:lerp(e.x,e.skillTargetX,t),z:lerp(e.z,e.skillTargetZ,t),r:.34+.12*t,kind,color:e.skillColor,age:0,life:.48});}
    this.blast(e.skillTargetX,e.skillTargetZ,e.skillRadius,e.damage*1.48,kind,e.skillColor);e.skillKind='';return;
   }
-  if(kind==='petal_swoop'){e.skillDash=5.0;e.flying=true;e.grassRadius=e.radius*1.90;e.anim=0;e.animState='flight';return;}
+  if(kind==='petal_swoop'){e.skillDash=5.0;e.flying=true;e.grassRadius=e.radius*1.90;e.animState='flight';e.swoopTrailClock=0;e.swoopLastX=e.x;e.swoopLastZ=e.z;return;}
   if(kind==='crystal_burst'){this.blast(e.skillTargetX,e.skillTargetZ,e.skillRadius,e.damage*1.34,kind,e.skillColor);e.skillKind='';return;}
   if(kind==='vine_lunge'){
    const dx=e.skillTargetX-e.x,dz=e.skillTargetZ-e.z,d=Math.hypot(dx,dz)||1;e.skillDirX=dx/d;e.skillDirZ=dz/d;e.skillDash=clamp(d/8.8,.42,.92);this.effects.push({x:e.x,z:e.z,r:2.4,kind,color:e.skillColor,age:0,life:.35});e.animState='run';return;
@@ -129,19 +130,26 @@ export class EnemyWorld{
   if(kind==='seed_volley'){const count=e.hp<=e.maxHp*.45?17:11;this.fireFan(e,count,2.20,5.10,e.damage*.82,kind);this.effects.push({x:e.x,z:e.z,r:3.1,kind,color:e.skillColor,age:0,life:.40});e.recovery=.68;e.skillKind='';return;}
   if(kind==='bloom_burst'){this.blast(e.x,e.z,e.skillRadius,e.damage*1.56,kind,e.skillColor);e.recovery=.78;e.skillKind='';return;}
  }
+ emitPetalSwoopTrail(e){
+  const moved=Math.hypot(e.x-e.swoopLastX,e.z-e.swoopLastZ);e.swoopTrailClock-=this._lastDt||0;
+  if(e.swoopTrailClock>0&&moved<.10)return;
+  if(moved>.015)this.effects.push({kind:'petal_swoop_trail',x:(e.swoopLastX+e.x)*.5,z:(e.swoopLastZ+e.z)*.5,x0:e.swoopLastX,z0:e.swoopLastZ,x1:e.x,z1:e.z,r:Math.max(.36,moved),color:e.skillColor,age:0,life:.34});
+  e.swoopLastX=e.x;e.swoopLastZ=e.z;e.swoopTrailClock=.085;
+ }
  finishDash(e){
   if(e.skillKind==='vine_lunge')this.blast(e.x,e.z,e.skillRadius,e.damage*1.76,'vine_lunge',e.skillColor);
-  if(e.skillKind==='petal_swoop'){e.flying=false;e.grassRadius=e.radius;}
+  if(e.skillKind==='petal_swoop'){e.flying=false;e.grassRadius=e.radius;e.swoopTrailClock=0;}
   e.skillKind='';e.skillDash=0;e.animState='walk';
  }
  updateSpecial(e,dt,player,distance){
   if(!e.isElite)return false;
   if(e.recovery>0){e.recovery=Math.max(0,e.recovery-dt);return true;}
-  if(e.skillWindup>0){e.skillWindup=Math.max(0,e.skillWindup-dt);if(e.skillWindup<=0)this.executeSkill(e);return true;}
+  if(e.skillWindup>0){if(e.skillKind==='petal_swoop'){e.flying=true;e.animState='flight';e.anim+=dt;e.walkBlend=1;}e.skillWindup=Math.max(0,e.skillWindup-dt);if(e.skillWindup<=0)this.executeSkill(e);return true;}
   if(e.skillDash>0){
    if(e.skillKind==='petal_swoop'){e.anim+=dt;e.walkBlend=1;e.animState='flight';}
    const speed=e.skillKind==='vine_lunge'?8.8:e.skillKind==='petal_swoop'?e.speed*2:e.speed*2.35,step=speed*dt,dx=e.skillDirX*step,dz=e.skillDirZ*step;
    if(enemyCanStand(e.x+dx,e.z+dz,e.radius)){e.x+=dx;e.z+=dz;}else{e.skillDash=0;}
+   if(e.skillKind==='petal_swoop')this.emitPetalSwoopTrail(e);
    e.yaw=Math.atan2(e.skillDirX,e.skillDirZ);e.skillDash=Math.max(0,e.skillDash-dt);
    if(Math.hypot(e.x-player[0],e.z-player[2])<e.radius+.35&&e.attack<=0){this.damage(e.damage);e.attack=.65;}
    if(e.skillDash<=0)this.finishDash(e);return true;
@@ -159,7 +167,7 @@ export class EnemyWorld{
   return e.skillWindup>0;
  }
  update(dt,player,limit=40,storm=null){
-  if(dt<=0||this.hp<=0||this.finished)return;dt=Math.min(dt,.05);this.player=player;this.time+=dt;this.hurt=Math.max(0,this.hurt-dt);this.noticeTime=Math.max(0,this.noticeTime-dt);this.navClock-=dt;
+  if(dt<=0||this.hp<=0||this.finished)return;dt=Math.min(dt,.05);this._lastDt=dt;this.player=player;this.time+=dt;this.hurt=Math.max(0,this.hurt-dt);this.noticeTime=Math.max(0,this.noticeTime-dt);this.navClock-=dt;
   if(this.navClock<=0){this.rebuild(player);this.navClock=.4;}
   if(this.initial){
    if(this.mode==='boss')this.spawnBoss(player);
