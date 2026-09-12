@@ -1,0 +1,100 @@
+{
+  "port": "Stage 1 Alpha elites + Ancient Bloom Colossus",
+  "source_archive": "Slime-v100-fire-evo-components.zip",
+  "source_archive_sha256": "2a69e69e95faa47e28427bdce8966385474ab859e22a5a9becab23debebfddf4",
+  "runtime_note": "Web runtime retains sourceHp=12000 for Ancient Bloom; current review hp=1200 until full player skill roster is restored.",
+  "files": {
+    "public/assets/enemies/boss-charge.bin": {
+      "bytes": 4765440,
+      "sha256": "4ef652185c9374df1e601957e41ec169689945756ba4864f5340a3af609aa7ec"
+    },
+    "public/assets/enemies/boss-push.bin": {
+      "bytes": 4765440,
+      "sha256": "142b74fcc155f0e11c5827406581ce03c29ad9115e30ec873c9ccdb4c192ae1c"
+    },
+    "public/assets/enemies/boss-run.bin": {
+      "bytes": 4765440,
+      "sha256": "f94ba92edf15f9d73fa7ba806eb83ccca248d525c706de7ee15dd33bbb7f72dc"
+    },
+    "public/assets/enemies/boss-spell.bin": {
+      "bytes": 4765440,
+      "sha256": "a015e2e981096c10cb6a977a12b6a40ee715b0613b8060c4b524083081ab2c99"
+    },
+    "public/assets/enemies/boss.bin": {
+      "bytes": 4863800,
+      "sha256": "de5e5c27d921afb291278bf47e4e71e09a4442dbaac983777f04bf2b3bb5887a"
+    },
+    "public/assets/enemies/boss.json": {
+      "bytes": 498,
+      "sha256": "b9aa4e0974d4b403014642115152086a70c4b8d3d89f5ff97c490b2e6121151c"
+    },
+    "public/assets/enemies/boss.png": {
+      "bytes": 1912534,
+      "sha256": "222fbf33571c7d85335617d2946290f84c73a4f56504808a6606437a5463ace3"
+    },
+    "public/assets/enemies/crystal-elite.png": {
+      "bytes": 6401212,
+      "sha256": "e94d9dcaebd262e6cde368fa73d35162c35cce1c5c53a58810c36cda336ac74c"
+    },
+    "public/assets/enemies/crystal.bin": {
+      "bytes": 1177780,
+      "sha256": "0526f6c71e7292fe876606b5dbb894f7b9c56db2c8650acc1478bd8018cf60c9"
+    },
+    "public/assets/enemies/crystal.json": {
+      "bytes": 183,
+      "sha256": "2b57620b0d26df64a6aa59b69ede901a8ec844f7ee0850d99eee45c11c6a1e41"
+    },
+    "public/assets/enemies/crystal.png": {
+      "bytes": 6344826,
+      "sha256": "b0f50509202016fa5e7130f269efcaad4a75957074bf449e8cdc06e1817732e2"
+    },
+    "public/assets/enemies/moss.bin": {
+      "bytes": 1129192,
+      "sha256": "16c2283abd18088d2d649cffa0d12eededc10c561c36914eba8be14770082657"
+    },
+    "public/assets/enemies/moss.json": {
+      "bytes": 167,
+      "sha256": "05c755e4001d509bb8faee20d67905c5149b0fe4dc77f193296188cb30d58413"
+    },
+    "public/assets/enemies/moss.png": {
+      "bytes": 6834549,
+      "sha256": "39eee021ae0676fdb350f75d106f97a4e8b74e89043e830de37c31a9ac31dd6e"
+    },
+    "public/assets/enemies/petal-flight.bin": {
+      "bytes": 394368,
+      "sha256": "1b73f408d6a21fd183a9e7ee5c807565ec464cf6e5951744e5ef40affec5b8fe"
+    },
+    "public/assets/enemies/petal.bin": {
+      "bytes": 804176,
+      "sha256": "6aefbeac44d788bcb4eb0acd8aa9c83e619d73ecef7cb0bc7cdf5c5408e32f19"
+    },
+    "public/assets/enemies/petal.jpg": {
+      "bytes": 3324870,
+      "sha256": "d0a0d5bdef3c2125eee69d37216890de8afce77556f94f46f093e0581f3143ea"
+    },
+    "public/assets/enemies/petal.json": {
+      "bytes": 229,
+      "sha256": "a5a97aa9c159b0490033d96e9491523d358151d9133f14469dd9dbc99b40cdeb"
+    },
+    "public/assets/enemies/thorn-sprite.json": {
+      "bytes": 123,
+      "sha256": "174fd6b25f3ab5988789acdc9d5185f90a6d90722ba6bef653ed749f4327424d"
+    },
+    "public/assets/enemies/thorn-sprite.png": {
+      "bytes": 1119876,
+      "sha256": "0045b341ef6540f074f9d5d91377e213b37d2e1c796e637f22b64de732d08558"
+    },
+    "public/assets/enemies/thorn.bin": {
+      "bytes": 546432,
+      "sha256": "21b240edec5f35b0a4500bb4b7443291fa7f01da2ac28cfb76398167039cf602"
+    },
+    "public/assets/enemies/thorn.jpg": {
+      "bytes": 2563489,
+      "sha256": "8951479ad331a2697a3af6965e7f1f936293b2f2a03605c88f8fb2a552ba801e"
+    },
+    "public/assets/enemies/thorn.json": {
+      "bytes": 152,
+      "sha256": "0e35c66b8f6e52c349e8ac3c1a754da57fa1e2c56d0b3d2bf2772524630a56a3"
+    }
+  }
+}

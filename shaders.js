@@ -102,7 +102,7 @@ vLocal=p;
 p+=localNormal*outline;vec4 world=model*vec4(p,1.);vWorld=world.xyz;vNormal=normalize(mat3(model)*localNormal);gl_Position=vp*world;
 
 }`;
-export const fs=`in vec3 vLocal;in float vAmbient;in float vBurn;in vec2 vUV;in vec2 vRoot;in vec3 vNormal,vWorld;uniform sampler2D tex,canopyTex,clearingTex,meadowTex,grassBendTex;uniform vec3 player,viewDirection,jellyMotion;uniform float enemyLift,enemyPalette,enemyHit;uniform float kind,time,outline,fade;out vec4 color;
+export const fs=`in vec3 vLocal;in float vAmbient;in float vBurn;in vec2 vUV;in vec2 vRoot;in vec3 vNormal,vWorld;uniform sampler2D tex,canopyTex,clearingTex,meadowTex,grassBendTex;uniform vec3 player,viewDirection,jellyMotion,enemySkillColor;uniform float enemyLift,enemyPalette,enemyHit,enemyElite,enemyBoss;uniform float kind,time,outline,fade;out vec4 color;
 float hash(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}float noise(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(hash(i),hash(i+vec2(1,0)),f.x),mix(hash(i+vec2(0,1)),hash(i+vec2(1,1)),f.x),f.y);}float fbm(vec2 p){return noise(p)*.55+noise(p*2.03)*.28+noise(p*4.1)*.17;}
 ${terrainGLSL}
 // Shared world-space pigment: grass roots and ground use exactly the same colour.
@@ -260,6 +260,24 @@ else if(kind==0.){
   vec3 mineral=mix(source,vec3(luma),.24)*vec3(.98,1.02,.91)+vec3(.035,.012,.008);
   source=mix(source,mineral,crystal);
  }
+ // Elite colour is selected by parts, never a whole-model tint. Crystal Alpha
+ // uses its authored replacement texture in enemy-assets.js instead.
+ if(enemyElite>.5&&enemyBoss<.5){
+  float luma=dot(source,vec3(.30,.59,.11));
+  if(enemyPalette<.5){
+   float warm=smoothstep(.08,.30,source.r-max(source.g,source.b));
+   vec3 alphaWarm=vec3(min(1.,source.r*1.10+.03),source.g*.72,source.b*.68);
+   source=mix(source,alphaWarm,warm*.78);
+  }else if(enemyPalette>.5&&enemyPalette<1.5){
+   float moss=smoothstep(.025,.16,source.g-max(source.r,source.b));
+   vec3 gold=vec3(luma*1.12+.10,luma*.82+.06,luma*.27+.02);
+   source=mix(source,gold,moss*.76);
+  }else if(enemyPalette>2.5&&enemyPalette<3.5){
+   float petal=smoothstep(.06,.28,source.r-source.g)*smoothstep(-.04,.16,source.b-source.g);
+   vec3 amber=vec3(luma*1.20+.10,luma*.70+.05,luma*.30+.03);
+   source=mix(source,amber,petal*.82);
+  }
+ }
  float value=dot(source,vec3(.30,.59,.11));
  vec3 paint=mix(source,vec3(value),.12);
  paint=mix(paint,sqrt(max(paint,vec3(0.))),enemyLift);
@@ -359,13 +377,13 @@ else if(kind==28.){
 }
 else if(kind==29.){c=vec3(1.,.95,.65);}
 else if(kind==30.){float shade=dot(normalize(vNormal),normalize(SUN_DIRECTION));c=mix(vec3(.60,.60,.55),vec3(.91,.90,.80),smoothstep(-.3,.7,shade));alpha=fade;}
-else if(kind==31.){float r=length(vUV*2.-1.);if(r>1.)discard;float n=noise(vWorld.xz*6.+vec2(time*1.5,-time*2.));c=mix(vec3(.66,.18,.035),vec3(1.,.64,.12),n);alpha=(1.-smoothstep(.55,1.,r))*fade*.76;}
+else if(kind==31.){float r=length(vUV*2.-1.);if(r>1.)discard;float n=noise(vWorld.xz*6.+vec2(time*1.5,-time*2.));c=mix(enemySkillColor*.62,min(vec3(1.),enemySkillColor*1.28+.08),n);alpha=(1.-smoothstep(.55,1.,r))*fade*.76;}
 else if(kind==32.){float light=dot(normalize(vNormal),normalize(SUN_DIRECTION));c=mix(vec3(.15,.52,.60),vec3(.70,.98,.90),smoothstep(-.5,.7,light));alpha=fade;}
-else if(kind==33.){float r=length(vUV*2.-1.);alpha=(1.-smoothstep(.025,.11,abs(r-.78)))*fade*.8;c=vec3(1.,.80,.38);}
+else if(kind==33.){float r=length(vUV*2.-1.);alpha=(1.-smoothstep(.025,.11,abs(r-.78)))*fade*.8;c=enemySkillColor;}
 else if(kind==27.){
  float light=dot(normalize(vNormal),normalize(SUN_DIRECTION));
- c=mix(vec3(.19,.42,.62),vec3(.67,.88,.91),smoothstep(-.45,.8,light));
- c=mix(c,vec3(.90,.96,.91),smoothstep(.81,.96,light)*.45);alpha=fade;
+ c=mix(enemySkillColor*.48,min(vec3(1.),enemySkillColor*1.18+.10),smoothstep(-.45,.8,light));
+ c=mix(c,vec3(.96,.98,.90),smoothstep(.81,.96,light)*.42);alpha=fade;
 }
 else if(kind==26.){vec2 q=vUV*2.-1.;float r=length(q);if(r>1.)discard;alpha=(1.-smoothstep(.5,1.,r))*fade;c=mix(vec3(.88,.83,1.),vec3(.51,.41,.70),r);}
 else if(kind==20.){alpha=vAmbient*.90;c=mix(vec3(.30,.38,.30),vec3(.43,.48,.36),vUV.x);if(alpha<.015)discard;}

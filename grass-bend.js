@@ -23,7 +23,7 @@ export function createGrassBend(){
   for(let i=0;i<field.length;i++)field[i]*=decay;
   for(const a of actors){
    if(player&&(Math.abs(a.x-player[0])>24||Math.abs(a.z-player[2])>24))continue;
-   const radius=a.radius+.36,cx=(a.x+36)/step,cz=(a.z+36)/step,reach=Math.ceil(radius/step)+1;
+   const radius=(a.grassRadius??a.radius)+.36,cx=(a.x+36)/step,cz=(a.z+36)/step,reach=Math.ceil(radius/step)+1;
    for(let z=Math.max(0,Math.floor(cz-reach));z<=Math.min(BEND_SIZE-1,Math.ceil(cz+reach));z++)for(let x=Math.max(0,Math.floor(cx-reach));x<=Math.min(BEND_SIZE-1,Math.ceil(cx+reach));x++){
     const dx=(x+.5)*step-36-a.x,dz=(z+.5)*step-36-a.z,d=Math.hypot(dx,dz);if(d>=radius)continue;
     let q=Math.max(0,Math.min(1,(radius-d)/(radius*.85)));q=q*q*(3-2*q)*.38;

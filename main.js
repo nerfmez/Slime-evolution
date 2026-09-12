@@ -316,16 +316,17 @@ const skillLab=mountSkillLab({
 });
 
 function draw(g,kind,m=I(),fade=1,texture=null,outline=0){uniform(gl,prog,'vp',vp);uniform(gl,prog,'model',m);uniform(gl,prog,'kind',kind);uniform(gl,prog,'outline',outline);uniform(gl,prog,'fade',fade);if(texture){gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,texture)}render(gl,g);draws++;tris+=g.count/3}
-function drawModel(asset,m,kind=0){
+function drawModel(asset,m,kind=0,textureOverride=null){
  gl.enable(gl.CULL_FACE);
+ const texture=textureOverride||asset.tex||null;
  if(kind===8){
   gl.enable(gl.BLEND);gl.blendFuncSeparate(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA,gl.ONE,gl.ONE_MINUS_SRC_ALPHA);
   gl.cullFace(gl.FRONT);draw(asset.mesh,kind,m,1,null,.009);
   gl.cullFace(gl.BACK);draw(asset.mesh,kind,m);
   gl.disable(gl.BLEND);
  }else{
-  gl.cullFace(gl.FRONT);draw(asset.mesh,kind,m,1,asset.tex,.009);
-  gl.cullFace(gl.BACK);draw(asset.mesh,kind,m,1,asset.tex);
+  gl.cullFace(gl.FRONT);draw(asset.mesh,kind,m,1,texture,.009);
+  gl.cullFace(gl.BACK);draw(asset.mesh,kind,m,1,texture);
  }
  gl.disable(gl.CULL_FACE);
 }
@@ -368,18 +369,22 @@ function renderScene(){
   uniform(gl,prog,'time',state.time);uniform(gl,prog,'jellyMotion',[jelly.lean,jelly.velocity,jelly.stretch]);
  }
  for(const e of visibleEnemies){
-  if(e.type==='thorn'&&state.thornView==='sprite'&&state.camera==='game'&&thornSprite&&!proofCamera)continue;
-  const asset=enemyAssets[e.type];if(!asset)continue;
-  const phase=ENEMY_TYPES[e.type].stride?e.walkPhase:e.anim/asset.duration;
-  const frame=(phase%1)*asset.frames.length;
-  asset.mesh=asset.frames[Math.floor(frame)];
-  uniform(gl,prog,'enemyFrameMix',ENEMY_TYPES[e.type].stride?frame-Math.floor(frame):0);
+  if(e.type==='thorn'&&!e.isElite&&state.thornView==='sprite'&&state.camera==='game'&&thornSprite&&!proofCamera)continue;
+  const asset=enemyAssets[e.assetType||e.type];if(!asset)continue;
+  let clip={frames:asset.frames,duration:asset.duration};
+  if(e.type==='petal'&&e.flying&&asset.clips?.flight)clip=asset.clips.flight;
+  else if(e.isBoss&&asset.clips?.[e.animState])clip=asset.clips[e.animState];
+  const phase=e.isBoss&&e.animState!=='walk'?state.time/Math.max(.01,clip.duration):(e.stride?e.walkPhase:e.anim/Math.max(.01,clip.duration));
+  const frame=(phase%1)*clip.frames.length;asset.mesh=clip.frames[Math.floor(frame)];
+  uniform(gl,prog,'enemyFrameMix',frame-Math.floor(frame));
   uniform(gl,prog,'enemyMotion',[phase*Math.PI*2,e.walkBlend,e.id]);
-  uniform(gl,prog,'enemyLift',e.type==='moss'?.22:e.type==='crystal'?.25:.18);
-  uniform(gl,prog,'enemyPalette',e.type==='moss'?1:e.type==='crystal'?2:0);
-  uniform(gl,prog,'enemyHit',e.hit>0?1:0);
-  drawModel(asset,model(e.x,.015,e.z,1,1,1,e.yaw));
+  uniform(gl,prog,'enemyLift',e.isBoss?.48:e.type==='moss'?.22:e.type==='crystal'?.25:e.flying?.08:.18);
+  uniform(gl,prog,'enemyPalette',e.isBoss?4:e.type==='moss'?1:e.type==='crystal'?2:e.type==='petal'?3:0);
+  uniform(gl,prog,'enemyElite',e.isElite?1:0);uniform(gl,prog,'enemyBoss',e.isBoss?1:0);uniform(gl,prog,'enemyHit',e.hit>0?1:0);
+  const texture=e.isElite&&asset.eliteTex?asset.eliteTex:asset.tex,scale=e.scale||1,y=e.flying?.55:.015;
+  drawModel(asset,model(e.x,y,e.z,scale,scale,scale,e.yaw),0,texture);
  }
+ uniform(gl,prog,'enemyElite',0);uniform(gl,prog,'enemyBoss',0);
  if(state.grass>0){
   vegetationDepth.capture(canvas.width,canvas.height);
   for(const tile of grassMesh)if(tileVisible(tile.x,tile.z)){
@@ -392,15 +397,18 @@ function renderScene(){
 
  // Draw billboards against solid depth after foliage, without moving their ground anchor.
  if(state.thornView==='sprite'&&state.camera==='game'&&thornSprite&&!proofCamera){
-  for(const e of visibleEnemies)if(e.type==='thorn'){const n=thornSprite.draw(e,vp,state.player,state.thornFrames);draws+=n.calls;tris+=n.triangles;}
+  for(const e of visibleEnemies)if(e.type==='thorn'&&!e.isElite){const n=thornSprite.draw(e,vp,state.player,state.thornFrames);draws+=n.calls;tris+=n.triangles;}
   gl.useProgram(prog);
  }
  if(!proofCamera){
-  gl.disable(gl.BLEND);gl.depthMask(true);
-  for(const b of enemyWorld.bullets)draw(crystalShard,27,model(b.x,.40,b.z,1,1,1,Math.atan2(b.vx,b.vz)),1);
-  gl.enable(gl.BLEND);gl.depthMask(false);
-  for(const e of visibleEnemies)if(e.windup>0)draw(crystalShard,27,model(e.x,.65,e.z,.4+(1-e.windup/.6)*.5,.4+(1-e.windup/.6)*.5,.4+(1-e.windup/.6)*.5,e.yaw),.80);
+  gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);gl.depthMask(false);
+  for(const e of visibleEnemies)if(e.skillWindup>0&&e.skillRadius>0){const targeted=['moss_pillar_line','crystal_burst','vine_lunge'].includes(e.skillKind),x=targeted?e.skillTargetX:e.x,z=targeted?e.skillTargetZ:e.z;uniform(gl,prog,'enemySkillColor',e.skillColor||[1,.78,.38]);draw(quad,33,model(x,.025,z,e.skillRadius,1,e.skillRadius),Math.min(1,.35+e.skillWindup));}
+  for(const fx of enemyWorld.effects)if(tileVisible(fx.x,fx.z,fx.r+.5)){uniform(gl,prog,'enemySkillColor',fx.color||[1,.78,.38]);draw(quad,31,model(fx.x,.04,fx.z,fx.r,1,fx.r),Math.max(0,Math.min(1,fx.life/.42)));}
   gl.depthMask(true);gl.disable(gl.BLEND);
+  for(const b of enemyWorld.bullets){uniform(gl,prog,'enemySkillColor',b.color||[.45,.78,.95]);const scale=b.kind==='seed_volley'?1.65:1;draw(crystalShard,27,model(b.x,b.kind==='seed_volley'?.52:.40,b.z,scale,scale,scale,Math.atan2(b.vx,b.vz)),1);}
+  gl.enable(gl.BLEND);gl.depthMask(false);
+  uniform(gl,prog,'enemySkillColor',[.45,.78,.95]);for(const e of visibleEnemies)if(e.windup>0)draw(crystalShard,27,model(e.x,.65,e.z,.4+(1-e.windup/.6)*.5,.4+(1-e.windup/.6)*.5,.4+(1-e.windup/.6)*.5,e.yaw),.80);
+  gl.depthMask(true);gl.disable(gl.BLEND);uniform(gl,prog,'enemySkillColor',[1,.78,.38]);
  }
 
  if(!proofCamera)drawFireCombat();
@@ -433,10 +441,12 @@ function initCanopyShadow(){
 }
 function updateEncounterHUD(){
  if(skillLab.active){$('status').textContent='ห้องทดสอบไฟ · รอบเล่นเดิมพักไว้';return;}
- const t=Math.min(300,Math.floor(enemyWorld.time)),clock=String(Math.floor(t/60)).padStart(2,'0')+':'+String(t%60).padStart(2,'0');
- $('status').textContent=enemyWorld.hp<=0?'สไลม์หมดแรง · กดเริ่มใหม่':enemyWorld.finished?'จบการทดสอบ 5 นาที':`ด่าน 1 · ${clock} / 05:00`;
+ const t=Math.max(0,Math.floor(enemyWorld.time)),clock=String(Math.floor(Math.min(t,300)/60)).padStart(2,'0')+':'+String(Math.min(t,300)%60).padStart(2,'0'),boss=enemyWorld.enemies.find(e=>e.isBoss);
+ $('status').textContent=enemyWorld.hp<=0?'สไลม์หมดแรง · กดเริ่มใหม่':enemyWorld.finished?'ด่าน 1 ผ่าน · Ancient Bloom ถูกกำจัด':boss?'BOSS · ANCIENT BLOOM COLOSSUS':`ด่าน 1 · ${clock} / 05:00 · บอสใน ${Math.max(0,300-t)} วิ`;
  $('retry').hidden=enemyWorld.hp>0&&!enemyWorld.finished;$('health').max=combat.maxHP;$('health').value=enemyWorld.hp;$('health-text').textContent=`HP ${Math.ceil(enemyWorld.hp)} / ${combat.maxHP} · กำจัด ${enemyWorld.kills}`;
- $('roster').textContent=enemyWorld.unlocked().map(k=>ENEMY_TYPES[k].name).join(' · ');
+ if(enemyWorld.mode==='boss')$('roster').textContent='Ancient Bloom Colossus';
+ else if(enemyWorld.mode==='elites')$('roster').textContent=['thorn','moss','petal','crystal'].map(k=>ENEMY_TYPES[k].eliteName).join(' · ');
+ else $('roster').textContent=enemyWorld.unlocked().map(k=>ENEMY_TYPES[k].name).join(' · ')+(enemyWorld.enemies.some(e=>e.isElite&&!e.isBoss)?' · ALPHA ACTIVE':'');
 }
 function resetEncounter(){grassBend.reset();combat.reset();fireUI.sync();keys.clear();release();enemyWorld.reset($('enemy-mode').value,Number($('start-minute').value));state.stormAge=6;state.paused=false;$('pause').textContent='หยุดภาพ';updateEncounterHUD();}
 $('enemy-mode').onchange=resetEncounter;$('start-minute').onchange=resetEncounter;$('restart').onclick=resetEncounter;$('retry').onclick=resetEncounter;
@@ -453,7 +463,10 @@ function drawFireCombat(){
 
 function drawCombatFeedback(){
  const layer=$('combat-feedback'),w=canvas.clientWidth,h=canvas.clientHeight;if(layer.width!==w||layer.height!==h){layer.width=w;layer.height=h;}const ctx=layer.getContext('2d');ctx.clearRect(0,0,w,h);ctx.textAlign='center';ctx.font='bold 18px system-ui';ctx.lineWidth=3;
- for(const n of combat.numbers){const y=.75+n.age*.8,x=(vp[0]*n.x+vp[4]*y+vp[8]*n.z+vp[12]+1)*w/2,z=(1-(vp[1]*n.x+vp[5]*y+vp[9]*n.z+vp[13]))*h/2;ctx.globalAlpha=Math.min(1,(.75-n.age)*4);ctx.strokeStyle='#5b301c';ctx.fillStyle='#fff0b9';ctx.strokeText(String(n.value),x,z);ctx.fillText(String(n.value),x,z);}ctx.globalAlpha=1;
+ const screen=(x,y,z)=>[(vp[0]*x+vp[4]*y+vp[8]*z+vp[12]+1)*w/2,(1-(vp[1]*x+vp[5]*y+vp[9]*z+vp[13]))*h/2];
+ for(const n of combat.numbers){const [x,z]=screen(n.x,.75+n.age*.8,n.z);ctx.globalAlpha=Math.min(1,(.75-n.age)*4);ctx.strokeStyle='#5b301c';ctx.fillStyle='#fff0b9';ctx.strokeText(String(n.value),x,z);ctx.fillText(String(n.value),x,z);}ctx.globalAlpha=1;
+ for(const e of enemyWorld.enemies)if(e.isElite){const [x,y]=screen(e.x,(e.isBoss?5.7:1.45)*(e.scale||1),e.z),bw=e.isBoss?Math.min(300,w*.58):84,bh=e.isBoss?12:7,ratio=Math.max(0,Math.min(1,e.hp/e.maxHp));ctx.fillStyle='#231c19cc';ctx.fillRect(x-bw/2,y,bw,bh);ctx.fillStyle=e.isBoss?'#d69d48':'#c85f45';ctx.fillRect(x-bw/2+1,y+1,(bw-2)*ratio,bh-2);ctx.font=e.isBoss?'bold 16px system-ui':'bold 11px system-ui';ctx.lineWidth=3;ctx.strokeStyle='#251b17';ctx.fillStyle='#fff2c9';ctx.strokeText(e.name,x,y-5);ctx.fillText(e.name,x,y-5);if(e.skillWindup>0&&e.skillLabel){ctx.font='bold 10px system-ui';ctx.fillStyle='#ffe292';ctx.fillText(e.skillLabel,x,y+bh+13);}}
+ if(enemyWorld.noticeTime>0&&enemyWorld.noticeText){ctx.globalAlpha=Math.min(1,enemyWorld.noticeTime*1.5);ctx.font='bold 22px system-ui';ctx.lineWidth=5;ctx.strokeStyle='#3a2418';ctx.fillStyle='#ffe5a1';for(const [i,line] of enemyWorld.noticeText.split('\n').entries()){ctx.strokeText(line,w/2,70+i*28);ctx.fillText(line,w/2,70+i*28);}ctx.globalAlpha=1;}
 }
 
 function captureInfernoFrame(age){

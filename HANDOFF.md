@@ -8,6 +8,13 @@
 รุ่นที่ขึ้นเว็บสำเร็จล่าสุด: Sites v101, source commit `3979cae54ff015cd61dd0964519f97d04eef7ab1`.
 Snapshot GitHub นี้รวมโค้ด/asset/ภาพตรวจจากรุ่นนั้น และเอกสารรับงานต่อ. GitHub migration ยังไม่เท่ากับตั้ง hosting ใหม่แล้ว. เว็บ Sites เดิมไม่อัปตาม GitHub อัตโนมัติ.
 
+
+## Stage 1 Alpha elites + boss port (2026-09-12)
+
+Recovered from the pre-migration Godot v100 source without replacing the current web renderer. `enemies.js` now contains the four Alpha variants and the 05:00 Ancient Bloom Colossus transition; `enemy-assets.js` supports shared extra clips and selective elite textures. Runtime assets live under `public/assets/enemies/`: Petal Alpha adds `petal-flight.bin`, Crystal Alpha adds `crystal-elite.png`, and Ancient Bloom adds `boss.bin`/`boss.png` plus run/charge/push/spell clips. The boss authoring HP remains 12,000 in `sourceHp`; the temporary web-review HP is 1,200 until the complete player skill roster is restored. See `enemy-stage.md` and `tests/stage1-elites-boss.test.mjs` before changing balance or visuals.
+
+Elite visuals must remain part-selective rather than whole-model tint. Petal Alpha keeps the approved 5 s Wing Dive at 2x speed, takes +50% damage in flight, and bends a wider grass path. Elite/boss kills grant +1 reroll. Ancient Bloom cycles Vine Lunge / Root Slam / Seed Volley / Bloom Burst and has 28% incoming-damage reduction. Browser/device visual verification is still required after integration; unit tests are not visual approval.
+
 ## งานปัจจุบัน: Sun Fall B
 
 - ลูกอาทิตย์ตกจากฟ้า ใช้ภาพความละเอียดสูง + การขยับผิว/หางต่อเนื่อง และแถบไฟ 3D จริงสองวง.

@@ -48,8 +48,8 @@ export class FireCombat{
   const near=world.enemies.filter(e=>e.hp>0&&Math.hypot(e.x-player[0],e.z-player[2])<=10).sort((a,b)=>Math.hypot(a.x-player[0],a.z-player[2])-Math.hypot(b.x-player[0],b.z-player[2])).slice(0,6);
   let best=null,score=-1;for(const e of near){let count=0;for(const n of world.enemies)if(n.hp>0&&(n.x-e.x)**2+(n.z-e.z)**2<=8.4)count++;if(count>score){score=count;best=e;}}return best;
  }
- hit(e,damage,x,z,push=0){if(e.hp<=0)return;e.hp-=damage;e.hit=.12;if(this.numbers.length<48)this.numbers.push({x:e.x,z:e.z,value:damage,age:0});
-  if(push){const d=Math.hypot(e.x-x,e.z-z)||1,scale=(e.type==='moss'?.25:1)*push*.10,nx=e.x+(e.x-x)/d*scale,nz=e.z+(e.z-z)/d*scale;if(enemyCanStand(nx,nz,e.radius)){e.x=nx;e.z=nz;}}
+ hit(e,damage,x,z,push=0){if(e.hp<=0)return;let applied=damage;if(e.isBoss)applied=Math.max(1,Math.round(applied*.72));if(e.type==='petal'&&e.isElite&&e.flying)applied=Math.max(1,Math.round(applied*1.5));e.hp-=applied;e.hit=.12;if(this.numbers.length<48)this.numbers.push({x:e.x,z:e.z,value:applied,age:0});
+  if(push){const d=Math.hypot(e.x-x,e.z-z)||1,resist=e.isBoss?.06:e.type==='moss'?(e.isElite?.18:.25):e.type==='crystal'&&e.isElite?.43:e.type==='petal'&&e.isElite?.85:e.isElite?.55:1,scale=resist*push*.10,nx=e.x+(e.x-x)/d*scale,nz=e.z+(e.z-z)/d*scale;if(enemyCanStand(nx,nz,e.radius)){e.x=nx;e.z=nz;}}
  }
  burn(e,damage,duration){e.burnDamage=Math.max(e.burnDamage||0,damage);e.burnTime=Math.max(e.burnTime||0,duration);e.burnTick=Math.min(e.burnTick??.28,.28);}
  effect(type,x,z,r){if(this.fx.length>=40)this.fx.shift();this.fx.push({type,x,z,r,age:0});}
@@ -67,7 +67,7 @@ export class FireCombat{
   if(dt<=0||this.choosing||world.hp<=0||world.finished)return;
   this.healClock=Math.max(0,this.healClock-dt);
   for(const e of world.defeated.splice(0)){if(this.mods.blood_feast>0&&this.healClock<=0&&Math.hypot(e.x-player[0],e.z-player[2])<2.55+(this.mods.blood_feast-1)*.1){world.hp=Math.min(this.maxHP,world.hp+(this.mods.blood_feast<3?1:2));this.healClock=Math.max(.60,.95-(this.mods.blood_feast-1)*.08);}
-   const value={thorn:2,moss:5,petal:6,crystal:10}[e.type]||2;const near=this.souls.find(o=>Math.hypot(o.x-e.x,o.z-e.z)<.65);if(near)near.value+=value;else this.souls.push({x:e.x,z:e.z,value,age:0,id:++this.serial});this.effect('death',e.x,e.z,.38);}
+   const baseValue={thorn:2,moss:5,petal:6,crystal:10,boss:24}[e.type]||2,value=baseValue*(e.isBoss?1:e.isElite?3:1);if(e.isElite)this.rerolls++;const near=this.souls.find(o=>Math.hypot(o.x-e.x,o.z-e.z)<.65);if(near)near.value+=value;else this.souls.push({x:e.x,z:e.z,value,age:0,id:++this.serial});this.effect('death',e.x,e.z,e.isBoss?1.25:e.isElite?.58:.38);}
   for(const o of this.souls){o.age+=dt;const dx=player[0]-o.x,dz=player[2]-o.z,d=Math.hypot(dx,dz),range=3.4+this.mods.magnet*.42;if(o.age>.12&&d<.38){if(this.level<50)this.xp+=o.value*(1+this.mods.soul*.05);o.value=0;}else if(o.age>.12&&d<range){const move=Math.min(d,(2.2+6.3*(1-d/range))*dt);o.x+=dx/d*move;o.z+=dz/d*move;}}
   this.souls=this.souls.filter(o=>o.value>0);this.checkLevel();if(this.choosing)return;
   for(const e of world.enemies)if(e.burnTime>0&&e.hp>0){e.burnTime-=dt;e.burnTick-=dt;if(e.burnTick<=0){this.hit(e,e.burnDamage,e.x,e.z);e.burnTick=.60;}if(e.burnTime<=0)e.burnDamage=0;}

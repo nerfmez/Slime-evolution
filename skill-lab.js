@@ -16,14 +16,14 @@ export const PRESETS={
 export class SkillLab{
  constructor(){
   this.combat=new FireCombat();this.player=[-2.5,0,1.8];this.target={x:-2.5,z:-1.65};
-  this.world={enemies:[],defeated:[],bullets:[],hp:100,hurt:0,kills:0,time:0,finished:false,unlocked:()=>Object.keys(ENEMY_TYPES)};
+  this.world={enemies:[],defeated:[],bullets:[],hp:100,hurt:0,kills:0,time:0,finished:false,unlocked:()=>Object.keys(ENEMY_TYPES).filter(type=>type!=='boss')};
   this.paused=false;this.speed=1;this.repeat=true;this.showTargets=true;this.soulCount=0;this.select('inferno');
  }
  select(id){if(!PRESETS[id])return;this.preset=id;this.restart();}
  restart(){
   const p=PRESETS[this.preset],c=this.combat;c.reset();c.cards=[];c.opening=false;c.level=50;c.fireLevel=p.branches.reduce((a,b)=>a+b,0);c.branches=Object.fromEntries(['blast','scatter','burn'].map((k,i)=>[k,p.branches[i]]));c.evo=p.evo||'';c.cooldown=1e6;
   this.elapsed=0;this.damage=0;this.nextCast=4.8;this.world.time=0;
-  this.world.enemies=Object.keys(ENEMY_TYPES).map((type,i)=>({id:i+1,type,x:this.target.x+(i%2-.5)*1.05,z:this.target.z+Math.floor(i/2)*1.05-.5,hp:99999,radius:ENEMY_TYPES[type].radius,yaw:0,walkBlend:0,walkPhase:.2,anim:0,attack:0,windup:0,hit:0}));
+  this.world.enemies=Object.keys(ENEMY_TYPES).filter(type=>type!=='boss').map((type,i)=>({id:i+1,type,x:this.target.x+(i%2-.5)*1.05,z:this.target.z+Math.floor(i/2)*1.05-.5,hp:99999,radius:ENEMY_TYPES[type].radius,yaw:0,walkBlend:0,walkPhase:.2,anim:0,attack:0,windup:0,hit:0}));
   for(const e of this.world.enemies){e.homeX=e.x;e.homeZ=e.z;}
   this.setSouls(this.soulCount);c.cast(this.target,this.player);
  }
