@@ -1,0 +1,112 @@
+name: Port complete Petal Alpha Wing Dive
+on:
+  push:
+    branches: ['main']
+    paths: ['.github/workflows/port-petal-wing-dive.yml']
+permissions:
+  contents: write
+jobs:
+  port:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - name: Port Godot Wing Dive pose state and trail
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          def replace(path, old, new):
+              p=Path(path); s=p.read_text();
+              if old not in s: raise SystemExit(f'anchor not found in {path}: {old[:120]!r}')
+              p.write_text(s.replace(old,new,1))
+
+          p=Path('enemies.js'); s=p.read_text()
+          old="grassRadius:s.radius,recovery:0,bossCycle:0,animState:'walk'};"
+          new="grassRadius:s.radius,recovery:0,bossCycle:0,animState:'walk',swoopTrailClock:0,swoopLastX:x,swoopLastZ:z};"
+          if old not in s: raise SystemExit('makeEnemy anchor missing')
+          s=s.replace(old,new,1)
+
+          old="e.skillColor=skillColor(kind);e.animState=e.isBoss?(kind==='vine_lunge'?'charge':kind==='root_slam'?'push':'spell'):'walk';\n  const cooldown="
+          new="e.skillColor=skillColor(kind);e.animState=e.isBoss?(kind==='vine_lunge'?'charge':kind==='root_slam'?'push':'spell'):'walk';\n  if(kind==='petal_swoop'){e.flying=true;e.anim=0;e.animState='flight';e.swoopTrailClock=0;e.swoopLastX=e.x;e.swoopLastZ=e.z;}\n  const cooldown="
+          if old not in s: raise SystemExit('startSkill anchor missing')
+          s=s.replace(old,new,1)
+
+          old="if(kind==='petal_swoop'){e.skillDash=5.0;e.flying=true;e.grassRadius=e.radius*1.90;e.anim=0;e.animState='flight';return;}"
+          new="if(kind==='petal_swoop'){e.skillDash=5.0;e.flying=true;e.grassRadius=e.radius*1.90;e.animState='flight';e.swoopTrailClock=0;e.swoopLastX=e.x;e.swoopLastZ=e.z;return;}"
+          if old not in s: raise SystemExit('execute swoop anchor missing')
+          s=s.replace(old,new,1)
+
+          old=" finishDash(e){\n"
+          new=" emitPetalSwoopTrail(e){\n  const moved=Math.hypot(e.x-e.swoopLastX,e.z-e.swoopLastZ);e.swoopTrailClock-=this._lastDt||0;\n  if(e.swoopTrailClock>0&&moved<.10)return;\n  if(moved>.015)this.effects.push({kind:'petal_swoop_trail',x:(e.swoopLastX+e.x)*.5,z:(e.swoopLastZ+e.z)*.5,x0:e.swoopLastX,z0:e.swoopLastZ,x1:e.x,z1:e.z,r:Math.max(.36,moved),color:e.skillColor,age:0,life:.34});\n  e.swoopLastX=e.x;e.swoopLastZ=e.z;e.swoopTrailClock=.085;\n }\n finishDash(e){\n"
+          if old not in s: raise SystemExit('finishDash anchor missing')
+          s=s.replace(old,new,1)
+
+          old="if(e.skillWindup>0){e.skillWindup=Math.max(0,e.skillWindup-dt);if(e.skillWindup<=0)this.executeSkill(e);return true;}"
+          new="if(e.skillWindup>0){if(e.skillKind==='petal_swoop'){e.flying=true;e.animState='flight';e.anim+=dt;e.walkBlend=1;}e.skillWindup=Math.max(0,e.skillWindup-dt);if(e.skillWindup<=0)this.executeSkill(e);return true;}"
+          if old not in s: raise SystemExit('windup anchor missing')
+          s=s.replace(old,new,1)
+
+          old="if(e.skillKind==='petal_swoop'){e.anim+=dt;e.walkBlend=1;e.animState='flight';}\n   const speed="
+          new="if(e.skillKind==='petal_swoop'){e.anim+=dt;e.walkBlend=1;e.animState='flight';}\n   const speed="
+          if old not in s: raise SystemExit('dash anim anchor missing')
+          # keep this anchor; trail is emitted after movement below
+
+          old2="if(enemyCanStand(e.x+dx,e.z+dz,e.radius)){e.x+=dx;e.z+=dz;}else{e.skillDash=0;}\n   e.yaw="
+          new2="if(enemyCanStand(e.x+dx,e.z+dz,e.radius)){e.x+=dx;e.z+=dz;}else{e.skillDash=0;}\n   if(e.skillKind==='petal_swoop')this.emitPetalSwoopTrail(e);\n   e.yaw="
+          if old2 not in s: raise SystemExit('trail movement anchor missing')
+          s=s.replace(old2,new2,1)
+
+          old="if(e.skillKind==='petal_swoop'){e.flying=false;e.grassRadius=e.radius;}"
+          new="if(e.skillKind==='petal_swoop'){e.flying=false;e.grassRadius=e.radius;e.swoopTrailClock=0;}"
+          if old not in s: raise SystemExit('finish swoop anchor missing')
+          s=s.replace(old,new,1)
+
+          old="if(dt<=0||this.hp<=0||this.finished)return;dt=Math.min(dt,.05);this.player=player;"
+          new="if(dt<=0||this.hp<=0||this.finished)return;dt=Math.min(dt,.05);this._lastDt=dt;this.player=player;"
+          if old not in s: raise SystemExit('dt anchor missing')
+          s=s.replace(old,new,1)
+          p.write_text(s)
+
+          p=Path('main.js'); s=p.read_text()
+          old="const texture=e.isElite&&asset.eliteTex?asset.eliteTex:asset.tex,scale=e.scale||1,y=e.flying?.55:.015;\n  drawModel(asset,model(e.x,y,e.z,scale,scale,scale,e.yaw),0,texture);"
+          new="const texture=e.isElite&&asset.eliteTex?asset.eliteTex:asset.tex,flightPulse=e.flying?1.05+Math.sin(e.anim*46)*.045:1,scale=(e.scale||1)*flightPulse,y=e.flying?(e.skillWindup>0?.36:.55):.015;\n  drawModel(asset,model(e.x,y,e.z,scale,scale,scale,e.yaw),0,texture);"
+          if old not in s: raise SystemExit('enemy model anchor missing')
+          s=s.replace(old,new,1)
+          old="for(const fx of enemyWorld.effects)if(tileVisible(fx.x,fx.z,fx.r+.5)){uniform(gl,prog,'enemySkillColor',fx.color||[1,.78,.38]);draw(quad,31,model(fx.x,.04,fx.z,fx.r,1,fx.r),Math.max(0,Math.min(1,fx.life/.42)));}"
+          new="for(const fx of enemyWorld.effects)if(tileVisible(fx.x,fx.z,fx.r+.5)){uniform(gl,prog,'enemySkillColor',fx.color||[1,.78,.38]);if(fx.kind==='petal_swoop_trail'){const dx=fx.x1-fx.x0,dz=fx.z1-fx.z0,len=Math.max(.16,Math.hypot(dx,dz)),yaw=Math.atan2(dx,dz);draw(quad,34,model(fx.x,.14,fx.z,.24,1,len*.72,yaw),Math.max(0,Math.min(1,fx.life/.34)));}else draw(quad,31,model(fx.x,.04,fx.z,fx.r,1,fx.r),Math.max(0,Math.min(1,fx.life/.42)));}"
+          if old not in s: raise SystemExit('effect draw anchor missing')
+          s=s.replace(old,new,1)
+          p.write_text(s)
+
+          p=Path('shaders.js'); s=p.read_text()
+          old="else if(kind==33.){float r=length(vUV*2.-1.);alpha=(1.-smoothstep(.025,.11,abs(r-.78)))*fade*.8;c=enemySkillColor;}\nelse if(kind==27.){"
+          new="else if(kind==33.){float r=length(vUV*2.-1.);alpha=(1.-smoothstep(.025,.11,abs(r-.78)))*fade*.8;c=enemySkillColor;}\nelse if(kind==34.){vec2 q=vUV*2.-1.;float along=vUV.y;float bend=.12*sin(along*8.+time*11.);float outer=1.-smoothstep(.16,.34,abs(q.x-bend));float core=1.-smoothstep(.035,.15,abs(q.x+bend*.35));float bars=0.;for(int i=0;i<3;i++){float p=.30+float(i)*.22;float by=1.-smoothstep(.025,.075,abs(along-p));float bx=1.-smoothstep(.20,.72,abs(q.x));bars=max(bars,by*bx);}float taper=smoothstep(0.,.10,along)*(1.-smoothstep(.86,1.,along));c=mix(enemySkillColor*1.05,vec3(1.,.965,.85),max(core,bars*.82));alpha=max(outer*.62,core*.90);alpha=max(alpha,bars*.58);alpha*=taper*fade;if(alpha<.02)discard;}\nelse if(kind==27.){"
+          if old not in s: raise SystemExit('shader anchor missing')
+          s=s.replace(old,new,1)
+          p.write_text(s)
+
+          p=Path('tests/stage1-elites-boss.test.mjs'); s=p.read_text()
+          old="w.update(.05,player,40);assert.equal(e.skillKind,'petal_swoop');assert(e.skillWindup>0);\n for(let i=0;i<11;i++)w.update(.05,player,40);\n assert.equal(e.flying,true);assert(e.skillDash>4);assert(e.grassRadius>e.radius);"
+          new="w.update(.05,player,40);assert.equal(e.skillKind,'petal_swoop');assert(e.skillWindup>0);assert.equal(e.flying,true);assert.equal(e.animState,'flight');const windupAnim=e.anim;\n w.update(.05,player,40);assert(e.anim>windupAnim,'flight animation advances during windup');\n for(let i=0;i<10;i++)w.update(.05,player,40);\n assert.equal(e.flying,true);assert(e.skillDash>4);assert(e.grassRadius>e.radius);for(let i=0;i<4;i++)w.update(.05,player,40);assert(w.effects.some(fx=>fx.kind==='petal_swoop_trail'),'Wing Dive emits the source-style swoop trail');"
+          if old not in s: raise SystemExit('test anchor missing')
+          s=s.replace(old,new,1)
+          p.write_text(s)
+          PY
+      - name: Validate JS and Stage 1 behavior
+        run: |
+          node --check enemies.js
+          node --check main.js
+          node --check shaders.js
+          node --test tests/*.mjs
+      - name: Commit complete Wing Dive port
+        run: |
+          git config user.name 'Slime Petal port'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          rm -f .github/workflows/port-petal-wing-dive.yml
+          git add -A
+          git commit -m 'Port Petal Alpha Wing Dive pose state and trail VFX'
+          git push origin HEAD:main
