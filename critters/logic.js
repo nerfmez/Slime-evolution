@@ -1,27 +1,29 @@
 import {syncExpAppearance} from './catalog.js';
-// Pickup actors: gameplay changes are scoped to attraction and a small, catchable escape.
-// Reward values, drop rates, combat RNG, audio and save keys are unchanged.
-export const CRITTER = Object.freeze({roam:.48, speed:.24, swallow:.16, limit:33.6,
-  magnetStep:.42, fleeNear:.95, fleeReset:1.65, fleeTime:.42, fleeSpeed:.95, fleeLeash:.96});
+// Pickups remain collectible actors: no passive attraction until Magnet, one short bounded escape.
+export const CRITTER=Object.freeze({roam:.48,speed:.24,swallow:.16,limit:33.6,
+  magnetStep:.42,fleeNear:.95,fleeReset:1.65,fleeTime:.42,fleeSpeed:.95,fleeLeash:.96});
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const fract=n=>n-Math.floor(n);
+function rememberDirection(c,dx,dz){
+  if(Math.abs(dx)>.001)c.facing=dx<0?-1:1;
+  if(Math.abs(dz)>.002)c.back=dz>0;
+}
 export function ensureCritter(o,canStand){
   if(o.critter&&(!canStand||o.critter.placed))return syncExpAppearance(o,o.critter);
   const seed=fract(Math.sin((o.id??o.x*17+o.z*31)*12.9898)*43758.5453);
-  const variant={heal:3,magnet:4,nova:5}[o.kind]??Math.floor(seed*3);
+  const variant={heal:3,magnet:4,nova:5}[o.kind]??0;
   if(canStand&&!canStand(o.x,o.z,.08)){
     outer:for(const r of [.25,.5,.9,1.4])for(let k=0;k<8;k++){
       const a=k*Math.PI/4,x=clamp(o.x+Math.cos(a)*r,-CRITTER.limit,CRITTER.limit),z=clamp(o.z+Math.sin(a)*r,-CRITTER.limit,CRITTER.limit);
       if(canStand(x,z,.08)){o.x=x;o.z=z;break outer;}
     }
   }
-  o.critter={...o.critter,placed:!!canStand,variant,seed,homeX:o.x,homeZ:o.z,facing:seed<.5?-1:1,
+  o.critter={...o.critter,placed:!!canStand,variant,seed,homeX:o.x,homeZ:o.z,facing:seed<.5?-1:1,back:false,
     phase:seed*Math.PI*2,moving:0,eating:false,eat:0,finished:false,fleeArmed:true,fleeLeft:0};
   return syncExpAppearance(o,o.critter);
 }
 export function critterAttractionRange(combat){
   const level=Math.max(0,combat.mods?.magnet||0);
-  // No hidden base vacuum. A mod extends the physical contact radius by .42 per rank.
   return level>0?.38*Math.max(1,combat.size||1)+level*CRITTER.magnetStep:0;
 }
 function moveTo(o,x,z,c,canStand){
@@ -29,7 +31,7 @@ function moveTo(o,x,z,c,canStand){
   const dx=x-o.x,dz=z-o.z,d=Math.hypot(dx,dz);
   if(d<.00001)return false;
   if(canStand)for(let i=1,n=Math.max(1,Math.ceil(d/.07));i<=n;i++)if(!canStand(o.x+dx*i/n,o.z+dz*i/n,.08))return false;
-  o.x=x;o.z=z;if(Math.abs(dx)>.001)c.facing=dx<0?-1:1;return true;
+  o.x=x;o.z=z;rememberDirection(c,dx,dz);return true;
 }
 function wander(o,dt,c,canStand){
   c.moving=0;
@@ -54,14 +56,14 @@ function reactToPlayer(o,dt,player,c,mouth,canStand){
       if(Math.hypot(x-c.homeX,z-c.homeZ)>CRITTER.fleeLeash)continue;
       if(moveTo(o,x,z,c,canStand)){c.moving=1.4;c.phase+=dt*20;return;}
     }
-    c.fleeLeft=0; // Cornered animals remain edible instead of clipping through terrain.
+    c.fleeLeft=0;
   }
-  // One short escape per approach, not endless kiting; pause nearby after the hop.
   if(d>=mouth+CRITTER.fleeNear&&d<18)wander(o,dt,c,canStand);
 }
 function swallow(o,dt,player,c){
   c.eating=true;c.moving=0;c.fleeLeft=0;c.eat=Math.min(1,c.eat+dt/CRITTER.swallow);
-  const f=1-Math.exp(-28*dt);o.x+=(player[0]-o.x)*f;o.z+=(player[2]-o.z)*f;
+  const dx=player[0]-o.x,dz=player[2]-o.z;rememberDirection(c,dx,dz);
+  const f=1-Math.exp(-28*dt);o.x+=dx*f;o.z+=dz*f;
   return c.eat>=1;
 }
 export function attractAllCritters(combat){for(const o of combat.souls)if(o.value>0)o.critterMagnet=true;}
@@ -77,7 +79,7 @@ export function updateCritterSouls(combat,dt,player,canStand){
       if(swallow(o,dt,player,c)&&!c.finished){c.finished=true;if(combat.level<50)combat.xp+=o.value*(1+(combat.mods.soul||0)*.05);o.value=0;}
     }else if((range>0&&d<range)||o.critterMagnet){
       const speed=o.critterMagnet?12:2.2+6.3*(1-d/range),step=Math.min(d,speed*dt);
-      o.x+=dx/d*step;o.z+=dz/d*step;c.fleeLeft=0;c.moving=1;c.facing=dx<0?-1:1;c.phase+=dt*16;
+      rememberDirection(c,dx,dz);o.x+=dx/d*step;o.z+=dz/d*step;c.fleeLeft=0;c.moving=1;c.phase+=dt*16;
     }else reactToPlayer(o,dt,player,c,mouth,canStand);
   }
 }
