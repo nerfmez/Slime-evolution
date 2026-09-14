@@ -1,0 +1,23 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {CRITTER,ensureCritter,updateCritterSouls,updateSpecialCritters,attractAllCritters} from '../critters/logic.js';
+const world=()=>({hp:60,finished:false});
+const combat=()=>({souls:[],pickups:[],xp:0,level:1,size:1,mods:{soul:0,magnet:0},choosing:false,growth:0});
+const drop=(x=0,z=0,value=2,id=1)=>({x,z,value,id,age:0});
+const tick=(c,count=90,player=[0,0,0],stand=()=>true)=>{for(let k=0;k<count;k++)updateCritterSouls(c,1/60,player,stand);};
+test('EXP is awarded once after swallowing, including its existing multiplier',()=>{
+ const c=combat();c.mods.soul=3;c.souls=[drop()];tick(c,8);assert.equal(c.xp,0);tick(c);assert.equal(c.xp,2.3);tick(c);assert.equal(c.xp,2.3);assert.equal(c.souls[0].value,0);
+});
+test('merge during swallowing conserves the entire reward',()=>{const c=combat();c.souls=[drop()];tick(c,12);c.souls[0].value+=5;tick(c);assert.equal(c.xp,7);});
+test('max-level slime consumes without gaining EXP',()=>{const c=combat();c.level=50;c.souls=[drop()];tick(c);assert.equal(c.xp,0);assert.equal(c.souls[0].value,0);});
+test('no movement or age progression while paused, choosing or growing',()=>{const c=combat();c.souls=[drop(6,0)];for(const flag of ['choosing','growth']){c[flag]=true;tick(c);c[flag]=false;}updateCritterSouls(c,0,[0,0,0]);assert.deepEqual(c.souls[0],drop(6,0));});
+test('existing magnet modifier still increases attraction range',()=>{const a=combat(),b=combat();a.souls=[drop(4,0)];b.souls=[drop(4,0)];b.mods.magnet=5;tick(a,90);tick(b,90);assert.equal(a.xp,0);assert.ok(b.xp>0);});
+test('global magnet brings distant animals in rather than deleting or duplicating EXP',()=>{const c=combat();c.souls=[drop(20,0,5),drop(-15,10,8,2)];attractAllCritters(c);assert.equal(c.xp,0);tick(c,240);assert.equal(c.xp,13);tick(c);assert.equal(c.xp,13);});
+test('wander remains anchored, bounded, and out of blocked terrain',()=>{const c=combat();c.souls=[drop(6,0)];tick(c,3600,[0,0,0],(x,z)=>z<=0);const o=c.souls[0];assert.ok(o.z<=0);assert.ok(Math.hypot(o.x-6,o.z)<=CRITTER.roam+.001);});
+test('renderer-first initialization still permits safe spawn relocation',()=>{const o=drop(8,0);ensureCritter(o);const c=ensureCritter(o,(x,z)=>x>8.1);assert.ok(o.x>8.1);assert.equal(c.homeX,o.x);});
+test('no passable spawn is still finite and magnet-collectible',()=>{const c=combat();c.souls=[drop(6,0)];tick(c,60,[0,0,0],()=>false);attractAllCritters(c);tick(c,180,[0,0,0],()=>false);assert.equal(c.xp,2);assert.ok(Number.isFinite(c.souls[0].x));});
+test('special animals retain their effect and collect only once',()=>{for(const kind of ['heal','magnet','nova']){const c=combat(),w=world();c.pickups=[{kind,x:0,z:0,age:0}];let times=0;c.collect=(o,t)=>{assert.equal(t,w);assert.equal(o.kind,kind);times++;o.done=true;};for(let k=0;k<80;k++)updateSpecialCritters(c,1/60,w,[0,0,0],()=>true);assert.equal(times,1);assert.equal(c.pickups[0].critter.variant,{heal:3,magnet:4,nova:5}[kind]);}});
+test('specials are not pulled by ordinary magnet radius and stop on death/end',()=>{const c=combat(),w=world();c.mods.magnet=5;c.pickups=[{kind:'heal',x:3,z:0,age:0}];c.collect=()=>assert.fail('Too far to eat');for(let k=0;k<100;k++)updateSpecialCritters(c,1/60,w,[0,0,0],()=>true);const age=c.pickups[0].age;w.hp=0;updateSpecialCritters(c,1,w,[0,0,0]);assert.equal(c.pickups[0].age,age);});
+test('growth increases the actual eating radius',()=>{const c=combat();c.size=3;c.pickups=[{kind:'heal',x:1.2,z:0,age:1}];let ate=false;c.collect=o=>{o.done=true;ate=true;};for(let k=0;k<20;k++)updateSpecialCritters(c,1/60,world(),[0,0,0]);assert.ok(ate);});
+test('cosmetic actors never consume the card/combat RNG',()=>{const c=combat();c.random=()=>assert.fail('Combat RNG must not be called');c.souls=[drop(8,0)];tick(c,300);});
+test('long frames and zero distance cannot create NaN or negative rewards',()=>{const c=combat();c.souls=[drop()];tick(c,12);updateCritterSouls(c,10,[0,0,0]);assert.equal(c.xp,2);assert.equal(c.souls[0].x,0);});
