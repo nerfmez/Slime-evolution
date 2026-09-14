@@ -14,14 +14,16 @@ if(rendererStart<0||rendererEnd<rendererStart)throw Error('Renderer boundary not
 bundle=bundle.slice(0,rendererStart)+'function Rt(e){return __critterRenderer(e)}'+bundle.slice(rendererEnd);
 bundle=replaceOnce(bundle,'Hr.draw(Y.souls,X,W.time,W.player,dr)','Hr.draw(Y.souls,X,W.time,W.player,dr,Y.pickups)','combined pickup draw');
 bundle=replaceOnce(bundle,'for(let t of e.pickups||[]){let e=t.kind===`heal`?[.96,.32,.38]:t.kind===`magnet`?[.27,.6,1]:[.93,.73,.24];c(t.x,.22+Math.sin(n*3)*.04,t.z,.15,.22,e,1,n),s(t.x,t.z,.24,.04,.025,e,.8)}','','old special pickup diamonds');
-bundle='import {updateCritterSouls as __critterSouls,updateSpecialCritters as __critterSpecial,attractAllCritters as __critterMagnet} from "./critters-v2/logic.js";\nimport {createCritterRenderer as __critterRenderer} from "./critters-v2/renderer.js";\n'+bundle;
+bundle='import {updateCritterSouls as __critterSouls,updateSpecialCritters as __critterSpecial,attractAllCritters as __critterMagnet} from "./critters-v3/logic.js";\nimport {createCritterRenderer as __critterRenderer} from "./critters-v3/renderer.js";\n'+bundle;
 bundle=replaceOnce(bundle,'ระยะเก็บวิญญาณ +0.42','ดูดสัตว์ EXP · ระยะ +0.42 ต่อขั้น','magnet mod description');
-writeFileSync(assets+'/main-critter-v2.js',bundle);
+writeFileSync(assets+'/main-critter-v3.js',bundle);
 let html=readFileSync(release+'/index.html','utf8');
-if(!html.includes('./assets/main-critter-v2.js')){const old=html.includes('./assets/main-critter-v1.js')?'./assets/main-critter-v1.js':'./assets/main-CT954LmH.js';html=replaceOnce(html,old,'./assets/main-critter-v2.js','release entry');}
+if(!html.includes('./assets/main-critter-v3.js')){const old=html.match(/\.\/assets\/main-critter-v[0-9]+\.js/)?.[0]||'./assets/main-CT954LmH.js';html=replaceOnce(html,old,'./assets/main-critter-v3.js','release entry');}
+if(!html.includes('/exp-animals.html'))html=replaceOnce(html,'<div id="skill-tools" class="settings-actions"></div>','<div id="skill-tools" class="settings-actions"></div><a class="settings-link" href="/exp-animals.html" target="_blank" rel="noopener">สัตว์ EXP · 9 เซ็ต / 27 แบบ ↗</a>','EXP catalog link');
 writeFileSync(release+'/index.html',html);
-mkdirSync(assets+'/critters-v2',{recursive:true});
-for(const file of ['logic.js','renderer.js'])copyFileSync('critters/'+file,assets+'/critters-v2/'+file);
+copyFileSync('critters/review.html',release+'/exp-animals.html');
+mkdirSync(assets+'/critters-v3',{recursive:true});
+for(const file of ['logic.js','renderer.js','catalog.js','xp-shapes.js'])copyFileSync('critters/'+file,assets+'/critters-v3/'+file);
 let source=readFileSync('fire-combat.js','utf8');
 if(!source.includes('updateCritterSouls')){
  if(createHash('sha256').update(source).digest('hex')!=='a450289f1849f1403ec306850424289ef79702688c2be3340a41323114c1a69b')throw Error('Root FireCombat changed: review before patching');
