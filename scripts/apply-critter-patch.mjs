@@ -8,7 +8,7 @@ function replaceOnce(text,old,next,label){if(text.split(old).length!==2)throw Er
 const oldSouls='for(let t of this.souls){t.age+=e;let r=n[0]-t.x,i=n[2]-t.z,a=Math.hypot(r,i),o=3.4+this.mods.magnet*.42;if(t.age>.12&&a<.38)this.level<50&&(this.xp+=t.value*(1+this.mods.soul*.05)),t.value=0;else if(t.age>.12&&a<o){let n=Math.min(a,(2.2+6.3*(1-a/o))*e);t.x+=r/a*n,t.z+=i/a*n}}';
 bundle=replaceOnce(bundle,oldSouls,'__critterSouls(this,e,n,P);','EXP collection loop');
 bundle=replaceOnce(bundle,'for(let r of this.pickups)r.age+=e,r.age>.15&&Math.hypot(r.x-n[0],r.z-n[2])<.5*this.size&&this.collect(r,t);','__critterSpecial(this,e,t,n,P);','special pickup loop');
-bundle=replaceOnce(bundle,'for(let t of this.souls)this.level<50&&(this.xp+=t.value*(1+.05*this.mods.soul));this.souls=[]','__critterMagnet(this)','global magnet');
+bundle=replaceOnce(bundle,'for(let e of this.souls)this.level<50&&(this.xp+=e.value*(1+.05*this.mods.soul));this.souls=[]','__critterMagnet(this)','global magnet');
 const rendererStart=bundle.indexOf('function Rt(e){'),rendererEnd=bundle.indexOf('function zt(e){',rendererStart);
 if(rendererStart<0||rendererEnd<rendererStart)throw Error('Renderer boundary not found');
 bundle=bundle.slice(0,rendererStart)+'function Rt(e){return __critterRenderer(e)}'+bundle.slice(rendererEnd);
