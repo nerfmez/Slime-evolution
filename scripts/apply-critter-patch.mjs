@@ -8,22 +8,23 @@ function replaceOnce(text,old,next,label){if(text.split(old).length!==2)throw Er
 const oldSouls='for(let t of this.souls){t.age+=e;let r=n[0]-t.x,i=n[2]-t.z,a=Math.hypot(r,i),o=3.4+this.mods.magnet*.42;if(t.age>.12&&a<.38)this.level<50&&(this.xp+=t.value*(1+this.mods.soul*.05)),t.value=0;else if(t.age>.12&&a<o){let n=Math.min(a,(2.2+6.3*(1-a/o))*e);t.x+=r/a*n,t.z+=i/a*n}}';
 bundle=replaceOnce(bundle,oldSouls,'__critterSouls(this,e,n,P);','EXP collection loop');
 bundle=replaceOnce(bundle,'for(let r of this.pickups)r.age+=e,r.age>.15&&Math.hypot(r.x-n[0],r.z-n[2])<.5*this.size&&this.collect(r,t);','__critterSpecial(this,e,t,n,P);','special pickup loop');
-bundle=replaceOnce(bundle,'for(let e of this.souls)this.level<50&&(this.xp+=e.value*(1+.05*this.mods.soul));this.souls=[]','__critterMagnet(this)','global magnet');
+bundle=replaceOnce(bundle,'for(let t of this.souls)this.level<50&&(this.xp+=t.value*(1+.05*this.mods.soul));this.souls=[]','__critterMagnet(this)','global magnet');
 const rendererStart=bundle.indexOf('function Rt(e){'),rendererEnd=bundle.indexOf('function zt(e){',rendererStart);
 if(rendererStart<0||rendererEnd<rendererStart)throw Error('Renderer boundary not found');
 bundle=bundle.slice(0,rendererStart)+'function Rt(e){return __critterRenderer(e)}'+bundle.slice(rendererEnd);
 bundle=replaceOnce(bundle,'Hr.draw(Y.souls,X,W.time,W.player,dr)','Hr.draw(Y.souls,X,W.time,W.player,dr,Y.pickups)','combined pickup draw');
 bundle=replaceOnce(bundle,'for(let t of e.pickups||[]){let e=t.kind===`heal`?[.96,.32,.38]:t.kind===`magnet`?[.27,.6,1]:[.93,.73,.24];c(t.x,.22+Math.sin(n*3)*.04,t.z,.15,.22,e,1,n),s(t.x,t.z,.24,.04,.025,e,.8)}','','old special pickup diamonds');
-bundle='import {updateCritterSouls as __critterSouls,updateSpecialCritters as __critterSpecial,attractAllCritters as __critterMagnet} from "./critters-v3/logic.js";\nimport {createCritterRenderer as __critterRenderer} from "./critters-v3/renderer.js";\n'+bundle;
+bundle='import {updateCritterSouls as __critterSouls,updateSpecialCritters as __critterSpecial,attractAllCritters as __critterMagnet} from "./critters-v4/logic.js";\nimport {createCritterRenderer as __critterRenderer} from "./critters-v4/renderer.js";\n'+bundle;
 bundle=replaceOnce(bundle,'ระยะเก็บวิญญาณ +0.42','ดูดสัตว์ EXP · ระยะ +0.42 ต่อขั้น','magnet mod description');
-writeFileSync(assets+'/main-critter-v3.js',bundle);
+writeFileSync(assets+'/main-critter-v4.js',bundle);
 let html=readFileSync(release+'/index.html','utf8');
-if(!html.includes('./assets/main-critter-v3.js')){const old=html.match(/\.\/assets\/main-critter-v[0-9]+\.js/)?.[0]||'./assets/main-CT954LmH.js';html=replaceOnce(html,old,'./assets/main-critter-v3.js','release entry');}
-if(!html.includes('/exp-animals.html'))html=replaceOnce(html,'<div id="skill-tools" class="settings-actions"></div>','<div id="skill-tools" class="settings-actions"></div><a class="settings-link" href="/exp-animals.html" target="_blank" rel="noopener">สัตว์ EXP · 9 เซ็ต / 27 แบบ ↗</a>','EXP catalog link');
+const entry=html.match(/\.\/assets\/main-critter-v[0-9]+\.js/)?.[0]||'./assets/main-CT954LmH.js';
+if(entry!=='./assets/main-critter-v4.js')html=replaceOnce(html,entry,'./assets/main-critter-v4.js','release entry');
+html=html.replace('<a class="settings-link" href="/exp-animals.html" target="_blank" rel="noopener">สัตว์ EXP · 9 เซ็ต / 27 แบบ ↗</a>','');
 writeFileSync(release+'/index.html',html);
-copyFileSync('critters/review.html',release+'/exp-animals.html');
-mkdirSync(assets+'/critters-v3',{recursive:true});
-for(const file of ['logic.js','renderer.js','catalog.js','xp-shapes.js'])copyFileSync('critters/'+file,assets+'/critters-v3/'+file);
+mkdirSync(assets+'/critters-v4',{recursive:true});
+for(const file of ['logic.js','renderer.js','catalog.js','atlas.js'])copyFileSync('critters/'+file,assets+'/critters-v4/'+file);
+copyFileSync('critters/atlas.png',assets+'/critters-v4/atlas.png');
 let source=readFileSync('fire-combat.js','utf8');
 if(!source.includes('updateCritterSouls')){
  if(createHash('sha256').update(source).digest('hex')!=='a450289f1849f1403ec306850424289ef79702688c2be3340a41323114c1a69b')throw Error('Root FireCombat changed: review before patching');
@@ -33,4 +34,4 @@ if(!source.includes('updateCritterSouls')){
  writeFileSync('fire-combat.js',source);
 }
 writeFileSync('vfx/beads.js',"// Compatibility entry for the older editable baseline.\nexport {createCritterRenderer as createBeadRenderer,critterVertex as beadVertex,critterFragment as beadFragment} from '../critters/renderer.js';\n");
-console.log('Applied critter feature to latest uploaded release and legacy EXP entry.');
+console.log('Applied approved 3-tier EXP animals, panda roll, and approved item-animal sprites to latest release.');
