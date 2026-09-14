@@ -63,7 +63,8 @@ void main(){
  vec3 pigment=base*mix(.78,1.07,step(-.12,p.y+.25*p.x));
  float grain=fract(sin(dot(floor(p*95.),vec2(127.1,311.7)))*43758.5453);
  pigment*=.97+.06*grain;
- pigment=mix(ink,pigment,smoothstep(-.049,-.031,body));
+ // Interior is negative SDF distance; retain pigment inside and ink at the edge.
+ pigment=mix(ink,pigment,1.-smoothstep(-.049,-.031,body));
  if(type>1.5&&p.y>.18&&abs(p.x-.25)<.22) {
   float ear=min(ellipse(p-vec2(.12,.48),vec2(.043,.25)),ellipse(p-vec2(.37,.47),vec2(.034,.23)));
   pigment=mix(pigment,base*vec3(1.,.80,.81),1.-smoothstep(-.015,.015,ear));
@@ -105,7 +106,7 @@ export function createCritterRenderer(gl){
   let count=0;
   for(const list of [souls,pickups])for(const o of list){
    if(o.done||o.value===0||!visible(o.x,o.z,1))continue;
-   const c=ensureCritter(o),i=count++*8,small=o.kind ? .28 :.20+Math.min(.05,Math.log2(1+o.value)*.008);
+   const c=ensureCritter(o),i=count++*8,small=o.kind ? .32 :.24+Math.min(.05,Math.log2(1+o.value)*.008);
    const shrink=1-c.eat*.94,hop=c.eating?.12*Math.sin(c.eat*Math.PI):Math.max(0,Math.sin(c.phase))*c.moving*.055;
    data[i]=o.x;data[i+1]=small*.73+hop+(player[1]||0)*c.eat;data[i+2]=o.z;data[i+3]=small*shrink;
    data[i+4]=c.variant;data[i+5]=c.phase+(o.age||0)*.22;data[i+6]=c.facing;data[i+7]=c.eat;
