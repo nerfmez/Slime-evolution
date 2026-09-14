@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {CRITTER,ensureCritter,updateCritterSouls,updateSpecialCritters,attractAllCritters} from '../critters/logic.js';
+import {CRITTER,critterAttractionRange,ensureCritter,updateCritterSouls,updateSpecialCritters,attractAllCritters} from '../critters/logic.js';
 const world=()=>({hp:60,finished:false});
 const combat=()=>({souls:[],pickups:[],xp:0,level:1,size:1,mods:{soul:0,magnet:0},choosing:false,growth:0});
 const drop=(x=0,z=0,value=2,id=1)=>({x,z,value,id,age:0});
@@ -11,7 +11,7 @@ test('EXP is awarded once after swallowing, including its existing multiplier',(
 test('merge during swallowing conserves the entire reward',()=>{const c=combat();c.souls=[drop()];tick(c,12);c.souls[0].value+=5;tick(c);assert.equal(c.xp,7);});
 test('max-level slime consumes without gaining EXP',()=>{const c=combat();c.level=50;c.souls=[drop()];tick(c);assert.equal(c.xp,0);assert.equal(c.souls[0].value,0);});
 test('no movement or age progression while paused, choosing or growing',()=>{const c=combat();c.souls=[drop(6,0)];for(const flag of ['choosing','growth']){c[flag]=true;tick(c);c[flag]=false;}updateCritterSouls(c,0,[0,0,0]);assert.deepEqual(c.souls[0],drop(6,0));});
-test('existing magnet modifier still increases attraction range',()=>{const a=combat(),b=combat();a.souls=[drop(4,0)];b.souls=[drop(4,0)];b.mods.magnet=5;tick(a,90);tick(b,90);assert.equal(a.xp,0);assert.ok(b.xp>0);});
+test('existing magnet modifier still increases attraction range',()=>{const a=combat(),b=combat();a.souls=[drop(2,0)];b.souls=[drop(2,0)];b.mods.magnet=5;tick(a,90);tick(b,90);assert.equal(a.xp,0);assert.ok(b.xp>0);});
 test('global magnet brings distant animals in rather than deleting or duplicating EXP',()=>{const c=combat();c.souls=[drop(20,0,5),drop(-15,10,8,2)];attractAllCritters(c);assert.equal(c.xp,0);tick(c,240);assert.equal(c.xp,13);tick(c);assert.equal(c.xp,13);});
 test('wander remains anchored, bounded, and out of blocked terrain',()=>{const c=combat();c.souls=[drop(6,0)];tick(c,3600,[0,0,0],(x,z)=>z<=0);const o=c.souls[0];assert.ok(o.z<=0);assert.ok(Math.hypot(o.x-6,o.z)<=CRITTER.roam+.001);});
 test('renderer-first initialization still permits safe spawn relocation',()=>{const o=drop(8,0);ensureCritter(o);const c=ensureCritter(o,(x,z)=>x>8.1);assert.ok(o.x>8.1);assert.equal(c.homeX,o.x);});
@@ -21,3 +21,12 @@ test('specials are not pulled by ordinary magnet radius and stop on death/end',(
 test('growth increases the actual eating radius',()=>{const c=combat();c.size=3;c.pickups=[{kind:'heal',x:1.2,z:0,age:1}];let ate=false;c.collect=o=>{o.done=true;ate=true;};for(let k=0;k<20;k++)updateSpecialCritters(c,1/60,world(),[0,0,0]);assert.ok(ate);});
 test('cosmetic actors never consume the card/combat RNG',()=>{const c=combat();c.random=()=>assert.fail('Combat RNG must not be called');c.souls=[drop(8,0)];tick(c,300);});
 test('long frames and zero distance cannot create NaN or negative rewards',()=>{const c=combat();c.souls=[drop()];tick(c,12);updateCritterSouls(c,10,[0,0,0]);assert.equal(c.xp,2);assert.equal(c.souls[0].x,0);});
+
+test('zero magnet means zero attraction at every slime size',()=>{const c=combat();for(const size of [1,2,3]){c.size=size;assert.equal(critterAttractionRange(c),0);}c.size=1;c.souls=[drop(.9,0)];tick(c,180);assert.equal(c.xp,0);assert.ok(c.souls[0].x>.9);});
+test('first mod unlocks a small radius and every rank adds exactly .42',()=>{const c=combat();for(let rank=1;rank<=5;rank++){c.mods.magnet=rank;assert.ok(Math.abs(critterAttractionRange(c)-(.38+rank*.42))<1e-9);}c.mods.magnet=1;c.souls=[drop(.70,0)];tick(c);assert.equal(c.xp,2);});
+test('a stationary slime cannot vacuum an animal just outside body contact',()=>{const c=combat();c.souls=[drop(.42,0)];tick(c,900);assert.equal(c.xp,0);assert.ok(c.souls[0].x>.42);});
+test('nearby EXP takes only a short escape and can be chased into contact',()=>{const c=combat();c.souls=[drop(.8,0)];tick(c,40);const o=c.souls[0],x=o.x,z=o.z;assert.ok(x>.8);assert.ok(Math.hypot(x-.8,z)<=CRITTER.fleeSpeed*CRITTER.fleeTime+.001);tick(c,60);assert.equal(o.x,x);assert.equal(o.z,z);tick(c,60,[x,0,z]);assert.equal(c.xp,2);});
+test('escape rearms only when slime backs off, with a fixed spawn leash',()=>{const c=combat();c.souls=[drop(.8,0)];tick(c,50);const o=c.souls[0];assert.equal(o.critter.fleeArmed,false);tick(c,1,[-4,0,0]);assert.equal(o.critter.fleeArmed,true);for(let i=0;i<20;i++){tick(c,1,[-4,0,0]);tick(c,50,[o.x-.7,0,o.z]);}assert.ok(Math.hypot(o.x-.8,o.z)<=CRITTER.fleeLeash+.001);assert.equal(c.xp,0);});
+test('escape respects walls and world bounds',()=>{const c=combat();c.souls=[drop(33.4,0)];tick(c,200,[32.6,0,0],(x,z)=>x<=33.42&&Math.abs(z)<.03);const o=c.souls[0];assert.ok(o.x<=33.42&&Math.abs(o.z)<.03);assert.ok(o.x<=CRITTER.limit);});
+test('special animals also run briefly without ordinary magnet attraction',()=>{const c=combat(),w=world();c.mods.magnet=5;c.pickups=[{kind:'heal',x:.9,z:0,age:1}];c.collect=()=>assert.fail('Must require actual contact');for(let i=0;i<80;i++)updateSpecialCritters(c,1/60,w,[0,0,0],()=>true);assert.ok(c.pickups[0].x>.9);assert.equal(c.pickups[0].critter.fleeLeft,0);});
+test('global magnet interrupts an escape even without a magnet mod',()=>{const c=combat();c.souls=[drop(.8,0)];tick(c,15);assert.ok(c.souls[0].critter.fleeLeft>0);attractAllCritters(c);tick(c);assert.equal(c.xp,2);});
