@@ -1,7 +1,7 @@
 name: Critter pickup validation
 on:
   push:
-    branches: [feature/critter-pickups]
+    branches: [feature/critter-behavior-v2]
   workflow_dispatch:
 permissions:
   contents: write
@@ -17,7 +17,7 @@ jobs:
       - name: Apply reviewed derivative and test logic
         run: |
           node scripts/apply-critter-patch.mjs
-          node --check published/2026-09-14/assets/main-critter-v1.js
+          node --check published/2026-09-14/assets/main-critter-v2.js
           node --test tests/*.test.mjs
       - name: Install browser verifier
         run: |
@@ -29,10 +29,10 @@ jobs:
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add fire-combat.js vfx/beads.js published/2026-09-14/index.html published/2026-09-14/assets/main-critter-v1.js published/2026-09-14/assets/critters
+          git add fire-combat.js vfx/beads.js published/2026-09-14/index.html published/2026-09-14/assets/main-critter-v2.js published/2026-09-14/assets/critters-v2
           if ! git diff --cached --quiet; then
             git commit -m 'Generate and verify small animal pickups in latest Slime release'
-            git push origin HEAD:feature/critter-pickups
+            git push origin HEAD:feature/critter-behavior-v2
           fi
       - uses: actions/upload-artifact@v4
         if: always()
