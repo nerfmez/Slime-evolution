@@ -1,38 +1,43 @@
-# Small animal pickups v3 — 2026-09-14
+# Small animal pickups v4 — approved artwork, 2026-09-14
 
-## Authoritative release and publishing
-The newest playable upload is `published/2026-09-14`, NOT the older root Vite source. Run `node scripts/apply-critter-patch.mjs` to generate `assets/main-critter-v3.js`, `assets/critters-v3/` and `exp-animals.html` from the hash-verified original bundle and readable `critters/` source. The original, v1 and v2 artifacts remain unchanged for rollback. Serve this release at the site root of the existing Vercel `slime-evolution` project, alias `slime-evolution-five.vercel.app`, team `team_wUPNV5SYxHR0mz3URq89uGm0`. Never rebuild the old root source over it.
+## Authoritative release
+The playable source is `published/2026-09-14`, not the older root Vite baseline. `node scripts/apply-critter-patch.mjs` regenerates `assets/main-critter-v4.js` and `assets/critters-v4/` from the verified uploaded bundle plus readable `critters/` source. v1/v2/v3 and the original bundle remain available for rollback.
 
-## EXP animal sets — latest user request
-Each of the nine canonical reward sizes has THREE possible animals: 27 total designs, NOT three drops or triple EXP. `critters/catalog.js` is the data source for both game rendering and the public `/exp-animals.html` guide.
+## EXP animals — exactly 3 bands × 3 animals
+Visual bands follow the actual stored EXP amount. Rewards are never rounded, multiplied, split, or otherwise changed.
 
-| Base EXP threshold | Three forms |
-| --- | --- |
-| 2 | Caterpillar, seed beetle, cricket |
-| 5 | Leaf frog, grass lizard, chick |
-| 6 | Field mouse, sparrow, leaf crab |
-| 10 | Meadow rabbit, squirrel, hedgehog |
-| 12 | Moss turtle, mole, chipmunk |
-| 15 | Chinchilla, ferret, quail |
-| 18 | Fennec, raccoon, red panda |
-| 30 | Leaf fawn, boarlet, forest owlet |
-| 56 | Forest dragon hatchling, griffin chick, kirin foal |
+| Band | Stored EXP | Three approved animals | World size |
+| --- | ---: | --- | ---: |
+| LOW | 1–9 | small frog, leaf bug, small rabbit | .18 |
+| MID | 10–19 | round bird, squirrel, little hedgehog | .22 |
+| HIGH | 20+ | fawn, moss turtle, tiny panda | .26 |
 
-Canonical values come from the current uploaded release: normal 2/5/6/10, Alpha 12/15/18/30, boss 56. Nearby drops still merge. A merged/intermediate value chooses the highest threshold <= its value; 56+ stays in the last set. This is a VISUAL band only: exact stored EXP is never rounded/replaced, and the soul EXP modifier still multiplies it at collection. Lowest band covers values under 2 for compatibility. Render radii increase .200→.395; rewards, collision/contact radii, enemy sizes, drop rates and counts are unchanged. There is no glow on EXP, including the fantasy set.
+Each drop deterministically keeps one of the three animals in its band from the existing cosmetic seed. When nearby EXP merges and crosses 10 or 20, only the appearance/size band changes; exact EXP and actor state remain intact.
 
-One deterministic choice out of three is derived from the existing cosmetic seed, never combat/card RNG. When a merge crosses a threshold, the visual tier/size changes but the actor object, seed/form, home anchor, wander/flee state and swallow progress do not reset. IDs 6–32 are EXP; special item IDs 3/4/5 remain reserved. See `critters/xp-shapes.js` for the distinct silhouettes and part colors.
+The tiny panda has a special rolling presentation while moving: it uses the approved round panda art and rotates as a ball instead of walking. At rest it returns to the approved front/back panda art.
 
-## Preserved v2 behavior
-No passive attraction before the Magnet mod. Contact starts a .16-second swallow. Each Magnet rank adds .42 beyond contact, no hidden 3.4 base. Animals make one .42-second escape at .95 units/s then settle; .96 spawn leash, passability/segment checks and map bounds apply. The global magnet pickup still gathers EXP without requiring a passive mod. Ordinary attraction does not pull special items. Special items keep their own faint glow and exact designs: heart axolotl / horseshoe-shell snail / nova lantern moth. Audio, skills, reward values, heal/nova effects and localStorage keys are untouched. Pause/cards/growth suspend motion.
+## Front/back movement art
+All nine EXP animals use the approved front and back views from the supplied design sheet. Movement remembers the last Z direction and selects the matching front/back art; left/right motion mirrors the current view. This adds no extra actor or gameplay RNG.
 
-## Rendering / verification
-All EXP and specials share one instanced draw, two triangles each, no new external textures/models. One branch selects the appropriate SDF silhouette. The guide uses this same renderer, scaled up for inspection while preserving relative size. It is linked under settings > tests.
+## Item animals
+Special pickups use the approved supplied artwork, not recolored EXP animals:
+- Heal: pink flower axolotl, front/back.
+- Magnet: blue magnet-horn creature, front/back.
+- Nova: golden radiant spiky creature, front/back.
 
+Their original colors, watercolor shading, outlines and decorative glow are preserved from the approved sheets. Paper background, labels and unrelated sheet elements are removed. A modest local shader halo reinforces item readability; EXP animals receive no halo. Item world size is .30 so they read clearly without becoming large enemies.
+
+## Preserved gameplay behavior
+No passive EXP attraction before the Magnet mod. Physical contact still swallows. Each Magnet rank adds .42 range beyond contact. Animals make one short bounded escape on approach, then settle so the player can catch them. Global magnet pickup still gathers EXP without requiring the passive Magnet mod. Heal/Nova behavior, rewards, drop rates, skills, audio and localStorage keys are unchanged.
+
+## Rendering
+All EXP and item animals share one instanced WebGL draw and one compressed PNG atlas. The atlas is cropped from the approved user sheets and stored in `critters/atlas.png`, with UV metadata in `critters/atlas.js`. Front/back selection, panda rolling and item halo happen in the same renderer.
+
+Verification commands:
 ```
 node scripts/apply-critter-patch.mjs
 node --test tests/*.test.mjs
 node tests/critter-browser.mjs
 ```
-56 Node tests currently pass locally. The browser verifier checks the real uploaded release, 27-species catalog and mobile layout, real merge promotion and conservation, no-mod behavior, first mod, heal/global magnet/nova, 1,000 mixed-tier instances, GL errors, missing assets and touch input. Actual CI run and screenshot review are separate evidence; no physical-device FPS or independent visual approval is implied.
 
-Rollback: restore the release index script to `./assets/main-critter-v2.js`. Original, v1 and v2 files are retained; never clear browser saves.
+Rollback: restore release index to `./assets/main-critter-v3.js` or earlier. Never clear browser saves.
