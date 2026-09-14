@@ -1,0 +1,21 @@
+import test from 'node:test';import assert from 'node:assert/strict';
+import {EXP_SETS,expTier,syncExpAppearance} from '../critters/catalog.js';
+import {ensureCritter,updateCritterSouls,attractAllCritters,critterAttractionRange} from '../critters/logic.js';
+import {critterFragment} from '../critters/renderer.js';
+import {readFileSync} from 'node:fs';
+const values=[2,5,6,10,12,15,18,30,56];
+function drop(value,id=11,x=0){return {id,x,z:0,value,age:1};}
+function combat(){return {souls:[],mods:{magnet:0,soul:0},xp:0,level:1,size:1,choosing:false,growth:0};}
+function tick(c,frames=80){for(let i=0;i<frames;i++)updateCritterSouls(c,1/60,[0,0,0],()=>true);}
+test('exactly nine real drop tiers, three unique named forms each',()=>{assert.deepEqual(EXP_SETS.map(s=>s.xp),values);assert.equal(EXP_SETS.flatMap(s=>s.animals).length,27);assert.equal(new Set(EXP_SETS.flatMap(s=>s.animals)).size,27);for(const s of EXP_SETS)assert.equal(s.animals.length,3);});
+test('all 27 choices are reachable without combat RNG or extra drops',()=>{const ids=new Set();for(const [tier,value] of values.entries())for(let form=0;form<3;form++){const o=drop(value);const c=ensureCritter(o);c.seed=(form+.5)/3;c.expValue=null;ensureCritter(o);assert.equal(c.expTier,tier);assert.equal(c.expForm,form);ids.add(c.variant);assert.equal(o.value,value);}assert.equal(ids.size,27);assert.ok([...ids].every(id=>id>=6&&id<=32));});
+test('tier ranges handle merged/intermediate values without reward rounding',()=>{for(let i=0;i<values.length;i++){assert.equal(expTier(values[i]),i);if(i<values.length-1)assert.equal(expTier(values[i+1]-.001),i);}assert.equal(expTier(99999),8);assert.equal(expTier(1),0);assert.equal(expTier(NaN),0);});
+test('sizes grow monotonically while all remain small world props',()=>{let previous=0;for(const s of EXP_SETS){assert.ok(s.size>previous);assert.ok(s.size<=.4);previous=s.size;}});
+test('merged EXP promotes appearance without resetting escape, anchor, phase or seed',()=>{const o=drop(2);const c=ensureCritter(o,()=>true);Object.assign(c,{fleeArmed:false,fleeLeft:.1,eat:.3,phase:9,homeX:17,homeZ:4});const seed=c.seed;o.value=32;const next=ensureCritter(o,()=>true);assert.equal(next,c);assert.equal(c.expTier,7);assert.equal(c.seed,seed);assert.equal(c.fleeLeft,.1);assert.equal(c.fleeArmed,false);assert.equal(c.phase,9);assert.equal(c.homeX,17);assert.equal(c.homeZ,4);assert.equal(c.eat,.3);assert.equal(o.value,32);});
+test('every tier credits its real reward exactly once, not three times',()=>{for(const value of values){const c=combat();c.souls=[drop(value)];tick(c);assert.equal(c.xp,value);tick(c);assert.equal(c.xp,value);assert.equal(c.souls.length,1);}});
+test('XP modifier and intermediate merged reward are preserved',()=>{const c=combat();c.mods.soul=3;c.souls=[drop(17)];tick(c);assert.equal(c.xp,17*1.15);assert.equal(c.souls[0].critter.expTier,5);});
+test('a value increase during swallowing upgrades the design without losing the new reward',()=>{const c=combat(),o=drop(2);c.souls=[o];tick(c,3);o.value=56;tick(c);assert.equal(c.xp,56);assert.equal(o.critter.expTier,8);});
+test('all nine tiers preserve no-mod contact and short flight; global magnet still conserves XP',()=>{const c=combat();c.souls=values.map((v,i)=>drop(v,i+1,.85));tick(c,60);assert.equal(c.xp,0);assert.equal(critterAttractionRange(c),0);for(const o of c.souls)assert.ok(o.x>.85);attractAllCritters(c);tick(c,180);assert.equal(c.xp,values.reduce((a,b)=>a+b,0));});
+test('special item identity and glow range cannot collide with EXP variants',()=>{for(const [kind,id] of [['heal',3],['magnet',4],['nova',5]]){const o={...drop(10000),kind};const c=ensureCritter(o);assert.equal(c.variant,id);assert.equal(c.expTier,undefined);}assert.ok(critterFragment.includes('info.x>2.5&&info.x<5.5'));});
+test('idle drawing sync never changes the reward or consumes gameplay RNG',()=>{const o=drop(15),c=ensureCritter(o),before=JSON.stringify(o);for(let i=0;i<10000;i++)syncExpAppearance(o,c);assert.equal(JSON.stringify(o),before);});
+test('catalog thresholds are present in the authoritative uploaded combat bundle',()=>{const s=readFileSync('published/2026-09-14/assets/main-CT954LmH.js','utf8');for(const xp of [12,15,18,30,56])assert.ok(s.includes(`xp:${xp}`));assert.ok(s.includes('thorn:2,moss:5,petal:6,crystal:10'));});
