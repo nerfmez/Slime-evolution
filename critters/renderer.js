@@ -27,11 +27,36 @@ uniform sampler2D atlas;
 uniform float clock;
 void main(){
   vec4 tex=texture(atlas,uv);
-  vec3 glow=special<1.5?vec3(1.,.40,.52):special<2.5?vec3(.30,.82,1.):vec3(1.,.68,.18);
-  float pulse=.86+.14*sin(clock*2.7+special*1.8);
-  // Item glow is generated here at runtime only. The atlas contains clean animal pixels with no baked aura.
-  float halo=special>.5?exp(-dot(localUv,localUv)*2.15)*.36*pulse:0.;
-  halo*=1.-tex.a;
+  vec3 glow=special<1.5?vec3(1.,.26,.48):special<2.5?vec3(.15,.78,1.):vec3(1.,.61,.12);
+  float pulse=.82+.18*sin(clock*3.2+special*1.7);
+  float halo=0.;
+  if(special>.5){
+    vec2 texel=1./vec2(textureSize(atlas,0));
+    vec2 cellSize=vec2(1./8.,1./4.);
+    vec2 cellBase=floor(uv/cellSize)*cellSize;
+    vec2 lo=cellBase+texel*.5,hi=cellBase+cellSize-texel*.5;
+    vec2 d1=texel*4.0,d2=texel*7.0;
+    float nearA=0.;
+    nearA=max(nearA,texture(atlas,clamp(uv+vec2( d1.x,0.),lo,hi)).a);
+    nearA=max(nearA,texture(atlas,clamp(uv+vec2(-d1.x,0.),lo,hi)).a);
+    nearA=max(nearA,texture(atlas,clamp(uv+vec2(0., d1.y),lo,hi)).a);
+    nearA=max(nearA,texture(atlas,clamp(uv+vec2(0.,-d1.y),lo,hi)).a);
+    nearA=max(nearA,texture(atlas,clamp(uv+vec2( d1.x, d1.y),lo,hi)).a);
+    nearA=max(nearA,texture(atlas,clamp(uv+vec2(-d1.x, d1.y),lo,hi)).a);
+    nearA=max(nearA,texture(atlas,clamp(uv+vec2( d1.x,-d1.y),lo,hi)).a);
+    nearA=max(nearA,texture(atlas,clamp(uv+vec2(-d1.x,-d1.y),lo,hi)).a);
+    float farA=0.;
+    farA=max(farA,texture(atlas,clamp(uv+vec2( d2.x,0.),lo,hi)).a);
+    farA=max(farA,texture(atlas,clamp(uv+vec2(-d2.x,0.),lo,hi)).a);
+    farA=max(farA,texture(atlas,clamp(uv+vec2(0., d2.y),lo,hi)).a);
+    farA=max(farA,texture(atlas,clamp(uv+vec2(0.,-d2.y),lo,hi)).a);
+    float silhouette=max(nearA,farA*.68);
+    float rim=max(0.,silhouette-tex.a);
+    float radial=1.-smoothstep(.35,1.28,length(localUv));
+    float edge=max(abs(localUv.x),abs(localUv.y));
+    float edgeFade=1.-smoothstep(.80,1.0,edge);
+    halo=clamp((rim*1.05+radial*(1.-tex.a)*.38)*pulse*edgeFade,0.,.92);
+  }
   float a=tex.a+halo*(1.-tex.a);
   if(a<.006)discard;
   vec3 prem=tex.rgb*tex.a+glow*halo*(1.-tex.a);
