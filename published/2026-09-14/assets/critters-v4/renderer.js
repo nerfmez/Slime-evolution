@@ -53,7 +53,9 @@ void main(){
     float silhouette=max(nearA,farA*.68);
     float rim=max(0.,silhouette-tex.a);
     float radial=1.-smoothstep(.35,1.28,length(localUv));
-    halo=clamp((rim*1.05+radial*(1.-tex.a)*.38)*pulse,0.,.92);
+    float edge=max(abs(localUv.x),abs(localUv.y));
+    float edgeFade=1.-smoothstep(.80,1.0,edge);
+    halo=clamp((rim*1.05+radial*(1.-tex.a)*.38)*pulse*edgeFade,0.,.92);
   }
   float a=tex.a+halo*(1.-tex.a);
   if(a<.006)discard;
