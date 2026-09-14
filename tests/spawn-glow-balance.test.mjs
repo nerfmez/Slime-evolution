@@ -16,12 +16,15 @@ test('normal run uses 100 monster cap and doubles spawn rate every full minute',
   assert.ok(!html.includes('<option value="40" selected>40 ตัว</option>'));
 });
 
-test('item glow is a translucent circular ring that slowly expands and contracts',()=>{
+test('item glow is a filled circular aura larger than the animal with repeating outward expansion',()=>{
   const renderer=readFileSync(`${release}/assets/critters-v4/renderer.js`,'utf8');
-  assert.ok(renderer.includes('float breath=.5+.5*sin(clock*.78+special*.72);'));
-  assert.ok(renderer.includes('float radius=.58+.20*breath;'));
-  assert.ok(renderer.includes('float d=length(localUv);'));
-  assert.ok(renderer.includes('float ring=1.-smoothstep(width*.45,width,abs(d-radius));'));
-  assert.ok(renderer.includes('halo=ring*outer*strength*(1.-tex.a);'));
+  assert.ok(renderer.includes('const float spriteScale=.54;'));
+  assert.ok(renderer.includes('const auraScale=kind?1.85:1;'));
+  assert.ok(renderer.includes('float base=1.-smoothstep(.18,.76,d);'));
+  assert.ok(renderer.includes('float phase=fract(clock*.24+special*.13);'));
+  assert.ok(renderer.includes('float radius=mix(.52,.96,phase);'));
+  assert.ok(renderer.includes('float filled=1.-smoothstep(radius*.52,radius,d);'));
+  assert.ok(renderer.includes('float pulseAura=filled*(.25*pulseFade);'));
   assert.ok(renderer.includes('special>.5'));
+  assert.ok(!renderer.includes('float ring='));
 });
