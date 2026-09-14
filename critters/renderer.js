@@ -1,5 +1,5 @@
 import {ensureCritter} from './logic.js';
-import {ATLAS_PNG_BASE64,SPRITES,EXP_FRAMES,PANDA_ROLL,ITEM_FRAMES} from './atlas.js';
+import {ATLAS_URL,SPRITES,EXP_FRAMES,PANDA_ROLL,ITEM_FRAMES} from './atlas.js';
 
 export const critterVertex=`
 layout(location=0) in vec2 corner;
@@ -65,7 +65,7 @@ export function createCritterRenderer(gl){
   let ready=false,disposed=false;
   const image=new Image();
   image.onload=()=>{if(disposed)return;gl.bindTexture(gl.TEXTURE_2D,texture);gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,true);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,image);gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,false);ready=true;};
-  image.src='data:image/png;base64,'+ATLAS_PNG_BASE64;
+  image.src=ATLAS_URL;
   let capacity=0,data=new Float32Array(0);
   return {draw(souls,vp,time,player,visible=()=>true,pickups=[]){
     if(disposed||!ready)return {calls:0,triangles:0,count:0};
