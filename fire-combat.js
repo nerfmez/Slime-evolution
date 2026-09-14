@@ -1,3 +1,4 @@
+import {updateCritterSouls} from './critters/logic.js';
 import {sunfallSettings,sunfallLife} from './vfx/sunfall-settings.js';
 // Fire rules ported from Slime-v100/scripts/main.gd and inferno_seed.gd.
 import {effectDuration,infernoSettings} from './vfx/inferno-settings.js';
@@ -68,7 +69,7 @@ export class FireCombat{
   this.healClock=Math.max(0,this.healClock-dt);
   for(const e of world.defeated.splice(0)){if(this.mods.blood_feast>0&&this.healClock<=0&&Math.hypot(e.x-player[0],e.z-player[2])<2.55+(this.mods.blood_feast-1)*.1){world.hp=Math.min(this.maxHP,world.hp+(this.mods.blood_feast<3?1:2));this.healClock=Math.max(.60,.95-(this.mods.blood_feast-1)*.08);}
    const baseValue={thorn:2,moss:5,petal:6,crystal:10,boss:24}[e.type]||2,value=baseValue*(e.isBoss?1:e.isElite?3:1);if(e.isElite)this.rerolls++;const near=this.souls.find(o=>Math.hypot(o.x-e.x,o.z-e.z)<.65);if(near)near.value+=value;else this.souls.push({x:e.x,z:e.z,value,age:0,id:++this.serial});this.effect('death',e.x,e.z,e.isBoss?1.25:e.isElite?.58:.38);}
-  for(const o of this.souls){o.age+=dt;const dx=player[0]-o.x,dz=player[2]-o.z,d=Math.hypot(dx,dz),range=3.4+this.mods.magnet*.42;if(o.age>.12&&d<.38){if(this.level<50)this.xp+=o.value*(1+this.mods.soul*.05);o.value=0;}else if(o.age>.12&&d<range){const move=Math.min(d,(2.2+6.3*(1-d/range))*dt);o.x+=dx/d*move;o.z+=dz/d*move;}}
+  updateCritterSouls(this,dt,player,enemyCanStand);
   this.souls=this.souls.filter(o=>o.value>0);this.checkLevel();if(this.choosing)return;
   for(const e of world.enemies)if(e.burnTime>0&&e.hp>0){e.burnTime-=dt;e.burnTick-=dt;if(e.burnTick<=0){this.hit(e,e.burnDamage,e.x,e.z);e.burnTick=.60;}if(e.burnTime<=0)e.burnDamage=0;}
   this.cooldown=Math.max(0,this.cooldown-dt);if(this.cooldown<=0&&this.fireLevel){const target=this.target(world,player);if(target){this.cast(target,player);this.cooldown=this.stats.cooldown;}}
