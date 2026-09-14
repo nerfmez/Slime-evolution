@@ -1,0 +1,59 @@
+name: Critter pickup validation
+on:
+  push:
+    branches: [feature/critter-pickups]
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Apply reviewed derivative and test logic
+        run: |
+          node scripts/apply-critter-patch.mjs
+          node --check published/2026-09-14/assets/main-critter-v1.js
+          node --test tests/*.test.mjs
+      - name: Install browser verifier
+        run: |
+          npm install --prefix /tmp/critter-browser --no-save playwright
+          /tmp/critter-browser/node_modules/.bin/playwright install --with-deps chromium
+      - name: Verify actual game rendering and touch input
+        run: node tests/critter-browser.mjs
+      - name: Save generated feature files to this branch
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add fire-combat.js vfx/beads.js published/2026-09-14/index.html published/2026-09-14/assets/main-critter-v1.js published/2026-09-14/assets/critters
+          if ! git diff --cached --quiet; then
+            git commit -m 'Generate and verify small animal pickups in latest Slime release'
+            git push origin HEAD:feature/critter-pickups
+          fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: critter-review
+          path: /tmp/critter-review
+          retention-days: 7
+      - name: Export feature review source
+        if: always()
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          from zipfile import ZipFile, ZIP_DEFLATED
+          with ZipFile('/tmp/critter-source.zip', 'w', ZIP_DEFLATED) as z:
+              for p in Path('.').rglob('*'):
+                  if p.is_file() and '.git' not in p.parts and 'node_modules' not in p.parts and p.suffix in {'.js','.mjs','.html','.md','.yml'}:
+                      z.write(p, str(p))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: critter-source
+          path: /tmp/critter-source.zip
+          retention-days: 3
