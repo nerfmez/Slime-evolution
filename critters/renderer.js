@@ -9,7 +9,9 @@ layout(location=3) in vec4 misc;
 uniform mat4 vp;
 out vec2 uv;
 out vec2 localUv;
+flat out vec4 atlasRect;
 flat out float special;
+flat out float mirrorX;
 void main(){
   float c=cos(misc.x),s=sin(misc.x);
   vec2 q=vec2(c*corner.x-s*corner.y,s*corner.x+c*corner.y);
@@ -19,26 +21,55 @@ void main(){
   if(misc.y>.5)t.x=1.-t.x;
   t.y=1.-t.y;
   uv=mix(rect.xy,rect.zw,t);
-  localUv=corner;special=misc.z;
+  localUv=corner;
+  atlasRect=rect;
+  special=misc.z;
+  mirrorX=misc.y;
 }`;
 export const critterFragment=`
-in vec2 uv;in vec2 localUv;flat in float special;out vec4 color;
+in vec2 uv;in vec2 localUv;
+flat in vec4 atlasRect;
+flat in float special;
+flat in float mirrorX;
+out vec4 color;
 uniform sampler2D atlas;
 uniform float clock;
 void main(){
-  vec4 tex=texture(atlas,uv);
+  vec4 tex;
+  if(special>.5){
+    // Item sprites are kept at their normal visual size while the quad is enlarged for a clearly bigger aura.
+    const float spriteScale=.54;
+    vec2 spriteLocal=localUv/spriteScale;
+    if(max(abs(spriteLocal.x),abs(spriteLocal.y))<=1.){
+      vec2 t=spriteLocal*.5+.5;
+      if(mirrorX>.5)t.x=1.-t.x;
+      t.y=1.-t.y;
+      tex=texture(atlas,mix(atlasRect.xy,atlasRect.zw,t));
+    }else tex=vec4(0.);
+  }else tex=texture(atlas,uv);
+
   vec3 glow=special<1.5?vec3(1.,.26,.48):special<2.5?vec3(.15,.78,1.):vec3(1.,.61,.12);
   float halo=0.;
   if(special>.5){
-    // Circular runtime aura: radius slowly expands and contracts instead of flashing as a solid patch.
-    float breath=.5+.5*sin(clock*.78+special*.72);
-    float radius=.58+.20*breath;
-    float width=.12+.025*breath;
+    // Filled circular aura, not an outline. A persistent soft body makes special animals readable at a glance.
     float d=length(localUv);
-    float ring=1.-smoothstep(width*.45,width,abs(d-radius));
-    float outer=1.-smoothstep(.94,1.0,d);
-    float strength=.14+.08*breath;
-    halo=ring*outer*strength*(1.-tex.a);
+    float base=1.-smoothstep(.18,.76,d);
+    float baseAura=base*.12;
+
+    // Repeating outward expansion: each pulse grows beyond the animal and fades before restarting.
+    float phase=fract(clock*.24+special*.13);
+    float radius=mix(.52,.96,phase);
+    float filled=1.-smoothstep(radius*.52,radius,d);
+    float pulseFade=1.-smoothstep(.38,1.,phase);
+    float pulseAura=filled*(.25*pulseFade);
+
+    // A slower breathing component slightly changes the filled aura size/strength so it never feels static.
+    float breathe=.5+.5*sin(clock*.72+special*.61);
+    float breatheRadius=.68+.10*breathe;
+    float breatheFill=(1.-smoothstep(breatheRadius*.48,breatheRadius,d))*(.05+.05*breathe);
+
+    float circleMask=1.-smoothstep(.94,1.,d);
+    halo=(baseAura+pulseAura+breatheFill)*circleMask*(1.-tex.a);
   }
   float a=tex.a+halo;
   if(a<.006)discard;
@@ -89,7 +120,8 @@ export function createCritterRenderer(gl){
       const frame=frameFor(o,c),r=SPRITES[frame]||SPRITES.low_frog_f;
       const rolling=!kind&&c.expTier===2&&c.expForm===2&&c.moving>.2&&!c.eating;
       const rotation=rolling?c.phase*.20*(c.facing<0?-1:1):0;
-      data[i]=o.x;data[i+1]=small*.72+hop+(player[1]||0)*c.eat;data[i+2]=o.z;data[i+3]=small*shrink;
+      const auraScale=kind?1.85:1;
+      data[i]=o.x;data[i+1]=small*.72+hop+(player[1]||0)*c.eat;data[i+2]=o.z;data[i+3]=small*shrink*auraScale;
       data[i+4]=r[0];data[i+5]=r[1];data[i+6]=r[2];data[i+7]=r[3];
       data[i+8]=rotation;data[i+9]=c.facing<0?1:0;data[i+10]=specialCode(kind);data[i+11]=0;
     }
