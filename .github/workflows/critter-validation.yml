@@ -1,7 +1,7 @@
 name: Critter pickup validation
 on:
   push:
-    branches: [feature/exp-animal-sets-v3]
+    branches: [fix/approved-exp-item-sprites-v4]
   workflow_dispatch:
 permissions:
   contents: write
@@ -14,11 +14,11 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Apply reviewed derivative and test logic
+      - name: Materialize approved sprites and test logic
         run: |
-          node scripts/materialize-exp-v3.mjs
           node scripts/apply-critter-patch.mjs
-          node --check published/2026-09-14/assets/main-critter-v3.js
+          node --check published/2026-09-14/assets/main-critter-v4.js
+          node --check published/2026-09-14/assets/critters-v4/renderer.js
           node --test tests/*.test.mjs
       - name: Install browser verifier
         run: |
@@ -26,14 +26,14 @@ jobs:
           /tmp/critter-browser/node_modules/.bin/playwright install --with-deps chromium
       - name: Verify actual game rendering and touch input
         run: node tests/critter-browser.mjs
-      - name: Save generated feature files to this branch
+      - name: Save generated release files
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add critters tests/exp-sets.test.mjs tests/critter-browser.mjs docs/CRITTER_PICKUPS.md scripts/apply-critter-patch.mjs AGENTS.md published/2026-09-14/exp-animals.html fire-combat.js vfx/beads.js published/2026-09-14/index.html published/2026-09-14/assets/main-critter-v3.js published/2026-09-14/assets/critters-v3
+          git add critters tests/exp-sets.test.mjs tests/critter-browser.mjs docs/CRITTER_PICKUPS.md scripts/apply-critter-patch.mjs AGENTS.md fire-combat.js vfx/beads.js published/2026-09-14/index.html published/2026-09-14/assets/main-critter-v4.js published/2026-09-14/assets/critters-v4
           if ! git diff --cached --quiet; then
-            git commit -m 'Materialize and verify 27 EXP animals in nine reward tiers'
-            git push origin HEAD:feature/exp-animal-sets-v3
+            git commit -m 'Materialize approved three-band EXP and item animal sprites'
+            git push origin HEAD:fix/approved-exp-item-sprites-v4
           fi
       - uses: actions/upload-artifact@v4
         if: always()
@@ -41,20 +41,3 @@ jobs:
           name: critter-review
           path: /tmp/critter-review
           retention-days: 7
-      - name: Export feature review source
-        if: always()
-        run: |
-          python3 - <<'PY'
-          from pathlib import Path
-          from zipfile import ZipFile, ZIP_DEFLATED
-          with ZipFile('/tmp/critter-source.zip', 'w', ZIP_DEFLATED) as z:
-              for p in Path('.').rglob('*'):
-                  if p.is_file() and '.git' not in p.parts and 'node_modules' not in p.parts and p.suffix in {'.js','.mjs','.html','.md','.yml'}:
-                      z.write(p, str(p))
-          PY
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: critter-source
-          path: /tmp/critter-source.zip
-          retention-days: 3
