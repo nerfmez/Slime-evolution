@@ -24,7 +24,7 @@ html=html.replace('<a class="settings-link" href="/exp-animals.html" target="_bl
 writeFileSync(release+'/index.html',html);
 mkdirSync(assets+'/critters-v4',{recursive:true});
 for(const file of ['logic.js','renderer.js','catalog.js','atlas.js'])copyFileSync('critters/'+file,assets+'/critters-v4/'+file);
-copyFileSync('critters/atlas.png',assets+'/critters-v4/atlas.png');
+copyFileSync('critters/atlas.webp',assets+'/critters-v4/atlas.webp');
 let source=readFileSync('fire-combat.js','utf8');
 if(!source.includes('updateCritterSouls')){
  if(createHash('sha256').update(source).digest('hex')!=='a450289f1849f1403ec306850424289ef79702688c2be3340a41323114c1a69b')throw Error('Root FireCombat changed: review before patching');
@@ -34,4 +34,4 @@ if(!source.includes('updateCritterSouls')){
  writeFileSync('fire-combat.js',source);
 }
 writeFileSync('vfx/beads.js',"// Compatibility entry for the older editable baseline.\nexport {createCritterRenderer as createBeadRenderer,critterVertex as beadVertex,critterFragment as beadFragment} from '../critters/renderer.js';\n");
-console.log('Applied approved 3-tier EXP animals, panda roll, and approved item-animal sprites to latest release.');
+console.log('Applied clean user-supplied EXP/item atlas, panda roll and runtime-only item glow to latest release.');
