@@ -1,7 +1,7 @@
 name: Critter pickup validation
 on:
   push:
-    branches: [feature/critter-behavior-v2]
+    branches: [feature/exp-animal-sets-v3]
   workflow_dispatch:
 permissions:
   contents: write
@@ -16,8 +16,9 @@ jobs:
           node-version: '22'
       - name: Apply reviewed derivative and test logic
         run: |
+          node scripts/materialize-exp-v3.mjs
           node scripts/apply-critter-patch.mjs
-          node --check published/2026-09-14/assets/main-critter-v2.js
+          node --check published/2026-09-14/assets/main-critter-v3.js
           node --test tests/*.test.mjs
       - name: Install browser verifier
         run: |
@@ -29,10 +30,10 @@ jobs:
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add fire-combat.js vfx/beads.js published/2026-09-14/index.html published/2026-09-14/assets/main-critter-v2.js published/2026-09-14/assets/critters-v2
+          git add critters tests/exp-sets.test.mjs tests/critter-browser.mjs docs/CRITTER_PICKUPS.md scripts/apply-critter-patch.mjs AGENTS.md published/2026-09-14/exp-animals.html fire-combat.js vfx/beads.js published/2026-09-14/index.html published/2026-09-14/assets/main-critter-v3.js published/2026-09-14/assets/critters-v3
           if ! git diff --cached --quiet; then
-            git commit -m 'Generate and verify small animal pickups in latest Slime release'
-            git push origin HEAD:feature/critter-behavior-v2
+            git commit -m 'Materialize and verify 27 EXP animals in nine reward tiers'
+            git push origin HEAD:feature/exp-animal-sets-v3
           fi
       - uses: actions/upload-artifact@v4
         if: always()
