@@ -28,7 +28,8 @@ uniform float clock;
 void main(){
   vec4 tex=texture(atlas,uv);
   vec3 glow=special<1.5?vec3(1.,.26,.48):special<2.5?vec3(.15,.78,1.):vec3(1.,.61,.12);
-  float pulse=.82+.18*sin(clock*3.2+special*1.7);
+  // Slow, soft breathing pulse. Item light stays translucent instead of becoming a solid color patch.
+  float pulse=.62+.20*(.5+.5*sin(clock*.95+special*.8));
   float halo=0.;
   if(special>.5){
     vec2 texel=1./vec2(textureSize(atlas,0));
@@ -50,16 +51,17 @@ void main(){
     farA=max(farA,texture(atlas,clamp(uv+vec2(-d2.x,0.),lo,hi)).a);
     farA=max(farA,texture(atlas,clamp(uv+vec2(0., d2.y),lo,hi)).a);
     farA=max(farA,texture(atlas,clamp(uv+vec2(0.,-d2.y),lo,hi)).a);
-    float silhouette=max(nearA,farA*.68);
+    float silhouette=max(nearA,farA*.52);
     float rim=max(0.,silhouette-tex.a);
-    float radial=1.-smoothstep(.35,1.28,length(localUv));
+    float radial=1.-smoothstep(.18,1.18,length(localUv));
     float edge=max(abs(localUv.x),abs(localUv.y));
-    float edgeFade=1.-smoothstep(.80,1.0,edge);
-    halo=clamp((rim*1.05+radial*(1.-tex.a)*.38)*pulse*edgeFade,0.,.92);
+    float edgeFade=1.-smoothstep(.78,1.0,edge);
+    halo=clamp((rim*.42+radial*(1.-tex.a)*.08)*pulse*edgeFade,0.,.30);
   }
-  float a=tex.a+halo*(1.-tex.a);
+  float haloAlpha=halo*(1.-tex.a);
+  float a=tex.a+haloAlpha;
   if(a<.006)discard;
-  vec3 prem=tex.rgb*tex.a+glow*halo*(1.-tex.a);
+  vec3 prem=tex.rgb*tex.a+glow*haloAlpha;
   color=vec4(prem/max(a,.001),a);
 }`;
 function compile(gl,type,source){
