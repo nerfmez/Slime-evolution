@@ -1,7 +1,7 @@
 name: Critter pickup validation
 on:
   push:
-    branches: [balance/glow-30s-escalation]
+    branches: [balance/glow-circle-60s]
   workflow_dispatch:
 permissions:
   contents: write
@@ -33,8 +33,8 @@ jobs:
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add critters tests/exp-sets.test.mjs tests/spawn-glow-balance.test.mjs tests/critter-browser.mjs docs/CRITTER_PICKUPS.md scripts/apply-critter-patch.mjs scripts/materialize-clean-atlas-v5.py AGENTS.md fire-combat.js vfx/beads.js published/2026-09-14/index.html published/2026-09-14/assets/main-critter-v4.js published/2026-09-14/assets/critters-v4
           if ! git diff --cached --quiet; then
-            git commit -m 'Materialize translucent glow and 30-second spawn escalation'
-            git push origin HEAD:balance/glow-30s-escalation
+            git commit -m 'Materialize circular glow and minute spawn escalation'
+            git push origin HEAD:balance/glow-circle-60s
           fi
       - uses: actions/upload-artifact@v4
         if: always()
