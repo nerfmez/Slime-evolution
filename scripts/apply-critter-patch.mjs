@@ -16,11 +16,19 @@ bundle=replaceOnce(bundle,'Hr.draw(Y.souls,X,W.time,W.player,dr)','Hr.draw(Y.sou
 bundle=replaceOnce(bundle,'for(let t of e.pickups||[]){let e=t.kind===`heal`?[.96,.32,.38]:t.kind===`magnet`?[.27,.6,1]:[.93,.73,.24];c(t.x,.22+Math.sin(n*3)*.04,t.z,.15,.22,e,1,n),s(t.x,t.z,.24,.04,.025,e,.8)}','','old special pickup diamonds');
 bundle='import {updateCritterSouls as __critterSouls,updateSpecialCritters as __critterSpecial,attractAllCritters as __critterMagnet} from "./critters-v4/logic.js";\nimport {createCritterRenderer as __critterRenderer} from "./critters-v4/renderer.js";\n'+bundle;
 bundle=replaceOnce(bundle,'ระยะเก็บวิญญาณ +0.42','ดูดสัตว์ EXP · ระยะ +0.42 ต่อขั้น','magnet mod description');
+// Gameplay balance requested 2026-09-14: keep the first minute unchanged, then spawn at 2x the previous rate and allow up to 100 monsters.
+bundle=replaceOnce(bundle,'update(e,t,n=40,r=null){','update(e,t,n=100,r=null){','enemy default cap');
+bundle=replaceOnce(bundle,'mobs:40,grass:1e4','mobs:100,grass:1e4','runtime mob cap');
+bundle=replaceOnce(bundle,'this.spawnClock=Math.max(.55,2.5-this.time*.005)','this.spawnClock=Math.max(.55,2.5-this.time*.005)*(this.time>=60?.5:1)','post-minute spawn rate');
+bundle=replaceOnce(bundle,'B(`mobs`).value=`40`,B(`camera`)','B(`mobs`).value=`100`,B(`camera`)','normal-run mob cap');
 writeFileSync(assets+'/main-critter-v4.js',bundle);
 let html=readFileSync(release+'/index.html','utf8');
 const entry=html.match(/\.\/assets\/main-critter-v[0-9]+\.js/)?.[0]||'./assets/main-CT954LmH.js';
 if(entry!=='./assets/main-critter-v4.js')html=replaceOnce(html,entry,'./assets/main-critter-v4.js','release entry');
 html=html.replace('<a class="settings-link" href="/exp-animals.html" target="_blank" rel="noopener">สัตว์ EXP · 9 เซ็ต / 27 แบบ ↗</a>','');
+if(!html.includes('<option value="100" selected>100 ตัว</option>')){
+  html=replaceOnce(html,'<option value="40" selected>40 ตัว</option><option value="80">80 ตัว</option>','<option value="40">40 ตัว</option><option value="80">80 ตัว</option><option value="100" selected>100 ตัว</option>','100 mob option');
+}
 writeFileSync(release+'/index.html',html);
 mkdirSync(assets+'/critters-v4',{recursive:true});
 for(const file of ['logic.js','renderer.js','catalog.js','atlas.js'])copyFileSync('critters/'+file,assets+'/critters-v4/'+file);
@@ -34,4 +42,4 @@ if(!source.includes('updateCritterSouls')){
  writeFileSync('fire-combat.js',source);
 }
 writeFileSync('vfx/beads.js',"// Compatibility entry for the older editable baseline.\nexport {createCritterRenderer as createBeadRenderer,critterVertex as beadVertex,critterFragment as beadFragment} from '../critters/renderer.js';\n");
-console.log('Applied clean user-supplied EXP/item atlas, panda roll and runtime-only item glow to latest release.');
+console.log('Applied clean critter atlas, stronger runtime item glow, 2x post-minute spawns, and 100-monster cap.');
