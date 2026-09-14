@@ -7,12 +7,12 @@ import {createCritterRenderer} from './assets/critters-v3/renderer.js';
 const board=document.getElementById('board'),canvas=document.getElementById('catalog');
 for(const [i,set] of EXP_SETS.entries()){
  const row=document.createElement('section');row.className='tier';
- const until=EXP_SETS[i+1]?.xp;const range=until?`${set.xp}–${until-1}`:`${set.xp}+`;
+ const until=EXP_SETS[i+1]?.xp;const range=until?(until===set.xp+1?String(set.xp):`${set.xp}–${until-1}`):`${set.xp}+`;
  row.innerHTML=`<h2>EXP ${range}<span>${set.name}</span></h2><div class="cells">${set.animals.map(n=>`<div class="cell"><strong>${n}</strong></div>`).join('')}</div>`;board.insertBefore(row,canvas);
 }
 try{
  const gl=canvas.getContext('webgl2',{alpha:true,preserveDrawingBuffer:true});if(!gl)throw Error('อุปกรณ์นี้เปิด WebGL2 ไม่สำเร็จ');
- const renderer=createCritterRenderer(gl),actors=[];let running=true,clock=0,previous=0;
+ const renderer=createCritterRenderer(gl),actors=[];let running=true,dirty=true,clock=0,previous=0;
  for(let tier=0;tier<9;tier++)for(let form=0;form<3;form++){
   const value=EXP_SETS[tier].xp,o={x:0,z:0,value,age:1,id:tier*3+form+1};
   ensureCritter(o);o.critter.seed=(form+.5)/3;o.critter.expValue=null;ensureCritter(o);actors.push(o);
@@ -20,15 +20,17 @@ try{
  const vp=new Float32Array(16);let scale=125;
  function resize(){
   const r=board.getBoundingClientRect(),dpr=Math.min(2,window.devicePixelRatio||1);canvas.width=Math.round(r.width*dpr);canvas.height=Math.round(r.height*dpr);gl.viewport(0,0,canvas.width,canvas.height);
-  scale=Math.min(142,r.width/6);vp.fill(0);vp[0]=2*scale/r.width;vp[5]=2*scale/r.height;vp[9]=-2*scale/r.height;vp[12]=-1;vp[13]=1;vp[15]=1;
-  board.querySelectorAll('.cell').forEach((el,i)=>{const box=el.getBoundingClientRect();actors[i].x=(box.left-r.left+box.width/2)/scale;actors[i].z=(box.top-r.top+box.height*.68)/scale;});
+  // Map Z to sheet rows; Y is not also projected, so billboard height is not stretched by sqrt(2).
+  scale=Math.min(175,r.width/4.2);vp.fill(0);vp[0]=2*scale/r.width;vp[9]=-2*scale/r.height;vp[12]=-1;vp[13]=1;vp[15]=1;
+  board.querySelectorAll('.cell').forEach((el,i)=>{const box=el.getBoundingClientRect();actors[i].x=(box.left-r.left+box.width/2)/scale;actors[i].z=(box.top-r.top+box.height*.53)/scale;});dirty=true;
  }
  new ResizeObserver(resize).observe(board);resize();
  function frame(t){if(running)clock+=Math.min(.05,(t-previous)/1000||0);previous=t;
-  for(const o of actors){o.critter.phase=clock*8+o.critter.seed*2;o.critter.moving=running?.7:0;}
-  gl.clearColor(0,0,0,0);gl.clear(gl.COLOR_BUFFER_BIT);renderer.draw(actors,vp,clock,[0,0,0],()=>true);requestAnimationFrame(frame);
+  if(running||dirty){for(const o of actors){o.critter.phase=clock*8+o.critter.seed*2;o.critter.moving=running?.7:0;}
+   gl.clearColor(0,0,0,0);gl.clear(gl.COLOR_BUFFER_BIT);renderer.draw(actors,vp,clock,[0,0,0],()=>true);dirty=false;}
+  requestAnimationFrame(frame);
  }
- document.getElementById('motion').onclick=e=>{running=!running;e.target.textContent=running?'หยุดท่าเดิน':'เล่นท่าเดิน';e.target.setAttribute('aria-pressed',String(running));};
+ document.getElementById('motion').onclick=e=>{running=!running;dirty=true;e.target.textContent=running?'หยุดท่าเดิน':'เล่นท่าเดิน';e.target.setAttribute('aria-pressed',String(running));};
  requestAnimationFrame(frame);
 }catch(error){const el=document.getElementById('error');el.hidden=false;el.textContent=error.message;console.error(error);}
 </script></body></html>
