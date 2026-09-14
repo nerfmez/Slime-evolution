@@ -14,8 +14,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Materialize approved sprites and test logic
+      - name: Clean item sprites and materialize release
         run: |
+          python3 -m pip install --quiet pillow
+          python3 scripts/clean-item-atlas.py
           node scripts/apply-critter-patch.mjs
           node --check published/2026-09-14/assets/main-critter-v4.js
           node --check published/2026-09-14/assets/critters-v4/renderer.js
@@ -30,9 +32,9 @@ jobs:
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add critters tests/exp-sets.test.mjs tests/critter-browser.mjs docs/CRITTER_PICKUPS.md scripts/apply-critter-patch.mjs AGENTS.md fire-combat.js vfx/beads.js published/2026-09-14/index.html published/2026-09-14/assets/main-critter-v4.js published/2026-09-14/assets/critters-v4
+          git add critters tests/exp-sets.test.mjs tests/critter-browser.mjs docs/CRITTER_PICKUPS.md scripts/apply-critter-patch.mjs scripts/clean-item-atlas.py AGENTS.md fire-combat.js vfx/beads.js published/2026-09-14/index.html published/2026-09-14/assets/main-critter-v4.js published/2026-09-14/assets/critters-v4
           if ! git diff --cached --quiet; then
-            git commit -m 'Materialize approved three-band EXP and item animal sprites'
+            git commit -m 'Keep item sprites clean and render glow at runtime'
             git push origin HEAD:fix/approved-exp-item-sprites-v4
           fi
       - uses: actions/upload-artifact@v4

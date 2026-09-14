@@ -28,8 +28,9 @@ uniform float clock;
 void main(){
   vec4 tex=texture(atlas,uv);
   vec3 glow=special<1.5?vec3(1.,.40,.52):special<2.5?vec3(.30,.82,1.):vec3(1.,.68,.18);
-  float pulse=.88+.12*sin(clock*2.7+special*1.8);
-  float halo=special>.5?exp(-dot(localUv,localUv)*2.4)*.27*pulse:0.;
+  float pulse=.86+.14*sin(clock*2.7+special*1.8);
+  // Item glow is generated here at runtime only. The atlas contains clean animal pixels with no baked aura.
+  float halo=special>.5?exp(-dot(localUv,localUv)*2.15)*.36*pulse:0.;
   halo*=1.-tex.a;
   float a=tex.a+halo*(1.-tex.a);
   if(a<.006)discard;

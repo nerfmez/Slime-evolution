@@ -12,7 +12,7 @@ Current approved critter art is deliberately limited to THREE EXP bands with THR
 - HIGH 20+: fawn / moss turtle / tiny panda.
 The tiny panda rolls as a ball while moving. Every animal uses approved front/back art. Do not expand this back into nine reward tiers or 27 animals.
 
-Approved item animals: pink flower axolotl = Heal, blue magnet-horn creature = Magnet, golden radiant spiky creature = Nova. Use their supplied colors/shading without restyling. Item animals glow more than EXP; EXP has no item glow. Paper backgrounds, labels and sheet decoration are excluded from the game atlas.
+Approved item animals: pink flower axolotl = Heal, blue magnet-horn creature = Magnet, golden radiant spiky creature = Nova. Use their supplied colors/shading without restyling. The item sprite images themselves must NOT contain baked glow, sparkles, aura clouds, coins, petals, hearts, or other effect particles. Item glow is added only at runtime by the renderer. EXP has no item glow. Paper backgrounds, labels and sheet decoration are excluded from the game atlas.
 
 Preserve behavior: no passive attraction until Magnet mod; +.42 range per rank; one short bounded escape; global magnet item still gathers EXP. Rewards, drop rates, skills, audio and localStorage keys stay unchanged.
 
