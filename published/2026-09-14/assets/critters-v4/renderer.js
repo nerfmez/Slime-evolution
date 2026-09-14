@@ -28,40 +28,21 @@ uniform float clock;
 void main(){
   vec4 tex=texture(atlas,uv);
   vec3 glow=special<1.5?vec3(1.,.26,.48):special<2.5?vec3(.15,.78,1.):vec3(1.,.61,.12);
-  // Slow, soft breathing pulse. Item light stays translucent instead of becoming a solid color patch.
-  float pulse=.62+.20*(.5+.5*sin(clock*.95+special*.8));
   float halo=0.;
   if(special>.5){
-    vec2 texel=1./vec2(textureSize(atlas,0));
-    vec2 cellSize=vec2(1./8.,1./4.);
-    vec2 cellBase=floor(uv/cellSize)*cellSize;
-    vec2 lo=cellBase+texel*.5,hi=cellBase+cellSize-texel*.5;
-    vec2 d1=texel*4.0,d2=texel*7.0;
-    float nearA=0.;
-    nearA=max(nearA,texture(atlas,clamp(uv+vec2( d1.x,0.),lo,hi)).a);
-    nearA=max(nearA,texture(atlas,clamp(uv+vec2(-d1.x,0.),lo,hi)).a);
-    nearA=max(nearA,texture(atlas,clamp(uv+vec2(0., d1.y),lo,hi)).a);
-    nearA=max(nearA,texture(atlas,clamp(uv+vec2(0.,-d1.y),lo,hi)).a);
-    nearA=max(nearA,texture(atlas,clamp(uv+vec2( d1.x, d1.y),lo,hi)).a);
-    nearA=max(nearA,texture(atlas,clamp(uv+vec2(-d1.x, d1.y),lo,hi)).a);
-    nearA=max(nearA,texture(atlas,clamp(uv+vec2( d1.x,-d1.y),lo,hi)).a);
-    nearA=max(nearA,texture(atlas,clamp(uv+vec2(-d1.x,-d1.y),lo,hi)).a);
-    float farA=0.;
-    farA=max(farA,texture(atlas,clamp(uv+vec2( d2.x,0.),lo,hi)).a);
-    farA=max(farA,texture(atlas,clamp(uv+vec2(-d2.x,0.),lo,hi)).a);
-    farA=max(farA,texture(atlas,clamp(uv+vec2(0., d2.y),lo,hi)).a);
-    farA=max(farA,texture(atlas,clamp(uv+vec2(0.,-d2.y),lo,hi)).a);
-    float silhouette=max(nearA,farA*.52);
-    float rim=max(0.,silhouette-tex.a);
-    float radial=1.-smoothstep(.18,1.18,length(localUv));
-    float edge=max(abs(localUv.x),abs(localUv.y));
-    float edgeFade=1.-smoothstep(.78,1.0,edge);
-    halo=clamp((rim*.42+radial*(1.-tex.a)*.08)*pulse*edgeFade,0.,.30);
+    // Circular runtime aura: radius slowly expands and contracts instead of flashing as a solid patch.
+    float breath=.5+.5*sin(clock*.78+special*.72);
+    float radius=.58+.20*breath;
+    float width=.12+.025*breath;
+    float d=length(localUv);
+    float ring=1.-smoothstep(width*.45,width,abs(d-radius));
+    float outer=1.-smoothstep(.94,1.0,d);
+    float strength=.14+.08*breath;
+    halo=ring*outer*strength*(1.-tex.a);
   }
-  float haloAlpha=halo*(1.-tex.a);
-  float a=tex.a+haloAlpha;
+  float a=tex.a+halo;
   if(a<.006)discard;
-  vec3 prem=tex.rgb*tex.a+glow*haloAlpha;
+  vec3 prem=tex.rgb*tex.a+glow*halo;
   color=vec4(prem/max(a,.001),a);
 }`;
 function compile(gl,type,source){
