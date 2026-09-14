@@ -1,0 +1,24 @@
+name: Import saved Slime source
+on:
+  push:
+    branches: ["import/sites-v130-20260913"]
+    paths: ["_migration/READY.json"]
+permissions:
+  contents: write
+jobs:
+  restore:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify and restore source snapshot
+        run: python3 _migration/restore.py
+      - name: Verify audio behavior
+        run: node --test tests/forest-audio.test.mjs tests/ambient-events.test.mjs
+      - name: Commit complete import
+        run: |
+          git config user.name "Codex"
+          git config user.email "codex@openai.com"
+          git add -A
+          git commit -m "Import complete Sites v130 source and recorded ambience audio patch"
+          git push origin HEAD:import/sites-v130-20260913
