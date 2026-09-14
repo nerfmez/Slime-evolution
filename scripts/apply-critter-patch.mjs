@@ -16,12 +16,12 @@ bundle=replaceOnce(bundle,'Hr.draw(Y.souls,X,W.time,W.player,dr)','Hr.draw(Y.sou
 bundle=replaceOnce(bundle,'for(let t of e.pickups||[]){let e=t.kind===`heal`?[.96,.32,.38]:t.kind===`magnet`?[.27,.6,1]:[.93,.73,.24];c(t.x,.22+Math.sin(n*3)*.04,t.z,.15,.22,e,1,n),s(t.x,t.z,.24,.04,.025,e,.8)}','','old special pickup diamonds');
 bundle='import {updateCritterSouls as __critterSouls,updateSpecialCritters as __critterSpecial,attractAllCritters as __critterMagnet} from "./critters-v4/logic.js";\nimport {createCritterRenderer as __critterRenderer} from "./critters-v4/renderer.js";\n'+bundle;
 bundle=replaceOnce(bundle,'ระยะเก็บวิญญาณ +0.42','ดูดสัตว์ EXP · ระยะ +0.42 ต่อขั้น','magnet mod description');
-// Gameplay balance requested 2026-09-14: 100-monster cap; starting at 00:30, double spawn frequency again every 30 seconds (1x,2x,4x,8x...).
+// Gameplay balance requested 2026-09-14: 100-monster cap; spawn frequency doubles once per full minute (1x,2x,4x,8x...).
 bundle=replaceOnce(bundle,'update(e,t,n=40,r=null){','update(e,t,n=100,r=null){','enemy default cap');
 bundle=replaceOnce(bundle,'mobs:40,grass:1e4','mobs:100,grass:1e4','runtime mob cap');
 const oldSpawn='this.spawnClock-=e,!a&&this.spawnClock<=0&&this.time<300){let e=i[Math.floor(this.random()*i.length)];this.enemies.length<n&&this.spawn(t,e),this.spawnClock=Math.max(.55,2.5-this.time*.005)}';
-const stagedSpawn='this.spawnClock-=e,!a&&this.time<300){let r=Math.max(.55,2.5-this.time*.005)/Math.pow(2,Math.floor(this.time/30));for(;this.spawnClock<=0&&this.enemies.length<n;){let e=i[Math.floor(this.random()*i.length)];this.spawn(t,e),this.spawnClock+=r}}';
-bundle=replaceOnce(bundle,oldSpawn,stagedSpawn,'30-second exponential spawn rate');
+const stagedSpawn='this.spawnClock-=e,!a&&this.time<300){let r=Math.max(.55,2.5-this.time*.005)/Math.pow(2,Math.floor(this.time/60));for(;this.spawnClock<=0&&this.enemies.length<n;){let e=i[Math.floor(this.random()*i.length)];this.spawn(t,e),this.spawnClock+=r}}';
+bundle=replaceOnce(bundle,oldSpawn,stagedSpawn,'60-second exponential spawn rate');
 bundle=replaceOnce(bundle,'B(`mobs`).value=`40`,B(`camera`)','B(`mobs`).value=`100`,B(`camera`)','normal-run mob cap');
 writeFileSync(assets+'/main-critter-v4.js',bundle);
 let html=readFileSync(release+'/index.html','utf8');
@@ -44,4 +44,4 @@ if(!source.includes('updateCritterSouls')){
  writeFileSync('fire-combat.js',source);
 }
 writeFileSync('vfx/beads.js',"// Compatibility entry for the older editable baseline.\nexport {createCritterRenderer as createBeadRenderer,critterVertex as beadVertex,critterFragment as beadFragment} from '../critters/renderer.js';\n");
-console.log('Applied clean critter atlas, translucent slow item glow, 30-second exponential spawn escalation, and 100-monster cap.');
+console.log('Applied clean critter atlas, circular breathing item glow, 60-second exponential spawn escalation, and 100-monster cap.');

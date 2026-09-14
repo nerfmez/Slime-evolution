@@ -25,13 +25,16 @@ Special pickups use the approved supplied artwork, not recolored EXP animals:
 - Magnet: blue magnet-horn creature, front/back.
 - Nova: golden radiant spiky creature, front/back.
 
-Their original colors, watercolor shading, outlines and decorative glow are preserved from the approved sheets. Paper background, labels and unrelated sheet elements are removed. A modest local shader halo reinforces item readability; EXP animals receive no halo. Item world size is .30 so they read clearly without becoming large enemies.
+Their original colors, watercolor shading and outlines are preserved. Paper background, labels and unrelated sheet elements are removed. The sprite atlas itself contains no baked aura. Item readability comes from a runtime-only translucent circular ring in the WebGL renderer. The ring slowly expands and contracts, remains circular at all times, and does not tint the animal into a solid patch. EXP animals receive no item glow. Item world size is .30 so they read clearly without becoming large enemies.
 
 ## Preserved gameplay behavior
 No passive EXP attraction before the Magnet mod. Physical contact still swallows. Each Magnet rank adds .42 range beyond contact. Animals make one short bounded escape on approach, then settle so the player can catch them. Global magnet pickup still gathers EXP without requiring the passive Magnet mod. Heal/Nova behavior, rewards, drop rates, skills, audio and localStorage keys are unchanged.
 
+## Current enemy-density balance
+Normal run is capped at 100 monsters. Spawn frequency doubles once per full minute until the boss transition: 00:00–00:59 = 1×, 01:00–01:59 = 2×, 02:00–02:59 = 4×, 03:00–03:59 = 8×, 04:00–04:59 = 16×. A spawn accumulator allows multiple spawn attempts in one frame at high multipliers while respecting the cap.
+
 ## Rendering
-All EXP and item animals share one instanced WebGL draw and one compressed PNG atlas. The atlas is cropped from the approved user sheets and stored in `critters/atlas.png`, with UV metadata in `critters/atlas.js`. Front/back selection, panda rolling and item halo happen in the same renderer.
+All EXP and item animals share one instanced WebGL draw and one compressed WebP atlas. The clean atlas is stored in `critters/atlas.webp`, with UV metadata in `critters/atlas.js`. Front/back selection, panda rolling and the circular item aura happen in the same renderer.
 
 Verification commands:
 ```
