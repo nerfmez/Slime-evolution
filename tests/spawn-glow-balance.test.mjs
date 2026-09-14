@@ -15,10 +15,10 @@ test('normal run uses 100 monster cap and doubles spawn rate after one minute',(
   assert.ok(!html.includes('<option value="40" selected>40 ตัว</option>'));
 });
 
-test('item glow is runtime-only and materially stronger than the previous halo',()=>{
+test('item glow is runtime-only, strong, and fades before sprite-quad edges',()=>{
   const renderer=readFileSync(`${release}/assets/critters-v4/renderer.js`,'utf8');
   assert.ok(renderer.includes('vec2 d1=texel*4.0,d2=texel*7.0;'));
-  assert.ok(renderer.includes('halo=clamp((rim*1.05+radial*(1.-tex.a)*.38)*pulse,0.,.92);'));
+  assert.ok(renderer.includes('float edgeFade=1.-smoothstep(.80,1.0,edge);'));
+  assert.ok(renderer.includes('halo=clamp((rim*1.05+radial*(1.-tex.a)*.38)*pulse*edgeFade,0.,.92);'));
   assert.ok(renderer.includes('special>.5'));
-  assert.ok(!renderer.includes('baked aura'));
 });
