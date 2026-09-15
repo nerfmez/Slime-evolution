@@ -3,7 +3,6 @@ import {EnemyWorld,ENEMY_TYPES} from './enemies.js';
 
 // Stage 1 animal pass: normal Thorn becomes Moss Frog. Elite Thorn stays unchanged.
 ENEMY_TYPES.thorn.name='Moss Frog';
-ENEMY_TYPES.thorn.stride=.82;
 
 const JUMP_CELLS=Object.freeze([0,1,2,3,4,5,6,7]);
 const DEATH_CELLS=Object.freeze([8,9,10,11,12]);
@@ -11,6 +10,8 @@ const HIT_CELL=9; // Approved: death frame 2 is also the hit frame.
 const ATTACK_RECT=Object.freeze([.25,0,.75,.25]); // Bottom row, cols 2-4: seated tongue attack.
 const DEATH_FRAME_TIME=.095;
 const DEATH_LIFE=DEATH_FRAME_TIME*DEATH_CELLS.length+.035;
+const FROG_STRIDE=.82;
+const THORN_STRIDE=.42;
 
 function cellRect(cell){
  const col=cell%4,row=Math.floor(cell/4);
@@ -18,10 +19,12 @@ function cellRect(cell){
 }
 function jumpCell(e){
  if((e.walkBlend||0)<.055)return JUMP_CELLS[0];
- const phase=((e.walkPhase||0)%1+1)%1;
+ // Keep gameplay/Elite Thorn stride untouched. Only slow the normal frog's visual cycle.
+ const visualPhase=(e.walkPhase||0)*(THORN_STRIDE/FROG_STRIDE);
+ const phase=((visualPhase%1)+1)%1;
  return JUMP_CELLS[Math.min(7,Math.floor(phase*8))];
 }
-function frogFrame(e){
+export function frogFrame(e){
  if(e.__frogCorpse||e.hp<=0){
   const age=Math.max(0,e.__frogDeathAge||0);
   return {rect:cellRect(DEATH_CELLS[Math.min(4,Math.floor(age/DEATH_FRAME_TIME))]),width:1,offset:0};
@@ -87,7 +90,7 @@ function loadImage(url){
 }
 
 export async function createThornSprite(gl){
- const image=await loadImage('./assets/enemies/frog-moveset.png?v=20260915-safe1');
+ const image=await loadImage('./assets/enemies/frog-moveset.png?v=20260915-safe2');
  const texture=gl.createTexture();
  gl.activeTexture(gl.TEXTURE10);gl.bindTexture(gl.TEXTURE_2D,texture);
  gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,true);
