@@ -1,3 +1,5 @@
+import './player-round-base-v1.js?v=1';
+
 // Stability shim for directional player sprite.
 // Fixes walk/idle flicker caused by using the oscillating jelly stretch as a movement signal,
 // and adds a small direction hysteresis so touch steering near octant boundaries does not chatter.
