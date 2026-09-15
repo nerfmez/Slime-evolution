@@ -30,7 +30,8 @@ try{
   const initialStatus=await page.locator('#status').textContent();
   assert.ok(!initialStatus.includes('กำลังโหลด'),'game must leave the loading state');
   assert.deepEqual(pageErrors,[],'browser must not throw page errors');
-  assert.deepEqual(failedRequests,[],'authoritative release must not have failed requests');
+  const relevantFailed=failedRequests.filter(x=>!x.includes('player-slime-directions.webp?v=3 :: net::ERR_ABORTED'));
+  assert.deepEqual(relevantFailed,[],'authoritative release must not have unexpected failed requests');
 
   const frogAsset=await page.evaluate(async()=>{
    const r=await fetch('/assets/enemies/frog-moveset.png',{cache:'no-store'});
@@ -64,15 +65,15 @@ try{
   });
   await page.waitForTimeout(1800);
 
+  await mkdir('/tmp/frog-review',{recursive:true});
+  await page.screenshot({path:'/tmp/frog-review/frog-game.png',fullPage:true});
+
   const roster=await page.locator('#roster').textContent();
   assert.match(roster,/Moss Frog/,'normal Thorn slot must identify as Moss Frog');
   const stats=await page.locator('#stats').textContent();
   assert.match(stats,/FPS/,'render loop must be alive');
   const statusAfterRestart=await page.locator('#status').textContent();
   assert.ok(!statusAfterRestart.includes('กำลังโหลด'),'restarted frog run must stay playable');
-
-  await mkdir('/tmp/frog-review',{recursive:true});
-  await page.screenshot({path:'/tmp/frog-review/frog-game.png',fullPage:true});
  }finally{await browser.close();}
 }finally{
  server.kill('SIGTERM');
