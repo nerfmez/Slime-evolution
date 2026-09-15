@@ -65,4 +65,5 @@ try{
 
 await import('./player-directional-stability-v1.js?v=3');
 await import('./player-directional-projection-fix-v1.js?v=1').catch(()=>{});
+await import('./frog-compat-v1.js?v=20260915a');
 await import('./main-critter-v4.js');
