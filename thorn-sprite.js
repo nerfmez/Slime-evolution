@@ -46,8 +46,6 @@ function patchFrogRuntime(){
  const originalUpdate=proto.update;
  proto.update=function(dt,player,limit,storm){
   this.__frogCorpses=this.__frogCorpses||[];
-  // Corpse sprites live outside the combat simulation. Remove them before the original update
-  // so kills, drops and caps are never counted twice.
   if(this.enemies?.some(e=>e.__frogCorpse))this.enemies=this.enemies.filter(e=>!e.__frogCorpse);
   const before=new Map((this.enemies||[]).map(e=>[e.id,{enemy:e,attack:e.attack||0}]));
   const out=originalUpdate.call(this,dt,player,limit,storm);
@@ -60,7 +58,6 @@ function patchFrogRuntime(){
     const current=live.get(id);
     if(current){
      current.__frogAttackPose=Math.max(0,(current.__frogAttackPose||0)-dt);
-     // A real contact attack resets the cooldown from <=0 to ~1.1 s.
      if((current.attack||0)>snapshot.attack+.35)current.__frogAttackPose=.18;
     }else if(old.hp<=0&&!old.__frogCorpseMade){
      old.__frogCorpseMade=true;
@@ -76,39 +73,27 @@ function patchFrogRuntime(){
 patchFrogRuntime();
 
 export function thornSpriteCell(yaw,phase,count=8){
- // Kept for compatibility with the existing review/debug UI.
  return Math.min(7,Math.floor((((phase%1)+1)%1)*8));
 }
 
-async function loadSpriteImage(url){
- const response=await fetch(url,{cache:'no-store'});
- if(!response.ok)throw Error('โหลดภาพ Moss Frog ไม่สำเร็จ ('+response.status+')');
- const blob=await response.blob();
- const objectURL=URL.createObjectURL(blob);
- try{
+function loadSpriteImage(url){
+ return new Promise((resolve,reject)=>{
   const image=new Image();
-  image.decoding='async';
-  await new Promise((resolve,reject)=>{
-   image.onload=resolve;
-   image.onerror=()=>reject(Error('Safari ถอดรหัสภาพ Moss Frog ไม่สำเร็จ'));
-   image.src=objectURL;
-  });
-  return image;
- }finally{
-  // Revoking is delayed until the image has decoded and can be uploaded to WebGL.
-  setTimeout(()=>URL.revokeObjectURL(objectURL),0);
- }
+  image.onload=()=>resolve(image);
+  image.onerror=()=>reject(Error('Safari โหลดภาพ Moss Frog PNG ไม่สำเร็จ'));
+  image.src=url;
+ });
 }
 
 export async function createThornSprite(gl){
- // Use an HTMLImageElement rather than createImageBitmap: this is more reliable for
- // alpha WebP uploads on iPad/Safari and prevents silently falling back to old Thorn 3D.
- const image=await loadSpriteImage('./assets/enemies/frog-moveset.webp?v=20260915frog2');
+ // PNG is intentional here: it avoids the alpha-WebP decode path that was falling back to the old Thorn model on iPad Safari.
+ const image=await loadSpriteImage('./assets/enemies/frog-moveset.png?v=20260915frog3');
  const texture=gl.createTexture();
  gl.activeTexture(gl.TEXTURE10);gl.bindTexture(gl.TEXTURE_2D,texture);
  gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,true);
  gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,image);
  gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,false);
+ if(gl.getError()!==gl.NO_ERROR)throw Error('อัปโหลดภาพ Moss Frog เข้า WebGL ไม่สำเร็จ');
  for(const k of [gl.TEXTURE_MIN_FILTER,gl.TEXTURE_MAG_FILTER])gl.texParameteri(gl.TEXTURE_2D,k,gl.LINEAR);
  for(const k of [gl.TEXTURE_WRAP_S,gl.TEXTURE_WRAP_T])gl.texParameteri(gl.TEXTURE_2D,k,gl.CLAMP_TO_EDGE);
  gl.activeTexture(gl.TEXTURE0);
@@ -118,7 +103,7 @@ export async function createThornSprite(gl){
  `in vec2 UV;in vec3 world;uniform sampler2D atlas,canopy;uniform vec4 rect;uniform vec3 player;out vec4 color;void main(){vec2 inset=vec2(.004);vec2 local=mix(inset,vec2(1.)-inset,UV);vec4 c=texture(atlas,rect.xy+local*rect.zw);if(c.a<.18)discard;vec2 shadowPoint=world.xz-vec2(.65,-.45)*max(world.y,0.);float shade=texture(canopy,(shadowPoint+40.)/80.).r;c.rgb*=mix(vec3(1.),vec3(.63,.72,.66),shade);float fog=smoothstep(16.,34.,length(world.xz-player.xz));c.rgb=mix(c.rgb,vec3(.87,.88,.67),fog);color=c;}`);
  const g=geometry(gl,[-.82,.82,0,.82,.82,0,.82,-.82,0,-.82,-.82,0],null,[0,1,1,1,1,0,0,0],[0,2,1,0,3,2]);
  gl.useProgram(p);gl.uniform1i(gl.getUniformLocation(p,'atlas'),10);gl.uniform1i(gl.getUniformLocation(p,'canopy'),1);
- return {draw(e,vp,player){
+ return {version:'frog3-png',draw(e,vp,player){
   gl.useProgram(p);uniform(gl,p,'vp',vp);uniform(gl,p,'origin',[e.x,.02,e.z]);uniform(gl,p,'player',player);uniform(gl,p,'rect',frogRect(e));uniform(gl,p,'spriteScale',(e.scale||1)*1.02);uniform(gl,p,'spriteAspect',frogAspect(e));
   gl.disable(gl.CULL_FACE);gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);gl.depthMask(true);render(gl,g);gl.disable(gl.BLEND);return {calls:1,triangles:2};
  }};
