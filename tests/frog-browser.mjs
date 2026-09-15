@@ -56,12 +56,23 @@ try{
   await page.evaluate(()=>{
    const mode=document.querySelector('#enemy-mode');
    const mobs=document.querySelector('#mobs');
+   const grass=document.querySelector('#grass');
    mode.value='thorn';
    mode.dispatchEvent(new Event('change',{bubbles:true}));
    if(mobs){mobs.value=[...mobs.options].some(o=>o.value==='12')?'12':mobs.value;mobs.dispatchEvent(new Event('change',{bubbles:true}));}
+   if(grass){grass.value=[...grass.options].some(o=>o.value==='1200')?'1200':grass.value;grass.dispatchEvent(new Event('change',{bubbles:true}));}
    document.querySelector('#restart')?.click();
   });
-  await page.waitForTimeout(1800);
+
+  const firstCard=page.locator('.skill-card').first();
+  await firstCard.waitFor({state:'visible',timeout:5000});
+  await firstCard.click();
+  await page.waitForFunction(()=>{
+   const text=document.querySelector('#stats')?.textContent||'';
+   const match=text.match(/(\d+) มอน/);
+   return match&&Number(match[1])>0;
+  },null,{timeout:10000});
+  await page.waitForTimeout(1200);
 
   await mkdir('/tmp/frog-review',{recursive:true});
   await page.screenshot({path:'/tmp/frog-review/frog-game.png',fullPage:true});
@@ -70,12 +81,15 @@ try{
    roster:document.querySelector('#roster')?.textContent||'',
    stats:document.querySelector('#stats')?.textContent||'',
    error:document.querySelector('#error')?.textContent||'',
-   errorHidden:document.querySelector('#error')?.hidden!==false
+   errorHidden:document.querySelector('#error')?.hidden!==false,
+   choosing:document.querySelector('#skill-choice')?.hidden===false
   }));
   await writeFile('/tmp/frog-review/state.json',JSON.stringify(debugState,null,2));
 
   assert.match(debugState.roster,/Moss Frog/,'normal Thorn slot must identify as Moss Frog');
-  assert.match(debugState.stats,/FPS/,'render loop must be alive');
+  assert.match(debugState.stats,/[1-9]\d* มอน/,'frog test run must actually spawn enemies');
+  assert.ok(!debugState.status.includes('กำลังโหลด'),'frog test run must leave the loading state');
+  assert.equal(debugState.choosing,false,'frog screenshot must show live gameplay, not the card picker');
   assert.equal(debugState.errorHidden,true,`game error panel must stay hidden: ${debugState.error}`);
  }finally{await browser.close();}
 }finally{
