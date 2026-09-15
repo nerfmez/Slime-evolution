@@ -46,12 +46,25 @@ try{
    return {
     value:select?.value,
     disabled:select?.options?.[0]?.disabled===true,
-    frogFrameHook:typeof globalThis.__slimeFrogFrame==='function'
+    frogFrameHook:typeof globalThis.__slimeFrogFrame==='function',
+    frogFacingHook:typeof globalThis.__slimeFrogFacing==='function'
    };
   });
   assert.equal(rendererState.value,'sprite','Moss Frog sprite renderer must initialize');
   assert.equal(rendererState.disabled,false,'Moss Frog sprite renderer must not fall back to the model');
   assert.equal(rendererState.frogFrameHook,true,'patched Moss Frog renderer must execute');
+  assert.equal(rendererState.frogFacingHook,true,'directional Moss Frog facing hook must execute');
+
+  const facingState=await page.evaluate(()=>{
+   const frog={yaw:Math.PI/2};
+   const right=globalThis.__slimeFrogFacing(frog);
+   frog.yaw=-Math.PI/2;
+   const left=globalThis.__slimeFrogFacing(frog);
+   frog.yaw=0;
+   const verticalHold=globalThis.__slimeFrogFacing(frog);
+   return {right,left,verticalHold};
+  });
+  assert.deepEqual(facingState,{right:1,left:-1,verticalHold:-1},'frog must mirror left/right and hold its last side near vertical');
 
   await page.evaluate(()=>{
    const mode=document.querySelector('#enemy-mode');
