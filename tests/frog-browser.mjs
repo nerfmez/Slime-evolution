@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import {mkdir} from 'node:fs/promises';
+import {mkdir,writeFile} from 'node:fs/promises';
 import {spawn} from 'node:child_process';
 import {chromium} from 'playwright';
 
@@ -72,7 +72,7 @@ try{
    error:document.querySelector('#error')?.textContent||'',
    errorHidden:document.querySelector('#error')?.hidden!==false
   }));
-  await Bun?.write?.('/tmp/frog-review/state.json',JSON.stringify(debugState,null,2)).catch?.(()=>{});
+  await writeFile('/tmp/frog-review/state.json',JSON.stringify(debugState,null,2));
 
   assert.match(debugState.roster,/Moss Frog/,'normal Thorn slot must identify as Moss Frog');
   assert.match(debugState.stats,/FPS/,'render loop must be alive');
