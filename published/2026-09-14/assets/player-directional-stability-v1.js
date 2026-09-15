@@ -99,3 +99,6 @@
     hysteresisDeg:8,
   };
 })();
+
+// Load the camera-projection correction after the stability shim is installed.
+import('./player-directional-projection-fix-v1.js?v=1').catch(e=>console.warn('slime diagonal projection fix unavailable',e));
