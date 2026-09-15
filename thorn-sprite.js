@@ -80,15 +80,35 @@ export function thornSpriteCell(yaw,phase,count=8){
  return Math.min(7,Math.floor((((phase%1)+1)%1)*8));
 }
 
+async function loadSpriteImage(url){
+ const response=await fetch(url,{cache:'no-store'});
+ if(!response.ok)throw Error('โหลดภาพ Moss Frog ไม่สำเร็จ ('+response.status+')');
+ const blob=await response.blob();
+ const objectURL=URL.createObjectURL(blob);
+ try{
+  const image=new Image();
+  image.decoding='async';
+  await new Promise((resolve,reject)=>{
+   image.onload=resolve;
+   image.onerror=()=>reject(Error('Safari ถอดรหัสภาพ Moss Frog ไม่สำเร็จ'));
+   image.src=objectURL;
+  });
+  return image;
+ }finally{
+  // Revoking is delayed until the image has decoded and can be uploaded to WebGL.
+  setTimeout(()=>URL.revokeObjectURL(objectURL),0);
+ }
+}
+
 export async function createThornSprite(gl){
- const response=await fetch('./assets/enemies/frog-moveset.webp');
- if(!response.ok)throw Error('โหลดภาพ Moss Frog ไม่สำเร็จ');
- const bitmap=await createImageBitmap(await response.blob());
+ // Use an HTMLImageElement rather than createImageBitmap: this is more reliable for
+ // alpha WebP uploads on iPad/Safari and prevents silently falling back to old Thorn 3D.
+ const image=await loadSpriteImage('./assets/enemies/frog-moveset.webp?v=20260915frog2');
  const texture=gl.createTexture();
  gl.activeTexture(gl.TEXTURE10);gl.bindTexture(gl.TEXTURE_2D,texture);
  gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,true);
- gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,bitmap);
- gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,false);bitmap.close();
+ gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,image);
+ gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,false);
  for(const k of [gl.TEXTURE_MIN_FILTER,gl.TEXTURE_MAG_FILTER])gl.texParameteri(gl.TEXTURE_2D,k,gl.LINEAR);
  for(const k of [gl.TEXTURE_WRAP_S,gl.TEXTURE_WRAP_T])gl.texParameteri(gl.TEXTURE_2D,k,gl.CLAMP_TO_EDGE);
  gl.activeTexture(gl.TEXTURE0);
