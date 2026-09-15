@@ -57,7 +57,7 @@ function patchFrogVisualState(){
    for(const corpse of this.__frogCorpses)corpse.__frogDeathAge=(corpse.__frogDeathAge||0)+dt;
    for(const [id,snapshot] of before){
     const old=snapshot.enemy;
-    if(old.type!=='thorn'||old.isElite)continue;
+    if(old.type!=='thorn'||old.elite)continue;
     const current=live.get(id);
     if(current){
      current.__frogAttackPose=Math.max(0,(current.__frogAttackPose||0)-dt);
@@ -93,9 +93,10 @@ export async function createThornSprite(gl){
  const image=await loadImage('./assets/enemies/frog-moveset.png?v=20260915-safe2');
  const texture=gl.createTexture();
  gl.activeTexture(gl.TEXTURE10);gl.bindTexture(gl.TEXTURE_2D,texture);
+ const previousFlip=gl.getParameter(gl.UNPACK_FLIP_Y_WEBGL);
  gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,true);
  gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,image);
- gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,false);
+ gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,previousFlip);
  for(const k of [gl.TEXTURE_MIN_FILTER,gl.TEXTURE_MAG_FILTER])gl.texParameteri(gl.TEXTURE_2D,k,gl.LINEAR);
  for(const k of [gl.TEXTURE_WRAP_S,gl.TEXTURE_WRAP_T])gl.texParameteri(gl.TEXTURE_2D,k,gl.CLAMP_TO_EDGE);
  gl.activeTexture(gl.TEXTURE0);
