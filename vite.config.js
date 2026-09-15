@@ -3,6 +3,8 @@ import {cpSync,existsSync} from 'node:fs';
 const copyRuntimeAssets={
  name:'copy-runtime-assets',
  closeBundle(){
+  const baseline='published/2026-09-14/assets';
+  if(existsSync(baseline))cpSync(baseline,'dist/assets',{recursive:true});
   if(existsSync('assets'))cpSync('assets','dist/assets',{recursive:true});
  }
 };
