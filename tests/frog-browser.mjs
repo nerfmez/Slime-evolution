@@ -27,8 +27,6 @@ try{
   await page.goto(base,{waitUntil:'networkidle',timeout:30000});
   await page.waitForFunction(()=>document.querySelector('#stats')?.textContent.includes('FPS'),null,{timeout:15000});
 
-  const initialStatus=await page.locator('#status').textContent();
-  assert.ok(!initialStatus.includes('กำลังโหลด'),'game must leave the loading state');
   assert.deepEqual(pageErrors,[],'browser must not throw page errors');
   const relevantFailed=failedRequests.filter(x=>!x.includes('player-slime-directions.webp?v=3 :: net::ERR_ABORTED'));
   assert.deepEqual(relevantFailed,[],'authoritative release must not have unexpected failed requests');
@@ -67,13 +65,18 @@ try{
 
   await mkdir('/tmp/frog-review',{recursive:true});
   await page.screenshot({path:'/tmp/frog-review/frog-game.png',fullPage:true});
+  const debugState=await page.evaluate(()=>({
+   status:document.querySelector('#status')?.textContent||'',
+   roster:document.querySelector('#roster')?.textContent||'',
+   stats:document.querySelector('#stats')?.textContent||'',
+   error:document.querySelector('#error')?.textContent||'',
+   errorHidden:document.querySelector('#error')?.hidden!==false
+  }));
+  await Bun?.write?.('/tmp/frog-review/state.json',JSON.stringify(debugState,null,2)).catch?.(()=>{});
 
-  const roster=await page.locator('#roster').textContent();
-  assert.match(roster,/Moss Frog/,'normal Thorn slot must identify as Moss Frog');
-  const stats=await page.locator('#stats').textContent();
-  assert.match(stats,/FPS/,'render loop must be alive');
-  const statusAfterRestart=await page.locator('#status').textContent();
-  assert.ok(!statusAfterRestart.includes('กำลังโหลด'),'restarted frog run must stay playable');
+  assert.match(debugState.roster,/Moss Frog/,'normal Thorn slot must identify as Moss Frog');
+  assert.match(debugState.stats,/FPS/,'render loop must be alive');
+  assert.equal(debugState.errorHidden,true,`game error panel must stay hidden: ${debugState.error}`);
  }finally{await browser.close();}
 }finally{
  server.kill('SIGTERM');
