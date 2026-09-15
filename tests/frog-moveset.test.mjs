@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {frogFrame,thornSpriteCell} from '../thorn-sprite.js';
+import {frogFacing,frogFrame,thornSpriteCell} from '../thorn-sprite.js';
 import {ENEMY_TYPES} from '../enemies.js';
 
 test('normal Thorn slot is renamed without changing Thorn Alpha stride',()=>{
@@ -34,6 +34,17 @@ test('death sequence keeps exactly five approved frames',()=>{
   const f=frogFrame({hp:0,__frogCorpse:true,__frogDeathAge:ages[i],hit:0});
   assert.deepEqual(f.rect,expected[i]);
  }
+});
+
+test('frog mirrors left and right from movement yaw and keeps its side near vertical',()=>{
+ const frog={yaw:Math.PI/2};
+ assert.equal(frogFacing(frog),1,'world +X / screen-right keeps the authored atlas direction');
+ frog.yaw=-Math.PI/2;
+ assert.equal(frogFacing(frog),-1,'world -X / screen-left mirrors the atlas');
+ frog.yaw=0;
+ assert.equal(frogFacing(frog),-1,'near vertical movement keeps the last side instead of flickering');
+ frog.yaw=Math.PI/2;
+ assert.equal(frogFacing(frog),1,'turning back right restores the original atlas direction');
 });
 
 test('compatibility frame selector stays in the 8-frame jump range',()=>{
