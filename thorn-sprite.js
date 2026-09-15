@@ -24,6 +24,18 @@ function jumpCell(e){
  const phase=((visualPhase%1)+1)%1;
  return JUMP_CELLS[Math.min(7,Math.floor(phase*8))];
 }
+export function frogFacing(e){
+ // The game camera's horizontal screen axis is world X. The approved atlas faces
+ // screen-right, so mirror it only when the frog is travelling toward world -X.
+ // Keep the last side while moving mostly toward/away from the camera to avoid flicker.
+ const yaw=Number.isFinite(e?.yaw)?e.yaw:0;
+ const horizontal=Math.sin(yaw);
+ let facing=e?.__frogFacing===-1?-1:1;
+ if(horizontal>.12)facing=1;
+ else if(horizontal<-.12)facing=-1;
+ if(e)e.__frogFacing=facing;
+ return facing;
+}
 export function frogFrame(e){
  if(e.__frogCorpse||e.hp<=0){
   const age=Math.max(0,e.__frogDeathAge||0);
@@ -90,7 +102,7 @@ function loadImage(url){
 }
 
 export async function createThornSprite(gl){
- const image=await loadImage('./assets/enemies/frog-moveset.png?v=20260915-safe2');
+ const image=await loadImage('./assets/enemies/frog-moveset.png?v=20260915-facing1');
  const texture=gl.createTexture();
  gl.activeTexture(gl.TEXTURE10);gl.bindTexture(gl.TEXTURE_2D,texture);
  const previousFlip=gl.getParameter(gl.UNPACK_FLIP_Y_WEBGL);
@@ -102,12 +114,12 @@ export async function createThornSprite(gl){
  gl.activeTexture(gl.TEXTURE0);
  const p=program(gl,
  `layout(location=0)in vec3 position;layout(location=2)in vec2 uv;uniform mat4 vp;uniform vec3 origin;uniform float spriteScale,spriteWidth,spriteOffsetX;out vec2 UV;out vec3 world;void main(){vec3 f=normalize(vec3(0,12,15)),right=normalize(cross(vec3(0,1,0),f)),up=cross(f,right);world=origin+right*(position.x*spriteWidth+spriteOffsetX)*spriteScale+up*position.y*spriteScale;world+=f*max(0.,(origin.y-world.y)/f.y);UV=uv;gl_Position=vp*vec4(world,1.);}`,
- `in vec2 UV;in vec3 world;uniform sampler2D atlas,canopy;uniform vec4 rect;uniform vec3 player;out vec4 color;void main(){vec2 inset=vec2(.004);vec2 local=mix(inset,vec2(1.)-inset,UV);vec4 c=texture(atlas,rect.xy+local*rect.zw);if(c.a<.18)discard;vec2 shadowPoint=world.xz-vec2(.65,-.45)*max(world.y,0.);float shade=texture(canopy,(shadowPoint+40.)/80.).r;c.rgb*=mix(vec3(1.),vec3(.63,.72,.66),shade);float fog=smoothstep(16.,34.,length(world.xz-player.xz));c.rgb=mix(c.rgb,vec3(.87,.88,.67),fog);color=c;}`);
+ `in vec2 UV;in vec3 world;uniform sampler2D atlas,canopy;uniform vec4 rect;uniform vec3 player;uniform float flipX;out vec4 color;void main(){vec2 inset=vec2(.004);vec2 sampleUV=vec2(flipX>.5?1.-UV.x:UV.x,UV.y);vec2 local=mix(inset,vec2(1.)-inset,sampleUV);vec4 c=texture(atlas,rect.xy+local*rect.zw);if(c.a<.18)discard;vec2 shadowPoint=world.xz-vec2(.65,-.45)*max(world.y,0.);float shade=texture(canopy,(shadowPoint+40.)/80.).r;c.rgb*=mix(vec3(1.),vec3(.63,.72,.66),shade);float fog=smoothstep(16.,34.,length(world.xz-player.xz));c.rgb=mix(c.rgb,vec3(.87,.88,.67),fog);color=c;}`);
  const g=geometry(gl,[-.82,.82,0,.82,.82,0,.82,-.82,0,-.82,-.82,0],null,[0,1,1,1,1,0,0,0],[0,2,1,0,3,2]);
  gl.useProgram(p);gl.uniform1i(gl.getUniformLocation(p,'atlas'),10);gl.uniform1i(gl.getUniformLocation(p,'canopy'),1);
  return {draw(e,vp,player){
-  const frame=frogFrame(e),scale=(e.scale||1)*1.02;
-  gl.useProgram(p);uniform(gl,p,'vp',vp);uniform(gl,p,'origin',[e.x,.02,e.z]);uniform(gl,p,'player',player);uniform(gl,p,'rect',frame.rect);uniform(gl,p,'spriteScale',scale);uniform(gl,p,'spriteWidth',frame.width);uniform(gl,p,'spriteOffsetX',frame.offset);
+  const frame=frogFrame(e),facing=frogFacing(e),scale=(e.scale||1)*1.02;
+  gl.useProgram(p);uniform(gl,p,'vp',vp);uniform(gl,p,'origin',[e.x,.02,e.z]);uniform(gl,p,'player',player);uniform(gl,p,'rect',frame.rect);uniform(gl,p,'spriteScale',scale);uniform(gl,p,'spriteWidth',frame.width);uniform(gl,p,'spriteOffsetX',frame.offset*facing);uniform(gl,p,'flipX',facing<0?1:0);
   gl.disable(gl.CULL_FACE);gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);gl.depthMask(true);render(gl,g);gl.disable(gl.BLEND);return {calls:1,triangles:2};
  }};
 }
