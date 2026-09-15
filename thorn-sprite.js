@@ -1,15 +1,13 @@
 import {program,geometry,render,uniform} from './gl.js';
 import {EnemyWorld,ENEMY_TYPES} from './enemies.js';
 
-// Stage-1 animal pass: the old normal Thorn Mite slot is temporarily the Moss Frog.
-// Keep the type key for save/spawn compatibility while the rest of the animal roster is rebuilt.
 ENEMY_TYPES.thorn.name='Moss Frog';
 ENEMY_TYPES.thorn.stride=.82;
 
 const JUMP_CELLS=Object.freeze([0,1,2,3,4,5,6,7]);
 const DEATH_CELLS=Object.freeze([8,9,10,11,12]);
-const HIT_CELL=9; // Death frame 2 is also the approved hit frame.
-const ATTACK_RECT=Object.freeze([.25,0,.75,.25]); // bottom row, columns 2-4
+const HIT_CELL=9;
+const ATTACK_RECT=Object.freeze([.25,0,.75,.25]);
 const DEATH_FRAME_TIME=.095;
 const DEATH_LIFE=DEATH_FRAME_TIME*DEATH_CELLS.length+.035;
 
@@ -80,20 +78,18 @@ function loadSpriteImage(url){
  return new Promise((resolve,reject)=>{
   const image=new Image();
   image.onload=()=>resolve(image);
-  image.onerror=()=>reject(Error('Safari โหลดภาพ Moss Frog PNG ไม่สำเร็จ'));
+  image.onerror=()=>reject(Error('โหลดภาพ Moss Frog PNG ไม่สำเร็จ'));
   image.src=url;
  });
 }
 
 export async function createThornSprite(gl){
- // PNG is intentional here: it avoids the alpha-WebP decode path that was falling back to the old Thorn model on iPad Safari.
- const image=await loadSpriteImage('./assets/enemies/frog-moveset.png?v=20260915frog3');
+ const image=await loadSpriteImage('./assets/enemies/frog-moveset.png?v=20260915frog-live7');
  const texture=gl.createTexture();
  gl.activeTexture(gl.TEXTURE10);gl.bindTexture(gl.TEXTURE_2D,texture);
  gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,true);
  gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,image);
  gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,false);
- if(gl.getError()!==gl.NO_ERROR)throw Error('อัปโหลดภาพ Moss Frog เข้า WebGL ไม่สำเร็จ');
  for(const k of [gl.TEXTURE_MIN_FILTER,gl.TEXTURE_MAG_FILTER])gl.texParameteri(gl.TEXTURE_2D,k,gl.LINEAR);
  for(const k of [gl.TEXTURE_WRAP_S,gl.TEXTURE_WRAP_T])gl.texParameteri(gl.TEXTURE_2D,k,gl.CLAMP_TO_EDGE);
  gl.activeTexture(gl.TEXTURE0);
@@ -103,7 +99,8 @@ export async function createThornSprite(gl){
  `in vec2 UV;in vec3 world;uniform sampler2D atlas,canopy;uniform vec4 rect;uniform vec3 player;out vec4 color;void main(){vec2 inset=vec2(.004);vec2 local=mix(inset,vec2(1.)-inset,UV);vec4 c=texture(atlas,rect.xy+local*rect.zw);if(c.a<.18)discard;vec2 shadowPoint=world.xz-vec2(.65,-.45)*max(world.y,0.);float shade=texture(canopy,(shadowPoint+40.)/80.).r;c.rgb*=mix(vec3(1.),vec3(.63,.72,.66),shade);float fog=smoothstep(16.,34.,length(world.xz-player.xz));c.rgb=mix(c.rgb,vec3(.87,.88,.67),fog);color=c;}`);
  const g=geometry(gl,[-.82,.82,0,.82,.82,0,.82,-.82,0,-.82,-.82,0],null,[0,1,1,1,1,0,0,0],[0,2,1,0,3,2]);
  gl.useProgram(p);gl.uniform1i(gl.getUniformLocation(p,'atlas'),10);gl.uniform1i(gl.getUniformLocation(p,'canopy'),1);
- return {version:'frog3-png',draw(e,vp,player){
+ globalThis.__mossFrogSpriteReady='frog-live7';
+ return {version:'frog-live7',draw(e,vp,player){
   gl.useProgram(p);uniform(gl,p,'vp',vp);uniform(gl,p,'origin',[e.x,.02,e.z]);uniform(gl,p,'player',player);uniform(gl,p,'rect',frogRect(e));uniform(gl,p,'spriteScale',(e.scale||1)*1.02);uniform(gl,p,'spriteAspect',frogAspect(e));
   gl.disable(gl.CULL_FACE);gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);gl.depthMask(true);render(gl,g);gl.disable(gl.BLEND);return {calls:1,triangles:2};
  }};
