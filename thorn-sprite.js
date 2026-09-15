@@ -31,6 +31,7 @@ function frogRect(e){
  if((e.__frogAttackPose||0)>0)return ATTACK_RECT;
  return cellRect(jumpCell(e));
 }
+function frogAspect(e){return !e.__frogCorpse&&e.hp>0&&!(e.hit>0)&&(e.__frogAttackPose||0)>0?3:1;}
 
 function patchFrogRuntime(){
  const proto=EnemyWorld.prototype;
@@ -93,12 +94,12 @@ export async function createThornSprite(gl){
  gl.activeTexture(gl.TEXTURE0);
 
  const p=program(gl,
- `layout(location=0)in vec3 position;layout(location=2)in vec2 uv;uniform mat4 vp;uniform vec3 origin;uniform float spriteScale;out vec2 UV;out vec3 world;void main(){vec3 f=normalize(vec3(0,12,15)),right=normalize(cross(vec3(0,1,0),f)),up=cross(f,right);world=origin+right*position.x*spriteScale+up*position.y*spriteScale;world+=f*max(0.,(origin.y-world.y)/f.y);UV=uv;gl_Position=vp*vec4(world,1.);}`,
+ `layout(location=0)in vec3 position;layout(location=2)in vec2 uv;uniform mat4 vp;uniform vec3 origin;uniform float spriteScale,spriteAspect;out vec2 UV;out vec3 world;void main(){vec3 f=normalize(vec3(0,12,15)),right=normalize(cross(vec3(0,1,0),f)),up=cross(f,right);world=origin+right*position.x*spriteScale*spriteAspect+up*position.y*spriteScale;world+=f*max(0.,(origin.y-world.y)/f.y);UV=uv;gl_Position=vp*vec4(world,1.);}`,
  `in vec2 UV;in vec3 world;uniform sampler2D atlas,canopy;uniform vec4 rect;uniform vec3 player;out vec4 color;void main(){vec2 inset=vec2(.004);vec2 local=mix(inset,vec2(1.)-inset,UV);vec4 c=texture(atlas,rect.xy+local*rect.zw);if(c.a<.18)discard;vec2 shadowPoint=world.xz-vec2(.65,-.45)*max(world.y,0.);float shade=texture(canopy,(shadowPoint+40.)/80.).r;c.rgb*=mix(vec3(1.),vec3(.63,.72,.66),shade);float fog=smoothstep(16.,34.,length(world.xz-player.xz));c.rgb=mix(c.rgb,vec3(.87,.88,.67),fog);color=c;}`);
  const g=geometry(gl,[-.82,.82,0,.82,.82,0,.82,-.82,0,-.82,-.82,0],null,[0,1,1,1,1,0,0,0],[0,2,1,0,3,2]);
  gl.useProgram(p);gl.uniform1i(gl.getUniformLocation(p,'atlas'),10);gl.uniform1i(gl.getUniformLocation(p,'canopy'),1);
  return {draw(e,vp,player){
-  gl.useProgram(p);uniform(gl,p,'vp',vp);uniform(gl,p,'origin',[e.x,.02,e.z]);uniform(gl,p,'player',player);uniform(gl,p,'rect',frogRect(e));uniform(gl,p,'spriteScale',(e.scale||1)*1.02);
+  gl.useProgram(p);uniform(gl,p,'vp',vp);uniform(gl,p,'origin',[e.x,.02,e.z]);uniform(gl,p,'player',player);uniform(gl,p,'rect',frogRect(e));uniform(gl,p,'spriteScale',(e.scale||1)*1.02);uniform(gl,p,'spriteAspect',frogAspect(e));
   gl.disable(gl.CULL_FACE);gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);gl.depthMask(true);render(gl,g);gl.disable(gl.BLEND);return {calls:1,triangles:2};
  }};
 }
