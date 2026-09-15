@@ -20,9 +20,23 @@ function readExtraFrames(gl,buffer,meta,uv,indices){
  connectNextFrameBuffers(gl,frames);return frames;
 }
 
+async function loadBossClips(gl,base,baseMeta,uv,indices){
+ const specs={charge:'boss_charge',run:'boss_run',push:'boss_push',spell:'boss_spell'};
+ const entries=await Promise.all(Object.entries(specs).map(async([name,file])=>{
+  const [metaResponse,dataResponse]=await Promise.all([fetch(base+file+'.json'),fetch(base+file+'.bin')]);
+  if(!metaResponse.ok||!dataResponse.ok)throw Error('โหลดคลิปบอสไม่สำเร็จ: '+name);
+  const meta=await metaResponse.json();
+  if(meta.vertices!==baseMeta.vertices||meta.indices!==baseMeta.indices)throw Error('ข้อมูลคลิปบอสไม่ตรงกับโมเดลหลัก: '+name);
+  return [name,{frames:readExtraFrames(gl,await dataResponse.arrayBuffer(),meta,uv,indices),duration:meta.duration}];
+ }));
+ return Object.fromEntries(entries);
+}
+
 export async function loadEnemyAsset(gl,key){
  const base='./assets/enemies/';
- const [metaResponse,dataResponse]=await Promise.all([fetch(base+key+'.json'),fetch(base+key+'.bin')]);
+ // Boss authoring exports its normal locomotion as boss_walk.* rather than boss.*.
+ const sourceKey=key==='boss'?'boss_walk':key;
+ const [metaResponse,dataResponse]=await Promise.all([fetch(base+sourceKey+'.json'),fetch(base+sourceKey+'.bin')]);
  if(!metaResponse.ok||!dataResponse.ok)throw Error('โหลดมอนสเตอร์ไม่สำเร็จ: '+key);
  const meta=await metaResponse.json(),buffer=await dataResponse.arrayBuffer(),n=meta.vertices;let offset=0;
  const uv=new Float32Array(buffer,offset,n*2);offset+=n*8;
@@ -33,6 +47,7 @@ export async function loadEnemyAsset(gl,key){
  }
  connectNextFrameBuffers(gl,frames);
  const clips={walk:{frames,duration:meta.duration}};
+ if(key==='boss')Object.assign(clips,await loadBossClips(gl,base,meta,uv,indices));
  if(meta.flight_clip){
   const response=await fetch(base+meta.flight_clip.bin);if(!response.ok)throw Error('โหลดท่าบิน Elite ไม่สำเร็จ: '+key);
   const clipMeta={...meta.flight_clip,vertices:n};clips.flight={frames:readExtraFrames(gl,await response.arrayBuffer(),clipMeta,uv,indices),duration:meta.flight_clip.duration};
