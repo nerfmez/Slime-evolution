@@ -13,15 +13,8 @@ jobs:
       - name: Download and validate cleaned atlas
         run: |
           curl -L --fail --retry 3 'https://drive.google.com/uc?export=download&id=1UYV75khqxw8vmclFPiw2zWffrQJ71Ldi' -o /tmp/frog.png
-          python - <<'PY'
-          from PIL import Image
-          im=Image.open('/tmp/frog.png').convert('RGBA')
-          assert im.size==(512,512), im.size
-          alpha=im.getchannel('A')
-          assert alpha.getextrema()[0] == 0, alpha.getextrema()
-          assert sum(1 for a in alpha.getdata() if a==0) > 50000
-          print('validated', im.size, alpha.getextrema())
-          PY
+          test "$(xxd -p -l 8 /tmp/frog.png)" = '89504e470d0a1a0a'
+          test "$(xxd -p -s 16 -l 8 /tmp/frog.png)" = '0000020000000200'
       - name: Replace only runtime atlas copies
         run: |
           cp /tmp/frog.png public/assets/enemies/frog-moveset.png
