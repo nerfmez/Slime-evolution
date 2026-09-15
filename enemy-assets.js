@@ -20,6 +20,17 @@ function readExtraFrames(gl,buffer,meta,uv,indices){
  connectNextFrameBuffers(gl,frames);return frames;
 }
 
+function readStandaloneFrames(gl,buffer,meta,uv,indices){
+ // Standalone boss_*.bin files include their own UV and index header before frame data.
+ let offset=meta.vertices*8+meta.indices*4;const frames=[];
+ for(let i=0;i<meta.frames;i++){
+  const p=new Float32Array(buffer,offset,meta.vertices*3);offset+=meta.vertices*12;
+  const normals=new Float32Array(buffer,offset,meta.vertices*3);offset+=meta.vertices*12;
+  frames.push(geometry(gl,p,normals,uv,indices));
+ }
+ connectNextFrameBuffers(gl,frames);return frames;
+}
+
 async function loadBossClips(gl,base,baseMeta,uv,indices){
  const specs={charge:'boss_charge',run:'boss_run',push:'boss_push',spell:'boss_spell'};
  const entries=await Promise.all(Object.entries(specs).map(async([name,file])=>{
@@ -27,7 +38,7 @@ async function loadBossClips(gl,base,baseMeta,uv,indices){
   if(!metaResponse.ok||!dataResponse.ok)throw Error('โหลดคลิปบอสไม่สำเร็จ: '+name);
   const meta=await metaResponse.json();
   if(meta.vertices!==baseMeta.vertices||meta.indices!==baseMeta.indices)throw Error('ข้อมูลคลิปบอสไม่ตรงกับโมเดลหลัก: '+name);
-  return [name,{frames:readExtraFrames(gl,await dataResponse.arrayBuffer(),meta,uv,indices),duration:meta.duration}];
+  return [name,{frames:readStandaloneFrames(gl,await dataResponse.arrayBuffer(),meta,uv,indices),duration:meta.duration}];
  }));
  return Object.fromEntries(entries);
 }
