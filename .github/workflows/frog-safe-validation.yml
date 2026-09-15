@@ -1,0 +1,63 @@
+name: Moss Frog safe validation
+on:
+  push:
+    branches: [frog-safe-integration-20260915]
+  pull_request:
+    branches: [main]
+    paths:
+      - 'thorn-sprite.js'
+      - 'public/assets/enemies/frog-moveset.png'
+      - 'scripts/apply-frog-patch.mjs'
+      - 'tests/frog-*'
+      - 'published/2026-09-14/index.html'
+      - 'published/2026-09-14/assets/main-critter-v4.js'
+      - 'published/2026-09-14/assets/enemies/frog-moveset.png'
+      - '.github/workflows/frog-safe-validation.yml'
+permissions:
+  contents: write
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install project
+        run: npm install
+      - name: Materialize Moss Frog into authoritative release
+        run: |
+          node scripts/apply-frog-patch.mjs
+          node --check published/2026-09-14/assets/main-critter-v4.js
+          test -s published/2026-09-14/assets/enemies/frog-moveset.png
+      - name: Unit and regression tests
+        run: |
+          node --check thorn-sprite.js
+          node --test tests/*.test.mjs
+      - name: Build source bundle
+        run: npm run build
+      - name: Install Chromium verifier
+        run: |
+          npm install --no-save playwright
+          npx playwright install --with-deps chromium
+      - name: Verify authoritative release in Chromium
+        run: node tests/frog-browser.mjs
+      - name: Commit validated authoritative release to safe branch
+        if: github.event_name == 'push' && github.ref == 'refs/heads/frog-safe-integration-20260915'
+        run: |
+          git add published/2026-09-14/index.html published/2026-09-14/assets/main-critter-v4.js published/2026-09-14/assets/enemies/frog-moveset.png
+          if git diff --cached --quiet; then
+            echo 'Authoritative release already materialized.'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'Materialize authoritative Moss Frog release'
+          git push origin HEAD:frog-safe-integration-20260915
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: moss-frog-review
+          path: /tmp/frog-review
+          retention-days: 7
