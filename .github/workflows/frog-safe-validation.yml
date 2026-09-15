@@ -7,6 +7,7 @@ on:
     paths:
       - 'thorn-sprite.js'
       - 'public/assets/enemies/frog-moveset.png'
+      - 'scripts/apply-frog-patch.mjs'
       - 'tests/frog-*'
       - '.github/workflows/frog-safe-validation.yml'
 permissions:
@@ -22,17 +23,22 @@ jobs:
           node-version: '22'
       - name: Install project
         run: npm install
+      - name: Materialize Moss Frog into authoritative release
+        run: |
+          node scripts/apply-frog-patch.mjs
+          node --check published/2026-09-14/assets/main-critter-v4.js
+          test -s published/2026-09-14/assets/enemies/frog-moveset.png
       - name: Unit and regression tests
         run: |
           node --check thorn-sprite.js
           node --test tests/*.test.mjs
-      - name: Build production bundle
+      - name: Build source bundle
         run: npm run build
       - name: Install Chromium verifier
         run: |
           npm install --no-save playwright
           npx playwright install --with-deps chromium
-      - name: Verify rendered game and frog asset
+      - name: Verify authoritative release in Chromium
         run: node tests/frog-browser.mjs
       - uses: actions/upload-artifact@v4
         if: always()
