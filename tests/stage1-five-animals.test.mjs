@@ -23,8 +23,9 @@ test('each animal has a distinct skill identity',()=>{
 test('walk hit cast and death frames are wired to the shared atlas',()=>{
  assert.match(sprites,/if\(e\.__animalCorpse\|\|e\.hp<=0\)return 5/);
  assert.match(sprites,/if\(e\.hit>0\)return 2/);
- assert.match(sprites,/skillWindup/);
- assert.match(sprites,/return \(\(Math\.floor/);
+ assert.match(sprites,/return 3\+\(Math\.floor\(t\)&1\)/);
+ assert.match(sprites,/walkPhase/);
+ assert.match(sprites,/function makeAtlas\(\)/);
  for(const id of ['hedge','turtle','elephant','panda'])assert.match(atlas,new RegExp(`id="${id}"`));
 });
 
