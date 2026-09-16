@@ -53,7 +53,6 @@ export class EnemyWorld{
  unlocked(){
   if(this.mode==='boss')return ['boss'];
   if(this.mode==='all'||this.mode==='elites')return [...STAGE1_FAMILIES];
-  if(this.mode.startsWith('elite-'))return [this.mode.slice(6)];
   if(this.mode!=='auto')return [this.mode];
   return STAGE1_FAMILIES.slice(0,Math.min(5,1+Math.floor(this.time/60)));
  }
@@ -145,7 +144,7 @@ export class EnemyWorld{
   if(dt<=0||this.hp<=0||this.finished)return;dt=Math.min(dt,.05);this._lastDt=dt;this.player=player;this.time+=dt;this.hurt=Math.max(0,this.hurt-dt);this.noticeTime=Math.max(0,this.noticeTime-dt);this.navClock-=dt;
   if(this.poisonTime>0){this.poisonTime=Math.max(0,this.poisonTime-dt);this.poisonTick-=dt;if(this.poisonTick<=0){this.damage(1);this.poisonTick=.72;}}
   if(this.navClock<=0){this.rebuild(player);this.navClock=.4;}
-  if(this.initial){if(this.mode==='boss')this.spawnBoss(player);else if(this.mode==='elites')for(const type of STAGE1_FAMILIES){this.spawnCounts[type]=1;this.spawn(player,type,{elite:true});}else if(this.mode.startsWith('elite-')){const type=this.mode.slice(6);this.spawnCounts[type]=1;for(let i=0;i<Math.min(4,limit);i++)this.spawn(player,type,{elite:true});}else if(this.mode==='auto')this.spawn(player,'thorn');else{const types=this.unlocked();for(let i=0;i<Math.min(8,limit);i++)this.spawn(player,types[i%types.length]);}this.initial=false;}
+  if(this.initial){if(this.mode==='boss')this.spawnBoss(player);else if(this.mode==='elites')for(const type of STAGE1_FAMILIES){this.spawnCounts[type]=1;this.spawn(player,type,{elite:true});}else if(this.mode==='auto')this.spawn(player,'thorn');else{const types=this.unlocked();for(let i=0;i<Math.min(8,limit);i++)this.spawn(player,types[i%types.length]);}this.initial=false;}
   if(limit>0&&!this.bossSpawned&&this.time>=300&&(this.mode==='auto'||this.mode==='all'))this.spawnBoss(player);
   this.spawnClock-=dt;
   if(!this.bossSpawned&&this.mode!=='boss'&&this.mode!=='elites'&&this.spawnClock<=0&&this.time<300){const type=this.mode==='auto'?this.rollStageOneType():this.unlocked()[Math.floor(this.random()*this.unlocked().length)];if(this.enemies.length<limit)this.spawn(player,type);const p=clamp(this.time/300,0,1);this.spawnClock=Math.max(.38,lerp(1.48,.38,Math.pow(p,.82)));}

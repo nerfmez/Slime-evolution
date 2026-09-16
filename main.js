@@ -1,5 +1,6 @@
 import {createSlimeAA} from './slime-aa.js';
 import {createThornSprite} from './thorn-sprite.js';
+import {createStageOneAnimalSprites,STAGE1_SPRITE_TYPES} from './stage1-animals.js';
 import {createVegetationDepth} from './vfx/vegetation-depth.js';
 import {mountSkillLab} from './skill-lab.js';
 import {createBeadRenderer} from './vfx/beads.js';
@@ -305,7 +306,7 @@ function movePlayer(dx,dz){
 
 let ambience;
 let ground,grassMesh,flowers,props,wetPlants,treeCards,outer,inner,winds,quad;let enemyWorld=new EnemyWorld(),combat=new FireCombat();let slimeAA,slimeWalkPhase=0,heldSlime={time:0,stretch:0,lean:0},slimePoseTick=-1;
-let enemyAssets={},thornSprite,fireVFX,soulVFX,vegetationDepth;
+let enemyAssets={},thornSprite,animalSprites,fireVFX,soulVFX,vegetationDepth;
 const fireUI=mountFireUI(combat,enemyWorld,()=>{keys.clear();release();lastFrame=0;});
 let vp,proofCamera=false,proofOpen=false;
 let savedRun=null;
@@ -369,7 +370,7 @@ function renderScene(){
   uniform(gl,prog,'time',state.time);uniform(gl,prog,'jellyMotion',[jelly.lean,jelly.velocity,jelly.stretch]);
  }
  for(const e of visibleEnemies){
-  if(e.type==='thorn'&&!e.isElite&&state.thornView==='sprite'&&state.camera==='game'&&thornSprite&&!proofCamera)continue;
+  if(!e.isBoss&&STAGE1_SPRITE_TYPES.has(e.type))continue;
   const asset=enemyAssets[e.assetType||e.type];if(!asset)continue;
   let clip={frames:asset.frames,duration:asset.duration};
   if(e.type==='petal'&&e.flying&&asset.clips?.flight)clip=asset.clips.flight;
@@ -396,8 +397,9 @@ function renderScene(){
  }
 
  // Draw billboards against solid depth after foliage, without moving their ground anchor.
- if(state.thornView==='sprite'&&state.camera==='game'&&thornSprite&&!proofCamera){
-  for(const e of visibleEnemies)if(e.type==='thorn'&&!e.isElite){const n=thornSprite.draw(e,vp,state.player,state.thornFrames);draws+=n.calls;tris+=n.triangles;}
+ if(!proofCamera){
+  if(thornSprite)for(const e of visibleEnemies)if(e.type==='thorn'){const n=thornSprite.draw(e,vp,state.player,state.thornFrames);draws+=n.calls;tris+=n.triangles;}
+  if(animalSprites)for(const e of visibleEnemies)if(e.type!=='thorn'&&STAGE1_SPRITE_TYPES.has(e.type)){const n=animalSprites.draw(e,vp,state.player);draws+=n.calls;tris+=n.triangles;}
   gl.useProgram(prog);
  }
  if(!proofCamera){
@@ -405,7 +407,7 @@ function renderScene(){
   for(const e of visibleEnemies)if(e.skillWindup>0&&e.skillRadius>0){const targeted=['moss_pillar_line','crystal_burst','vine_lunge'].includes(e.skillKind),x=targeted?e.skillTargetX:e.x,z=targeted?e.skillTargetZ:e.z;uniform(gl,prog,'enemySkillColor',e.skillColor||[1,.78,.38]);draw(quad,33,model(x,.025,z,e.skillRadius,1,e.skillRadius),Math.min(1,.35+e.skillWindup));}
   for(const fx of enemyWorld.effects)if(tileVisible(fx.x,fx.z,fx.r+.5)){uniform(gl,prog,'enemySkillColor',fx.color||[1,.78,.38]);if(fx.kind==='petal_swoop_trail'){const dx=fx.x1-fx.x0,dz=fx.z1-fx.z0,len=Math.max(.16,Math.hypot(dx,dz)),yaw=Math.atan2(dx,dz);draw(quad,34,model(fx.x,.14,fx.z,.24,1,len*.72,yaw),Math.max(0,Math.min(1,fx.life/.34)));}else draw(quad,31,model(fx.x,.04,fx.z,fx.r,1,fx.r),Math.max(0,Math.min(1,fx.life/.42)));}
   gl.depthMask(true);gl.disable(gl.BLEND);
-  for(const b of enemyWorld.bullets){uniform(gl,prog,'enemySkillColor',b.color||[.45,.78,.95]);const scale=b.kind==='seed_volley'?1.65:1;draw(crystalShard,27,model(b.x,b.kind==='seed_volley'?.52:.40,b.z,scale,scale,scale,Math.atan2(b.vx,b.vz)),1);}
+  for(const b of enemyWorld.bullets){uniform(gl,prog,'enemySkillColor',b.color||[.45,.78,.95]);if(b.kind==='water_shot'){draw(quad,31,model(b.x,.10,b.z,.23,1,.23),.95);}else{const scale=b.kind==='seed_volley'?1.65:1;draw(crystalShard,27,model(b.x,b.kind==='seed_volley'?.52:.40,b.z,scale,scale,scale,Math.atan2(b.vx,b.vz)),1);}}
   gl.enable(gl.BLEND);gl.depthMask(false);
   uniform(gl,prog,'enemySkillColor',[.45,.78,.95]);for(const e of visibleEnemies)if(e.windup>0)draw(crystalShard,27,model(e.x,.65,e.z,.4+(1-e.windup/.6)*.5,.4+(1-e.windup/.6)*.5,.4+(1-e.windup/.6)*.5,e.yaw),.80);
   gl.depthMask(true);gl.disable(gl.BLEND);uniform(gl,prog,'enemySkillColor',[1,.78,.38]);
@@ -445,12 +447,12 @@ function updateEncounterHUD(){
  $('status').textContent=enemyWorld.hp<=0?'สไลม์หมดแรง · กดเริ่มใหม่':enemyWorld.finished?'ด่าน 1 ผ่าน · Ancient Bloom ถูกกำจัด':boss?'BOSS · ANCIENT BLOOM COLOSSUS':`ด่าน 1 · ${clock} / 05:00 · บอสใน ${Math.max(0,300-t)} วิ`;
  $('retry').hidden=enemyWorld.hp>0&&!enemyWorld.finished;$('health').max=combat.maxHP;$('health').value=enemyWorld.hp;$('health-text').textContent=`HP ${Math.ceil(enemyWorld.hp)} / ${combat.maxHP} · กำจัด ${enemyWorld.kills}`;
  if(enemyWorld.mode==='boss')$('roster').textContent='Ancient Bloom Colossus';
- else if(enemyWorld.mode==='elites')$('roster').textContent=['thorn','moss','petal','crystal'].map(k=>ENEMY_TYPES[k].eliteName).join(' · ');
+ else if(enemyWorld.mode==='elites')$('roster').textContent=['thorn','moss','petal','crystal','panda'].map(k=>ENEMY_TYPES[k].eliteName).join(' · ');
  else $('roster').textContent=enemyWorld.unlocked().map(k=>ENEMY_TYPES[k].name).join(' · ')+(enemyWorld.enemies.some(e=>e.isElite&&!e.isBoss)?' · ALPHA ACTIVE':'');
 }
 function resetEncounter(){grassBend.reset();combat.reset();fireUI.sync();keys.clear();release();enemyWorld.reset($('enemy-mode').value,Number($('start-minute').value));state.stormAge=6;state.paused=false;$('pause').textContent='หยุดภาพ';updateEncounterHUD();}
 $('enemy-mode').onchange=resetEncounter;$('start-minute').onchange=resetEncounter;$('restart').onclick=resetEncounter;$('retry').onclick=resetEncounter;
-async function start(){gl=canvas.getContext('webgl2',{antialias:false,alpha:false,powerPreference:'high-performance'});if(!gl){const probe=document.createElement('canvas');const legacy=probe.getContext('webgl');throw Error(legacy?'รองรับ WebGL 1 เท่านั้น แต่ฉากนี้ต้องใช้ WebGL 2':'เบราว์เซอร์นี้เปิดทั้ง WebGL 2 และ WebGL 1 ไม่ได้ — ยังเรนเดอร์ฉาก 3D ไม่ได้');}prog=program(gl,vs,fs);vegetationDepth=createVegetationDepth(gl);initCanopyShadow();initGrassBend();crystalShard=crystalShardGeometry();soulVFX=createBeadRenderer(gl);fireVFX=createFireRenderer(gl,await loadTexture(gl,'./assets/vfx/inferno-flame-paint.png'),await loadTexture(gl,'./assets/vfx/inferno-atlas.png'),await loadTexture(gl,'./assets/vfx/inferno-inbetweens.png'),await loadTexture(gl,'./assets/vfx/inferno-inbetweens48.png'),await Promise.all(['sunfall-impact-hd.png','sunfall-flight-hd.png','sunfall-smoke-hd.png'].map(name=>loadTexture(gl,'./assets/vfx/'+name,false))));gl.useProgram(prog);gl.enable(gl.DEPTH_TEST);gl.depthFunc(gl.LEQUAL);ground=plane(60);quad=plane(1);grassMesh=grassGeometry();flowers=flowerGeometry();ambience=ambientGeometry();props=sceneryGeometry();wetPlants=wetlandDetails();treeCards=treeGeometry();outer=funnel();inner=funnel(true);winds=[windRibbon(0),windRibbon(Math.PI)];resize();window.addEventListener('resize',resize);[grassTexture,treeTexture,pondTexture,tuftTexture,northTexture,clearingTexture,meadowTexture]=await Promise.all([loadTexture(gl,'./assets/grass-original.png'),loadTexture(gl,'./assets/tree-reference-b.png'),loadTexture(gl,'./assets/pond-painted.png'),loadTexture(gl,'./assets/grass-painted.png'),loadTexture(gl,'./assets/pond-northern.png'),loadTexture(gl,'./assets/clearing-painted.png'),loadTexture(gl,'./assets/meadow-pigment-cache.png')]);enemyAssets=Object.fromEntries(await Promise.all(Object.keys(ENEMY_TYPES).map(async key=>[key,await loadEnemyAsset(gl,key)])));try{thornSprite=await createThornSprite(gl);}catch(error){state.thornView='model';$('thorn-view').value='model';$('thorn-view').options[0].disabled=true;console.warn(error);}gl.useProgram(prog);const shape=liquidSlimeGeometry();slime={mesh:mesh(shape.pos,shape.normals,shape.uv,shape.indices)};slimeAA=createSlimeAA(gl);gl.useProgram(prog);gl.activeTexture(gl.TEXTURE2);gl.bindTexture(gl.TEXTURE_2D,clearingTexture);gl.useProgram(prog);gl.uniform1i(gl.getUniformLocation(prog,'clearingTex'),2);gl.activeTexture(gl.TEXTURE3);gl.bindTexture(gl.TEXTURE_2D,meadowTexture);gl.uniform1i(gl.getUniformLocation(prog,'meadowTex'),3);gl.activeTexture(gl.TEXTURE0);updateEncounterHUD();fireUI.sync();mountProof(captureProofFrame,visible=>{proofOpen=visible;lastFrame=0;fpsFrames=[];release()});requestAnimationFrame(frame)}start().catch(fail);
+async function start(){gl=canvas.getContext('webgl2',{antialias:false,alpha:false,powerPreference:'high-performance'});if(!gl){const probe=document.createElement('canvas');const legacy=probe.getContext('webgl');throw Error(legacy?'รองรับ WebGL 1 เท่านั้น แต่ฉากนี้ต้องใช้ WebGL 2':'เบราว์เซอร์นี้เปิดทั้ง WebGL 2 และ WebGL 1 ไม่ได้ — ยังเรนเดอร์ฉาก 3D ไม่ได้');}prog=program(gl,vs,fs);vegetationDepth=createVegetationDepth(gl);initCanopyShadow();initGrassBend();crystalShard=crystalShardGeometry();soulVFX=createBeadRenderer(gl);fireVFX=createFireRenderer(gl,await loadTexture(gl,'./assets/vfx/inferno-flame-paint.png'),await loadTexture(gl,'./assets/vfx/inferno-atlas.png'),await loadTexture(gl,'./assets/vfx/inferno-inbetweens.png'),await loadTexture(gl,'./assets/vfx/inferno-inbetweens48.png'),await Promise.all(['sunfall-impact-hd.png','sunfall-flight-hd.png','sunfall-smoke-hd.png'].map(name=>loadTexture(gl,'./assets/vfx/'+name,false))));gl.useProgram(prog);gl.enable(gl.DEPTH_TEST);gl.depthFunc(gl.LEQUAL);ground=plane(60);quad=plane(1);grassMesh=grassGeometry();flowers=flowerGeometry();ambience=ambientGeometry();props=sceneryGeometry();wetPlants=wetlandDetails();treeCards=treeGeometry();outer=funnel();inner=funnel(true);winds=[windRibbon(0),windRibbon(Math.PI)];resize();window.addEventListener('resize',resize);[grassTexture,treeTexture,pondTexture,tuftTexture,northTexture,clearingTexture,meadowTexture]=await Promise.all([loadTexture(gl,'./assets/grass-original.png'),loadTexture(gl,'./assets/tree-reference-b.png'),loadTexture(gl,'./assets/pond-painted.png'),loadTexture(gl,'./assets/grass-painted.png'),loadTexture(gl,'./assets/pond-northern.png'),loadTexture(gl,'./assets/clearing-painted.png'),loadTexture(gl,'./assets/meadow-pigment-cache.png')]);enemyAssets={boss:await loadEnemyAsset(gl,'boss')};animalSprites=await createStageOneAnimalSprites(gl);try{thornSprite=await createThornSprite(gl);}catch(error){console.warn(error);}gl.useProgram(prog);const shape=liquidSlimeGeometry();slime={mesh:mesh(shape.pos,shape.normals,shape.uv,shape.indices)};slimeAA=createSlimeAA(gl);gl.useProgram(prog);gl.activeTexture(gl.TEXTURE2);gl.bindTexture(gl.TEXTURE_2D,clearingTexture);gl.useProgram(prog);gl.uniform1i(gl.getUniformLocation(prog,'clearingTex'),2);gl.activeTexture(gl.TEXTURE3);gl.bindTexture(gl.TEXTURE_2D,meadowTexture);gl.uniform1i(gl.getUniformLocation(prog,'meadowTex'),3);gl.activeTexture(gl.TEXTURE0);updateEncounterHUD();fireUI.sync();mountProof(captureProofFrame,visible=>{proofOpen=visible;lastFrame=0;fpsFrames=[];release()});requestAnimationFrame(frame)}start().catch(fail);
 
 function drawFireCombat(){
  gl.disable(gl.CULL_FACE);gl.disable(gl.BLEND);gl.depthMask(true);
