@@ -14,10 +14,13 @@ try{
  await waitServer();
  browser=await chromium.launch({headless:true,args:['--enable-webgl','--use-angle=swiftshader','--enable-unsafe-swiftshader','--ignore-gpu-blocklist']});
  page=await browser.newPage({viewport:{width:1180,height:820},hasTouch:true,deviceScaleFactor:1});
- // The migrated source tree intentionally lacks some legacy VFX PNGs that exist only in
- // the old hosted release. They are unrelated to this animal pass, so replace only those
- // missing VFX textures during the animal renderer review instead of masking any gameplay asset.
- await page.route(/\/assets\/vfx\/.*\.png(?:\?.*)?$/,route=>route.fulfill({status:200,contentType:'image/png',body:transparentPng}));
+ // The migrated source tree is missing some legacy fire-VFX PNGs. Those are outside
+ // this animal pass, so stub only matching VFX image requests for the focused review.
+ await page.route('**/*',async route=>{
+  const request=route.request(),url=new URL(request.url()),path=url.pathname;
+  if(path.includes('/assets/vfx/')&&path.endsWith('.png'))return route.fulfill({status:200,contentType:'image/png',body:transparentPng});
+  return route.continue();
+ });
  const errors=[],missing=[];page.on('pageerror',e=>errors.push(String(e)));page.on('response',r=>{if(r.status()>=400&&!r.url().endsWith('/favicon.ico'))missing.push(`${r.status()} ${r.url()}`);});
  await page.goto('http://127.0.0.1:4173/',{waitUntil:'load',timeout:60000});
  await page.waitForTimeout(1800);
