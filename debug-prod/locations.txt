@@ -1,0 +1,134 @@
+=== NAMES ===
+1053:    name: `Ancient Bloom Colossus`,
+1063:      name: `Thorn Alpha`,
+1073:      name: `Mossback Alpha`,
+1083:      name: `Petal Skitter Alpha`,
+1092:      name: `Crystal Warden Alpha`,
+1582:      (r.onerror = () => n(Error("โหลดภาพ Moss Frog ไม่สำเร็จ: " + e))),
+2417:    name: `Moss Frog`,
+2425:    name: `Mossback`,
+2433:    name: `Petal Skitter`,
+2440:    name: `Crystal Warden`,
+9714:          ? `ด่าน 1 · Ancient Bloom Colossus`
+=== MODES / SPAWN ===
+12:      thornFrames: 16,
+13:      thornView: `sprite`,
+19:      thornFrames: 16,
+20:      thornView: `sprite`,
+26:      thornFrames: 24,
+27:      thornView: `sprite`,
+33:      thornFrames: 32,
+34:      thornView: `sprite`,
+54:    thornFrames: [16, 24, 32],
+55:    thornView: [`sprite`, `model`],
+72:      thornFrames: `thorn-frames`,
+73:      thornView: `thorn-view`,
+78:      s(`thorn-view`).options[0].disabled && (e.thornView = `model`);
+83:      (s(`thorn-frames`).disabled = e.thornView !== `sprite`),
+106:        [e]: e === `thornView` ? t.target.value : Number(t.target.value),
+957:        `thorn_charge`,
+958:        `petal_swoop`,
+960:        `moss_pillar_line`,
+968:          e.kind === `thorn_charge`
+970:            : e.kind === `petal_swoop`
+978:          e.kind === `moss_pillar_line` ? 0.58 : 0.28,
+982:    [`thorn_charge`, `petal_swoop`, `seed_volley`].includes(e.kind) ||
+989:      a.kind === `moss_pillar_line` ? 1 : a.kind === `crystal_burst` ? 7 : 12;
+999:        a.kind === `crystal_burst` ? 27 : 36,
+1024:        : e.walkPhase != null && [`thorn`, `moss`].includes(e.type)
+1062:    thorn: {
+1072:    moss: {
+1082:    petal: {
+1091:    crystal: {
+1129:    n.kind === `thorn_charge` ||
+1130:    n.kind === `petal_swoop` ||
+1134:      n.kind === `thorn_charge` ? 5.2 : n.kind === `petal_swoop` ? 4.9 : 8.8;
+1141:        n.kind === `thorn_charge`
+1143:          : n.kind === `petal_swoop`
+1156:      e.bullets.push({
+1167:  } else if (n.kind === `moss_pillar_line`)
+1180:    thorn_charge: 4.6,
+1181:    petal_swoop: 2.2,
+1182:    moss_pillar_line: 4.25,
+1183:    crystal_burst: 3.8,
+1194:  let a = t.dash?.kind === `petal_swoop` || t.special?.kind === `petal_swoop`;
+1218:    if (((a.left -= n), a.kind === `petal_swoop`)) {
+1230:      a.kind === `petal_swoop` &&
+1271:    t.type === `thorn` && c > 2 && c < 7
+1272:      ? Ee(t, `thorn_charge`, 0.62, r[0], r[2], 0.7, i.damage)
+1273:      : t.type === `moss` && c < 3.6
+1276:            `moss_pillar_line`,
+1283:        : t.type === `petal` && c > 1.5 && c < 7.2
+1284:          ? Ee(t, `petal_swoop`, 0.48, r[0], r[2], 0.6, i.damage)
+1285:          : t.type === `crystal` &&
+1290:              `crystal_burst`,
+2416:  thorn: {
+2424:  moss: {
+2432:  petal: {
+2439:  crystal: {
+2516:        (this.bullets = []),
+2543:    unlocked() {
+2544:      return this.mode === `boss`
+2546:        : this.mode === `elites`
+2550:            : this.mode === `all`
+2552:              : this.mode === `auto`
+2632:    spawn(e, t, n = !1) {
+2710:      let i = this.unlocked(),
+2712:          this.mode === `boss` ||
+2713:          this.mode === `elites` ||
+2717:          for (let e of i) this.spawn(t, e, e !== `boss`);
+2718:          this.mode === `boss` &&
+2722:            this.spawn(t, i[e % i.length]);
+2729:          (this.bossSpawned = this.spawn(t, `boss`)),
+2738:          this.spawn(t, e), (this.spawnClock += r);
+2744:          this.spawn(t, e[this.eliteCycle % e.length], !0) &&
+2804:          n.type === `thorn` &&
+2816:        if (n.type === `thorn` && !n.elite && !n.boss) {
+2840:          (n.type === `crystal` && !n.elite && s < 6.5 && f
+2850:                  this.bullets.push({
+2908:                : (n.anim += c / (n.type === `petal` ? 0.75 : 1)));
+2913:          n.type === `crystal` && f && (n.yaw = Math.atan2(a, o));
+2918:          (e.type === `thorn` &&
+2927:            (this.bullets = [])));
+2930:      for (let n of this.bullets)
+2938:      this.bullets = this.bullets.filter((e) => e.life > 0);
+3135:          a = (e.boss ? 0.08 : e.type === `moss` ? 0.25 : 1) * i * 0.1,
+3289:              e.xp || { thorn: 2, moss: 5, petal: 6, crystal: 10 }[e.type] || 2,
+3393:                  let i = e * (r.boss ? 0.02 : r.type === `moss` ? 0.15 : 0.5),
+3972:    a = e.boss ? 0.08 : e.type === `moss` ? 0.25 : 1,
+4243:        R(e, t, `crystal`, l, u, {
+4318:      i.kind === `bolt` || i.kind === `crystal`)
+4961:        bullets: [],
+6552:uniform float petals;
+6577:uniform float petals;
+6587:    float r = 0.62 + cos(a * petals + seed) * 0.12 + sin(a * 2.0 - seed) * lump;
+6610:        petals: 5,
+6621:        petals: `float`,
+7227:    if (t.kind === `bolt` || t.kind === `crystal` || t.kind === `borer`) {
+8130: // Select only moss greens / crystal blues; retain skin, shell and stone regions.
+8132:  float moss=smoothstep(.025,.16,source.g-max(source.r,source.b));
+8133:  // Pale stone on the upper shell only; exclude green moss and the head/legs.
+8136:  float stone=shell*(1.-moss)*smoothstep(.30,.52,stoneValue);
+8140:  source=mix(source,source*vec3(1.07,.91,1.12)+vec3(.018,.008,.018),moss*.75);
+8142:  float crystal=smoothstep(.10,.35,source.b-source.r)*smoothstep(.24,.55,source.g);
+8145:  source=mix(source,mineral,crystal);
+8214:   // Warm limestone, matching the painted shoreline boulders; no moss tint.
+8433:    thornView: `sprite`,
+8434:    thornFrames: 16,
+9455:    if (e.type === `thorn` && !e.elite && W.camera === `game` && Br) continue;
+9459:          ? `petal-fly`
+9478:          : e.type === `moss`
+9480:            : e.type === `crystal`
+9490:          : e.type === `moss`
+9492:            : e.type === `crystal`
+9514:      if (e.type === `thorn` && !e.elite) {
+9515:        let t = Br.draw(e, X, W.player, W.thornFrames);
+9526:  for (let e of J.bullets)
+9573:        `enemy-mode`,
+9728:    (B(`roster`).textContent = J.unlocked()
+9742:    J.reset(B(`enemy-mode`).value, Number(B(`start-minute`).value)),
+9764:    (B(`enemy-mode`).value = `auto`),
+9847:          `petal-fly`,
+9860:    (W.thornView = `model`),
+9861:      (B(`thorn-view`).value = `model`),
+9862:      (B(`thorn-view`).options[0].disabled = !0),
