@@ -12,6 +12,7 @@ const DEATH_FRAME_TIME=.095;
 const DEATH_LIFE=DEATH_FRAME_TIME*DEATH_CELLS.length+.035;
 const FROG_STRIDE=.82;
 const THORN_STRIDE=.42;
+export const FROG_RENDER_SCALE=.714; // 1.02 * 0.70: 30% smaller than the previous in-game sprite.
 
 function cellRect(cell){
  const col=cell%4,row=Math.floor(cell/4);
@@ -118,7 +119,7 @@ export async function createThornSprite(gl){
  const g=geometry(gl,[-.82,.82,0,.82,.82,0,.82,-.82,0,-.82,-.82,0],null,[0,1,1,1,1,0,0,0],[0,2,1,0,3,2]);
  gl.useProgram(p);gl.uniform1i(gl.getUniformLocation(p,'atlas'),10);gl.uniform1i(gl.getUniformLocation(p,'canopy'),1);
  return {draw(e,vp,player){
-  const frame=frogFrame(e),facing=frogFacing(e),scale=(e.scale||1)*1.02;
+  const frame=frogFrame(e),facing=frogFacing(e),scale=(e.scale||1)*FROG_RENDER_SCALE;
   gl.useProgram(p);uniform(gl,p,'vp',vp);uniform(gl,p,'origin',[e.x,.02,e.z]);uniform(gl,p,'player',player);uniform(gl,p,'rect',frame.rect);uniform(gl,p,'spriteScale',scale);uniform(gl,p,'spriteWidth',frame.width);uniform(gl,p,'spriteOffsetX',frame.offset*facing);uniform(gl,p,'flipX',facing<0?1:0);
   gl.disable(gl.CULL_FACE);gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);gl.depthMask(true);render(gl,g);gl.disable(gl.BLEND);return {calls:1,triangles:2};
  }};
