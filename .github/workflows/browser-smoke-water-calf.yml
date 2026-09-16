@@ -28,7 +28,7 @@ jobs:
           exit 1
       - name: Exercise Water Calf in Chromium/WebGL2
         run: |
-          cat > /tmp/smoke.mjs <<'NODE'
+          cat > smoke-water-calf.mjs <<'NODE'
           import { chromium } from 'playwright';
           const browser=await chromium.launch({headless:true,args:['--use-gl=angle','--use-angle=swiftshader','--enable-webgl','--ignore-gpu-blocklist']});
           const page=await browser.newPage({viewport:{width:1366,height:768}});
@@ -55,7 +55,7 @@ jobs:
           if(errors.length)throw new Error(errors.join('\n'));
           await browser.close();
           NODE
-          node /tmp/smoke.mjs
+          node smoke-water-calf.mjs
       - name: Stop server
         if: always()
         run: kill $(cat /tmp/slime-server.pid) || true
