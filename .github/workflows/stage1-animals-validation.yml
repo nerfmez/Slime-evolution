@@ -14,6 +14,7 @@ on:
       - 'enemies.js'
       - 'main.js'
       - 'fire-combat.js'
+      - 'gl.js'
       - 'index.html'
       - '.github/workflows/stage1-animals-validation.yml'
 permissions:
@@ -38,14 +39,19 @@ jobs:
           node --check stage1-animals.js
           node --check main.js
           node --check fire-combat.js
+          node --check gl.js
           node --test tests/stage1-five-animals.test.mjs
       - name: Build game
         run: npm run build
+      - name: Restore migrated static assets for review
+        run: |
+          mkdir -p dist/assets
+          cp -Rn published/2026-09-14/assets/. dist/assets/
       - name: Install Chromium verifier
         run: |
           npm install --no-save playwright
           npx playwright install --with-deps chromium
-      - name: Review each animal in the real game renderer
+      - name: Runtime-check each animal in packaged game renderer
         run: node tests/stage1-animals-browser.mjs
       - uses: actions/upload-artifact@v4
         if: always()
@@ -61,7 +67,7 @@ jobs:
           cp -R dist/. published/2026-09-16/
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add enemies.js main.js fire-combat.js index.html HANDOFF.md stage1-animals.js public/assets/enemies/stage1-animals.svg scripts/stage1-enemies.template.js scripts/apply-stage1-animals.mjs tests/stage1-five-animals.test.mjs tests/stage1-animals-browser.mjs published/2026-09-16
+          git add enemies.js main.js fire-combat.js gl.js index.html HANDOFF.md stage1-animals.js public/assets/enemies/stage1-animals.svg scripts/stage1-enemies.template.js scripts/apply-stage1-animals.mjs tests/stage1-five-animals.test.mjs tests/stage1-animals-browser.mjs published/2026-09-16
           if git diff --cached --quiet; then
             echo 'Five-animal Stage 1 already materialized.'
             exit 0
