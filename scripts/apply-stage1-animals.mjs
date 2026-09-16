@@ -8,6 +8,16 @@ function replaceOnce(text,oldText,newText,label){
 }
 
 copyFileSync('scripts/stage1-enemies.template.js','enemies.js');
+let enemies=readFileSync('enemies.js','utf8');
+enemies=replaceOnce(enemies,
+ "  if(this.mode!=='auto')return [this.mode];",
+ "  if(this.mode.startsWith('elite-'))return [this.mode.slice(6)];\n  if(this.mode!=='auto')return [this.mode];",
+ 'single elite family mode');
+enemies=replaceOnce(enemies,
+ "  if(this.initial){if(this.mode==='boss')this.spawnBoss(player);else if(this.mode==='elites')for(const type of STAGE1_FAMILIES){this.spawnCounts[type]=1;this.spawn(player,type,{elite:true});}else if(this.mode==='auto')this.spawn(player,'thorn');else{const types=this.unlocked();for(let i=0;i<Math.min(8,limit);i++)this.spawn(player,types[i%types.length]);}this.initial=false;}",
+ "  if(this.initial){if(this.mode==='boss')this.spawnBoss(player);else if(this.mode==='elites')for(const type of STAGE1_FAMILIES){this.spawnCounts[type]=1;this.spawn(player,type,{elite:true});}else if(this.mode.startsWith('elite-')){const type=this.mode.slice(6);this.spawnCounts[type]=1;for(let i=0;i<Math.min(4,limit);i++)this.spawn(player,type,{elite:true});}else if(this.mode==='auto')this.spawn(player,'thorn');else{const types=this.unlocked();for(let i=0;i<Math.min(8,limit);i++)this.spawn(player,types[i%types.length]);}this.initial=false;}",
+ 'single elite spawn mode');
+writeFileSync('enemies.js',enemies);
 
 let main=readFileSync('main.js','utf8');
 if(!main.includes("from './stage1-animals.js'")){
@@ -26,7 +36,7 @@ main=replaceOnce(main,
  'skip 3d animal models');
 main=replaceOnce(main,
  " if(state.thornView==='sprite'&&state.camera==='game'&&thornSprite&&!proofCamera){\n  for(const e of visibleEnemies)if(e.type==='thorn'&&!e.isElite){const n=thornSprite.draw(e,vp,state.player,state.thornFrames);draws+=n.calls;tris+=n.triangles;}\n  gl.useProgram(prog);\n }",
- " if(state.thornView==='sprite'&&!proofCamera){\n  if(thornSprite)for(const e of visibleEnemies)if(e.type==='thorn'){const n=thornSprite.draw(e,vp,state.player,state.thornFrames);draws+=n.calls;tris+=n.triangles;}\n  if(animalSprites)for(const e of visibleEnemies)if(e.type!=='thorn'&&STAGE1_SPRITE_TYPES.has(e.type)){const n=animalSprites.draw(e,vp,state.player);draws+=n.calls;tris+=n.triangles;}\n  gl.useProgram(prog);\n }",
+ " if(!proofCamera){\n  if(thornSprite)for(const e of visibleEnemies)if(e.type==='thorn'){const n=thornSprite.draw(e,vp,state.player,state.thornFrames);draws+=n.calls;tris+=n.triangles;}\n  if(animalSprites)for(const e of visibleEnemies)if(e.type!=='thorn'&&STAGE1_SPRITE_TYPES.has(e.type)){const n=animalSprites.draw(e,vp,state.player);draws+=n.calls;tris+=n.triangles;}\n  gl.useProgram(prog);\n }",
  'draw five animal sprites');
 main=replaceOnce(main,
  "for(const b of enemyWorld.bullets){uniform(gl,prog,'enemySkillColor',b.color||[.45,.78,.95]);const scale=b.kind==='seed_volley'?1.65:1;draw(crystalShard,27,model(b.x,b.kind==='seed_volley'?.52:.40,b.z,scale,scale,scale,Math.atan2(b.vx,b.vz)),1);}",
@@ -69,6 +79,6 @@ html=html.replace('Thorn · ทดลองภาพ 2D','สัตว์ด่�
 writeFileSync('index.html',html);
 
 let handoff=readFileSync('HANDOFF.md','utf8');
-const note=`\n## Stage 1 five-animal ecosystem pass (2026-09-16)\n\nNormal Stage 1 roster is now five real-animal-derived species: Moss Frog / Poison Tongue, Spark Hedgehog / Chain Spark, Pond Turtle / Shell Guard, Water Calf / Water Shot, and Forest Panda / Roll. Each has walk, hit, cast and short death poses in the 2D animal atlas. The existing Ancient Bloom boss remains while balance is still being tuned. Internal type keys are intentionally stable (thorn/moss/petal/crystal + panda) to reduce migration risk.\n`;
+const note=`\n## Stage 1 five-animal ecosystem pass (2026-09-16)\n\nNormal Stage 1 roster is now five real-animal-derived species: Moss Frog / Poison Tongue, Spark Hedgehog / Chain Spark, Pond Turtle / Shell Guard, Water Calf / Water Shot, and Forest Panda / Roll. Each has walk, hit, cast and short death poses in the 2D animal atlas. The existing Ancient Bloom boss remains while balance is still being tuned. Internal type keys are intentionally stable (thorn/moss/petal/crystal + panda) to reduce migration risk. Animal sprites are always used even if an older local graphics save still contains the removed 3D Thorn view option.\n`;
 if(!handoff.includes('Stage 1 five-animal ecosystem pass'))writeFileSync('HANDOFF.md',handoff+note);
 console.log('Stage 1 five-animal roster materialized.');
