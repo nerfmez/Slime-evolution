@@ -47,24 +47,29 @@ try{
     value:select?.value,
     disabled:select?.options?.[0]?.disabled===true,
     frogFrameHook:typeof globalThis.__slimeFrogFrame==='function',
-    frogFacingHook:typeof globalThis.__slimeFrogFacing==='function'
+    frogFacingHook:typeof globalThis.__slimeFrogFacing==='function',
+    frogHopLiftHook:typeof globalThis.__slimeFrogHopLift==='function'
    };
   });
   assert.equal(rendererState.value,'sprite','Moss Frog sprite renderer must initialize');
   assert.equal(rendererState.disabled,false,'Moss Frog sprite renderer must not fall back to the model');
   assert.equal(rendererState.frogFrameHook,true,'patched Moss Frog renderer must execute');
   assert.equal(rendererState.frogFacingHook,true,'directional Moss Frog facing hook must execute');
+  assert.equal(rendererState.frogHopLiftHook,true,'airborne Moss Frog hop hook must execute');
 
-  const facingState=await page.evaluate(()=>{
-   const frog={yaw:Math.PI/2};
-   const right=globalThis.__slimeFrogFacing(frog);
-   frog.yaw=-Math.PI/2;
-   const left=globalThis.__slimeFrogFacing(frog);
-   frog.yaw=0;
-   const verticalHold=globalThis.__slimeFrogFacing(frog);
-   return {right,left,verticalHold};
+  const hopProbe=await page.evaluate(()=>{
+   const frog={hp:10,frogHopActive:true,frogHopPhase:.5,frogAttack:0,hit:0,yaw:Math.PI/2};
+   return {
+    lift:globalThis.__slimeFrogHopLift(frog),
+    frame:globalThis.__slimeFrogFrame(frog).r,
+    facing:globalThis.__slimeFrogFacing(frog),
+    restLift:globalThis.__slimeFrogHopLift({...frog,frogHopActive:false})
+   };
   });
-  assert.deepEqual(facingState,{right:1,left:-1,verticalHold:-1},'frog must mirror left/right and hold its last side near vertical');
+  assert.ok(hopProbe.lift>.25,'mid-hop sprite must visibly rise above the ground');
+  assert.equal(hopProbe.facing,1,'rightward hop must keep authored facing');
+  assert.equal(hopProbe.restLift,0,'resting frog must stay on the ground');
+  assert.notDeepEqual(hopProbe.frame,[0,.75,.25,.25],'mid-hop must not use the idle frame');
 
   await page.evaluate(()=>{
    const mode=document.querySelector('#enemy-mode');
@@ -97,7 +102,7 @@ try{
    errorHidden:document.querySelector('#error')?.hidden!==false,
    choosing:document.querySelector('#skill-choice')?.hidden===false
   }));
-  await writeFile('/tmp/frog-review/state.json',JSON.stringify(debugState,null,2));
+  await writeFile('/tmp/frog-review/state.json',JSON.stringify({debugState,hopProbe},null,2));
 
   assert.match(debugState.roster,/Moss Frog/,'normal Thorn slot must identify as Moss Frog');
   assert.match(debugState.stats,/[1-9]\d* มอน/,'frog test run must actually spawn enemies');
