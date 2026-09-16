@@ -10,6 +10,7 @@ on:
       - 'scripts/stage1-enemies.template.js'
       - 'scripts/apply-stage1-animals.mjs'
       - 'tests/stage1-five-animals.test.mjs'
+      - 'tests/stage1-animals-browser.mjs'
       - 'enemies.js'
       - 'main.js'
       - 'fire-combat.js'
@@ -21,7 +22,7 @@ jobs:
   validate:
     if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -40,6 +41,18 @@ jobs:
           node --test tests/stage1-five-animals.test.mjs
       - name: Build game
         run: npm run build
+      - name: Install Chromium verifier
+        run: |
+          npm install --no-save playwright
+          npx playwright install --with-deps chromium
+      - name: Review each animal in the real game renderer
+        run: node tests/stage1-animals-browser.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: stage1-animal-review
+          path: /tmp/stage1-animal-review
+          retention-days: 7
       - name: Save reviewable published build
         if: github.event_name == 'push'
         run: |
@@ -48,7 +61,7 @@ jobs:
           cp -R dist/. published/2026-09-16/
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add enemies.js main.js fire-combat.js index.html HANDOFF.md stage1-animals.js public/assets/enemies/stage1-animals.svg scripts/stage1-enemies.template.js scripts/apply-stage1-animals.mjs tests/stage1-five-animals.test.mjs published/2026-09-16
+          git add enemies.js main.js fire-combat.js index.html HANDOFF.md stage1-animals.js public/assets/enemies/stage1-animals.svg scripts/stage1-enemies.template.js scripts/apply-stage1-animals.mjs tests/stage1-five-animals.test.mjs tests/stage1-animals-browser.mjs published/2026-09-16
           if git diff --cached --quiet; then
             echo 'Five-animal Stage 1 already materialized.'
             exit 0
