@@ -4,8 +4,8 @@ on:
   push:
     branches:
       - production-five-animals-fix
-    paths-ignore:
-      - 'debug-prod/**'
+    paths:
+      - 'FORMAT_PROD_TRIGGER'
 
 permissions:
   contents: write
