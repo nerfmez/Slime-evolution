@@ -106,3 +106,7 @@ Sun Fall ใช้ localStorage key **`slime.sunfall.v1`**. ค่าเดิ�
 - Cloud renderer ผ่านไม่เท่ากับ Android/iOS 60fps. FPS ข้ามอุปกรณ์เคยต่างกันมาก. วัดจริง.
 - Sites upload เคย timeout หลายครั้ง; source commit สำเร็จไม่เท่ากับ deploy สำเร็จ. รุ่นล่าสุด v101 ยืนยัน succeeded แล้ว.
 - ห้ามอ้าง GitHub ย้ายสำเร็จจนตรวจไฟล์ source + binary assets ครบ.
+
+## Stage 1 five-animal ecosystem pass (2026-09-16)
+
+Normal Stage 1 roster is now five real-animal-derived species: Moss Frog / Poison Tongue, Spark Hedgehog / Chain Spark, Pond Turtle / Shell Guard, Water Calf / Water Shot, and Forest Panda / Roll. Each has walk, hit, cast and short death poses in the 2D animal atlas. The existing Ancient Bloom boss remains while balance is still being tuned. Internal type keys are intentionally stable (thorn/moss/petal/crystal + panda) to reduce migration risk.
