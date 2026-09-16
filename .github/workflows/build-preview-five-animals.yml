@@ -1,0 +1,47 @@
+name: Build five-animal preview from source
+
+on:
+  push:
+    branches:
+      - preview-five-animals
+    paths-ignore:
+      - 'preview-dist/**'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout exact preview branch
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build from source
+        run: npm run build
+
+      - name: Replace preview-dist with fresh dist
+        run: |
+          rm -rf preview-dist
+          mkdir -p preview-dist
+          cp -a dist/. preview-dist/
+
+      - name: Commit generated preview
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -f preview-dist
+          if git diff --cached --quiet; then
+            echo "Preview output unchanged"
+            exit 0
+          fi
+          git commit -m "Build preview from five-animal source [skip ci]"
+          git push origin HEAD:preview-five-animals
