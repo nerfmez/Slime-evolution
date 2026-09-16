@@ -1,0 +1,35 @@
+name: Inspect production bundle structure
+
+on:
+  push:
+    branches:
+      - production-five-animals-fix
+    paths:
+      - '.github/workflows/inspect-prod-bundle.yml'
+      - 'INSPECT_PROD_TRIGGER'
+
+permissions:
+  contents: write
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Locate production runtime sections
+        run: |
+          F=debug-prod/main-critter-v4.formatted.js
+          {
+            echo '=== NAMES ==='
+            grep -nE 'Moss Frog|Mossback|Petal Skitter|Crystal Warden|Ancient Bloom|Thorn Alpha|Mossback Alpha|Petal Skitter Alpha|Crystal Warden Alpha' "$F" || true
+            echo '=== MODES / SPAWN ==='
+            grep -nE 'enemy-mode|spawnBoss|mode ===|mode===|unlocked\(|spawn\(|isElite|skillWindup|bullets|effects|ENEMY|thorn|moss|petal|crystal' "$F" | head -n 500 || true
+          } > debug-prod/locations.txt
+      - name: Commit inspection
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -f debug-prod/locations.txt
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "Inspect current production runtime [skip ci]"
+          git push origin HEAD:production-five-animals-fix
