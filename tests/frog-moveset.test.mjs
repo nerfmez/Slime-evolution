@@ -1,12 +1,17 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {frogFacing,frogFrame,thornSpriteCell} from '../thorn-sprite.js';
+import {FROG_RENDER_SCALE,frogFacing,frogFrame,thornSpriteCell} from '../thorn-sprite.js';
 import {ENEMY_TYPES} from '../enemies.js';
 
 test('normal Thorn slot is renamed without changing Thorn Alpha stride',()=>{
  assert.equal(ENEMY_TYPES.thorn.name,'Moss Frog');
  assert.equal(ENEMY_TYPES.thorn.eliteName,'Thorn Alpha');
  assert.equal(ENEMY_TYPES.thorn.stride,.42);
+});
+
+test('Moss Frog visual is 30 percent smaller in game',()=>{
+ assert.equal(FROG_RENDER_SCALE,.714);
+ assert.equal(FROG_RENDER_SCALE/1.02,.7);
 });
 
 test('approved hit pose is death frame 2',()=>{
