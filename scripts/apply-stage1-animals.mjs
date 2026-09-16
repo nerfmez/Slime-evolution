@@ -6,6 +6,11 @@ function replaceOnce(text,oldText,newText,label){
  if(hits!==1)throw Error(`${label}: expected 1 match, found ${hits}`);
  return text.replace(oldText,newText);
 }
+function replaceVariant(text,variants,newText,label){
+ if(text.includes(newText))return text;
+ for(const oldText of variants){if(text.includes(oldText))return replaceOnce(text,oldText,newText,label);}
+ throw Error(`${label}: no supported source variant found`);
+}
 
 copyFileSync('scripts/stage1-enemies.template.js','enemies.js');
 let enemies=readFileSync('enemies.js','utf8');
@@ -34,10 +39,10 @@ main=replaceOnce(main,
  "for(const e of visibleEnemies){\n  if(e.type==='thorn'&&!e.isElite&&state.thornView==='sprite'&&state.camera==='game'&&thornSprite&&!proofCamera)continue;\n  const asset=enemyAssets[e.assetType||e.type];",
  "for(const e of visibleEnemies){\n  if(!e.isBoss&&STAGE1_SPRITE_TYPES.has(e.type))continue;\n  const asset=enemyAssets[e.assetType||e.type];",
  'skip 3d animal models');
-main=replaceOnce(main,
- " if(state.thornView==='sprite'&&state.camera==='game'&&thornSprite&&!proofCamera){\n  for(const e of visibleEnemies)if(e.type==='thorn'&&!e.isElite){const n=thornSprite.draw(e,vp,state.player,state.thornFrames);draws+=n.calls;tris+=n.triangles;}\n  gl.useProgram(prog);\n }",
- " if(!proofCamera){\n  if(thornSprite)for(const e of visibleEnemies)if(e.type==='thorn'){const n=thornSprite.draw(e,vp,state.player,state.thornFrames);draws+=n.calls;tris+=n.triangles;}\n  if(animalSprites)for(const e of visibleEnemies)if(e.type!=='thorn'&&STAGE1_SPRITE_TYPES.has(e.type)){const n=animalSprites.draw(e,vp,state.player);draws+=n.calls;tris+=n.triangles;}\n  gl.useProgram(prog);\n }",
- 'draw five animal sprites');
+const originalAnimalDraw=" if(state.thornView==='sprite'&&state.camera==='game'&&thornSprite&&!proofCamera){\n  for(const e of visibleEnemies)if(e.type==='thorn'&&!e.isElite){const n=thornSprite.draw(e,vp,state.player,state.thornFrames);draws+=n.calls;tris+=n.triangles;}\n  gl.useProgram(prog);\n }";
+const migratedAnimalDraw=" if(state.thornView==='sprite'&&!proofCamera){\n  if(thornSprite)for(const e of visibleEnemies)if(e.type==='thorn'){const n=thornSprite.draw(e,vp,state.player,state.thornFrames);draws+=n.calls;tris+=n.triangles;}\n  if(animalSprites)for(const e of visibleEnemies)if(e.type!=='thorn'&&STAGE1_SPRITE_TYPES.has(e.type)){const n=animalSprites.draw(e,vp,state.player);draws+=n.calls;tris+=n.triangles;}\n  gl.useProgram(prog);\n }";
+const finalAnimalDraw=" if(!proofCamera){\n  if(thornSprite)for(const e of visibleEnemies)if(e.type==='thorn'){const n=thornSprite.draw(e,vp,state.player,state.thornFrames);draws+=n.calls;tris+=n.triangles;}\n  if(animalSprites)for(const e of visibleEnemies)if(e.type!=='thorn'&&STAGE1_SPRITE_TYPES.has(e.type)){const n=animalSprites.draw(e,vp,state.player);draws+=n.calls;tris+=n.triangles;}\n  gl.useProgram(prog);\n }";
+main=replaceVariant(main,[originalAnimalDraw,migratedAnimalDraw],finalAnimalDraw,'draw five animal sprites');
 main=replaceOnce(main,
  "for(const b of enemyWorld.bullets){uniform(gl,prog,'enemySkillColor',b.color||[.45,.78,.95]);const scale=b.kind==='seed_volley'?1.65:1;draw(crystalShard,27,model(b.x,b.kind==='seed_volley'?.52:.40,b.z,scale,scale,scale,Math.atan2(b.vx,b.vz)),1);}",
  "for(const b of enemyWorld.bullets){uniform(gl,prog,'enemySkillColor',b.color||[.45,.78,.95]);if(b.kind==='water_shot'){draw(quad,31,model(b.x,.10,b.z,.23,1,.23),.95);}else{const scale=b.kind==='seed_volley'?1.65:1;draw(crystalShard,27,model(b.x,b.kind==='seed_volley'?.52:.40,b.z,scale,scale,scale,Math.atan2(b.vx,b.vz)),1);}}",
