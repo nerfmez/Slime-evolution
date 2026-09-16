@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {FROG_RENDER_SCALE,frogFacing,frogFrame,thornSpriteCell} from '../thorn-sprite.js';
-import {ENEMY_TYPES} from '../enemies.js';
+import {frogFacing,frogFrame,frogHopLift,FROG_RENDER_SCALE,thornSpriteCell} from '../thorn-sprite.js';
+import {ENEMY_TYPES,EnemyWorld,enemyCanStand} from '../enemies.js';
 
 test('normal Thorn slot is renamed without changing Thorn Alpha stride',()=>{
  assert.equal(ENEMY_TYPES.thorn.name,'Moss Frog');
@@ -50,6 +50,41 @@ test('frog mirrors left and right from movement yaw and keeps its side near vert
  assert.equal(frogFacing(frog),-1,'near vertical movement keeps the last side instead of flickering');
  frog.yaw=Math.PI/2;
  assert.equal(frogFacing(frog),1,'turning back right restores the original atlas direction');
+});
+
+test('frog rises only during the airborne middle of a hop',()=>{
+ const frog={hp:10,__frogHopActive:true,__frogAttackPose:0,__frogHopPhase:0};
+ assert.equal(frogHopLift(frog),0);
+ frog.__frogHopPhase=.5;
+ assert.ok(frogHopLift(frog)>.25,'mid-hop must visibly lift above the ground');
+ frog.__frogHopPhase=1;
+ assert.equal(frogHopLift(frog),0,'landing returns to ground level');
+ frog.__frogHopActive=false;
+ frog.__frogHopPhase=.5;
+ assert.equal(frogHopLift(frog),0,'resting frog stays planted');
+});
+
+test('normal Moss Frog moves in hop bursts with still rests between them',()=>{
+ let start=null;
+ for(let z=-6;z<=6&&!start;z++)for(let x=-6;x<=2;x++){
+  if(enemyCanStand(x,z,.3)&&enemyCanStand(x+4,z,.3)){start=[x,z];break;}
+ }
+ assert.ok(start,'test map needs one open four-metre lane');
+ const world=new EnemyWorld();
+ world.reset('thorn',0);world.initial=false;
+ const frog=world.makeEnemy('thorn',start[0],start[1]);frog.attack=999;
+ world.enemies=[frog];
+ const player=[start[0]+4,0,start[1]];
+ const moved=[];const phases=[];
+ for(let i=0;i<36;i++){
+  const x=frog.x,z=frog.z;
+  world.update(.05,player,1);
+  moved.push(Math.hypot(frog.x-x,frog.z-z)>.0001);
+  phases.push(frog.__frogHopPhase||0);
+ }
+ assert.ok(moved.some(Boolean),'frog must travel during a hop');
+ assert.ok(moved.some((v,i)=>!v&&i>4&&moved.slice(Math.max(0,i-2),i).some(Boolean)),'frog must visibly pause after a hop');
+ assert.ok(phases.some(p=>p>.35&&p<.75),'hop phase must pass through an airborne middle');
 });
 
 test('compatibility frame selector stays in the 8-frame jump range',()=>{
