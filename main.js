@@ -397,7 +397,7 @@ function renderScene(){
  }
 
  // Draw billboards against solid depth after foliage, without moving their ground anchor.
- if(state.thornView==='sprite'&&!proofCamera){
+ if(!proofCamera){
   if(thornSprite)for(const e of visibleEnemies)if(e.type==='thorn'){const n=thornSprite.draw(e,vp,state.player,state.thornFrames);draws+=n.calls;tris+=n.triangles;}
   if(animalSprites)for(const e of visibleEnemies)if(e.type!=='thorn'&&STAGE1_SPRITE_TYPES.has(e.type)){const n=animalSprites.draw(e,vp,state.player);draws+=n.calls;tris+=n.triangles;}
   gl.useProgram(prog);
