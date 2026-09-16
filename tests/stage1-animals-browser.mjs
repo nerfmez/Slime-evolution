@@ -37,7 +37,10 @@ try{
  await page.locator('#skill-choice .skill-card').first().click();
  const modes=[['thorn','Moss Frog'],['moss','Spark Hedgehog'],['petal','Pond Turtle'],['crystal','Water Calf'],['panda','Forest Panda']];
  for(const [mode,name] of modes){
-  await page.selectOption('#enemy-mode',mode);await page.click('#restart');await page.waitForTimeout(2400);
+  await page.evaluate(selected=>{
+   const select=document.getElementById('enemy-mode');select.value=selected;select.dispatchEvent(new Event('change',{bubbles:true}));document.getElementById('restart').click();
+  },mode);
+  await page.waitForTimeout(2400);
   const gameError=await page.locator('#error').isVisible()?await page.locator('#error').textContent():'';
   assert.equal(gameError,'',`game error while reviewing ${name}: ${gameError}`);
   assert.match(await page.locator('#roster').textContent(),new RegExp(name));
