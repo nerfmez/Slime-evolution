@@ -51,7 +51,7 @@ jobs:
         run: |
           npm install --no-save playwright
           npx playwright install --with-deps chromium
-      - name: Review each animal in packaged game renderer
+      - name: Runtime-check each animal in packaged game renderer
         run: node tests/stage1-animals-browser.mjs
       - uses: actions/upload-artifact@v4
         if: always()
