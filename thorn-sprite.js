@@ -1,5 +1,5 @@
 import {program,geometry,render,uniform} from './gl.js';
-import {EnemyWorld,ENEMY_TYPES} from './enemies.js';
+import {EnemyWorld,ENEMY_TYPES,enemyCanStand} from './enemies.js';
 
 // Stage 1 animal pass: normal Thorn becomes Moss Frog. Elite Thorn stays unchanged.
 ENEMY_TYPES.thorn.name='Moss Frog';
@@ -10,20 +10,54 @@ const HIT_CELL=9; // Approved: death frame 2 is also the hit frame.
 const ATTACK_RECT=Object.freeze([.25,0,.75,.25]); // Bottom row, cols 2-4: seated tongue attack.
 const DEATH_FRAME_TIME=.095;
 const DEATH_LIFE=DEATH_FRAME_TIME*DEATH_CELLS.length+.035;
-const FROG_STRIDE=.82;
-const THORN_STRIDE=.42;
 export const FROG_RENDER_SCALE=.714; // 1.02 * 0.70: 30% smaller than the previous in-game sprite.
+export const FROG_HOP_DURATION=.46;
+export const FROG_HOP_MOVE_SCALE=2.1;
+const FROG_HOP_MOVE_START=.16;
+const FROG_HOP_MOVE_END=.86;
+const FROG_HOP_LIFT=.30;
 
 function cellRect(cell){
  const col=cell%4,row=Math.floor(cell/4);
  return [col*.25,(3-row)*.25,.25,.25];
 }
+function frogRestDuration(e){
+ const hop=e.__frogHopCount||0;
+ return .18+.16*(.5+.5*Math.sin(e.id*12.9898+hop*4.17));
+}
+function ensureFrogHop(e){
+ if(e.__frogHopActive==null)e.__frogHopActive=false;
+ if(!Number.isFinite(e.__frogHopPhase))e.__frogHopPhase=0;
+ if(!Number.isFinite(e.__frogHopCount))e.__frogHopCount=0;
+ if(!Number.isFinite(e.__frogRest))e.__frogRest=.08+(e.id%5)*.03;
+}
+function advanceFrogHop(e,dt,wantsMove){
+ ensureFrogHop(e);
+ if(e.__frogHopActive){
+  if(e.__frogHopPhase>=1){
+   e.__frogHopActive=false;e.__frogHopPhase=0;e.__frogHopCount++;e.__frogRest=frogRestDuration(e);
+   return false;
+  }
+  e.__frogHopPhase=Math.min(1,e.__frogHopPhase+dt/FROG_HOP_DURATION);
+ }else{
+  e.__frogRest=Math.max(0,e.__frogRest-dt);
+  e.__frogHopPhase=0;
+  if(wantsMove&&e.__frogRest<=0){e.__frogHopActive=true;e.__frogHopPhase=Math.min(1,dt/FROG_HOP_DURATION);}
+ }
+ const p=e.__frogHopPhase;
+ return e.__frogHopActive&&p>FROG_HOP_MOVE_START&&p<FROG_HOP_MOVE_END;
+}
 function jumpCell(e){
- if((e.walkBlend||0)<.055)return JUMP_CELLS[0];
- // Keep gameplay/Elite Thorn stride untouched. Only slow the normal frog's visual cycle.
- const visualPhase=(e.walkPhase||0)*(THORN_STRIDE/FROG_STRIDE);
- const phase=((visualPhase%1)+1)%1;
- return JUMP_CELLS[Math.min(7,Math.floor(phase*8))];
+ if(!e.__frogHopActive)return JUMP_CELLS[0];
+ const p=Math.max(0,Math.min(1,e.__frogHopPhase||0));
+ return JUMP_CELLS[Math.min(7,Math.floor(p*8))];
+}
+export function frogHopLift(e){
+ if(!e||e.__frogCorpse||e.hp<=0||(e.__frogAttackPose||0)>0||!e.__frogHopActive)return 0;
+ const p=Math.max(0,Math.min(1,e.__frogHopPhase||0));
+ if(p<=.18||p>=.92)return 0;
+ const t=(p-.18)/.74;
+ return Math.sin(t*Math.PI)*FROG_HOP_LIFT;
 }
 export function frogFacing(e){
  // The game camera's horizontal screen axis is world X. The approved atlas faces
@@ -47,8 +81,8 @@ export function frogFrame(e){
  return {rect:cellRect(jumpCell(e)),width:1,offset:0};
 }
 
-// Preserve gameplay logic. This wrapper only retains short-lived visual state for
-// normal frogs so approved attack/death frames can finish after the simulation event.
+// Preserve the original combat/pathfinding. The wrapper changes only normal Moss Frog
+// locomotion: crouch -> moving airborne hop -> landing -> a short motionless rest.
 function patchFrogVisualState(){
  const proto=EnemyWorld.prototype;
  if(proto.__mossFrogVisualPatch)return;
@@ -63,21 +97,41 @@ function patchFrogVisualState(){
  proto.update=function(dt,player,limit,storm){
   this.__frogCorpses=this.__frogCorpses||[];
   if(this.enemies?.some(e=>e.__frogCorpse))this.enemies=this.enemies.filter(e=>!e.__frogCorpse);
-  const before=new Map((this.enemies||[]).map(e=>[e.id,{enemy:e,attack:e.attack||0}]));
+  const before=new Map((this.enemies||[]).map(e=>{
+   const normalFrog=e.type==='thorn'&&!e.isElite&&!e.isBoss;
+   const wantsMove=normalFrog&&Math.hypot(player[0]-e.x,player[2]-e.z)>e.radius+.29;
+   const hopMove=normalFrog&&dt>0?advanceFrogHop(e,Math.min(dt,.05),wantsMove):false;
+   return [e.id,{enemy:e,attack:e.attack||0,x:e.x,z:e.z,yaw:e.yaw,walkPhase:e.walkPhase||0,hopMove,normalFrog}];
+  }));
   const out=originalUpdate.call(this,dt,player,limit,storm);
   const live=new Map((this.enemies||[]).map(e=>[e.id,e]));
   if(dt>0){
    for(const corpse of this.__frogCorpses)corpse.__frogDeathAge=(corpse.__frogDeathAge||0)+dt;
    for(const [id,snapshot] of before){
     const old=snapshot.enemy;
-    if(old.type!=='thorn'||old.elite)continue;
+    if(!snapshot.normalFrog)continue;
     const current=live.get(id);
     if(current){
+     if(snapshot.hopMove){
+      const dx=current.x-snapshot.x,dz=current.z-snapshot.z;
+      const tx=snapshot.x+dx*FROG_HOP_MOVE_SCALE,tz=snapshot.z+dz*FROG_HOP_MOVE_SCALE;
+      if(enemyCanStand(tx,tz,current.radius)){current.x=tx;current.z=tz;}
+      else{
+       if(enemyCanStand(tx,current.z,current.radius))current.x=tx;
+       if(enemyCanStand(current.x,tz,current.radius))current.z=tz;
+      }
+      current.walkBlend=1;
+     }else{
+      current.x=snapshot.x;current.z=snapshot.z;current.yaw=snapshot.yaw;current.walkPhase=snapshot.walkPhase;current.walkBlend=0;
+     }
      current.__frogAttackPose=Math.max(0,(current.__frogAttackPose||0)-dt);
-     if((current.attack||0)>snapshot.attack+.35)current.__frogAttackPose=.18;
+     if((current.attack||0)>snapshot.attack+.35){
+      current.__frogAttackPose=.18;
+      current.__frogHopActive=false;current.__frogHopPhase=0;current.__frogRest=.26;
+     }
     }else if(old.hp<=0&&!old.__frogCorpseMade){
      old.__frogCorpseMade=true;
-     this.__frogCorpses.push({...old,__frogCorpse:true,__frogDeathAge:0,__frogAttackPose:0,hit:0});
+     this.__frogCorpses.push({...old,__frogCorpse:true,__frogDeathAge:0,__frogAttackPose:0,__frogHopActive:false,__frogHopPhase:0,hit:0});
     }
    }
   }
@@ -103,7 +157,7 @@ function loadImage(url){
 }
 
 export async function createThornSprite(gl){
- const image=await loadImage('./assets/enemies/frog-moveset.png?v=20260915-facing1');
+ const image=await loadImage('./assets/enemies/frog-moveset.png?v=20260916-hop1');
  const texture=gl.createTexture();
  gl.activeTexture(gl.TEXTURE10);gl.bindTexture(gl.TEXTURE_2D,texture);
  const previousFlip=gl.getParameter(gl.UNPACK_FLIP_Y_WEBGL);
@@ -119,8 +173,8 @@ export async function createThornSprite(gl){
  const g=geometry(gl,[-.82,.82,0,.82,.82,0,.82,-.82,0,-.82,-.82,0],null,[0,1,1,1,1,0,0,0],[0,2,1,0,3,2]);
  gl.useProgram(p);gl.uniform1i(gl.getUniformLocation(p,'atlas'),10);gl.uniform1i(gl.getUniformLocation(p,'canopy'),1);
  return {draw(e,vp,player){
-  const frame=frogFrame(e),facing=frogFacing(e),scale=(e.scale||1)*FROG_RENDER_SCALE;
-  gl.useProgram(p);uniform(gl,p,'vp',vp);uniform(gl,p,'origin',[e.x,.02,e.z]);uniform(gl,p,'player',player);uniform(gl,p,'rect',frame.rect);uniform(gl,p,'spriteScale',scale);uniform(gl,p,'spriteWidth',frame.width);uniform(gl,p,'spriteOffsetX',frame.offset*facing);uniform(gl,p,'flipX',facing<0?1:0);
+  const frame=frogFrame(e),facing=frogFacing(e),scale=(e.scale||1)*FROG_RENDER_SCALE,lift=frogHopLift(e);
+  gl.useProgram(p);uniform(gl,p,'vp',vp);uniform(gl,p,'origin',[e.x,.02+lift,e.z]);uniform(gl,p,'player',player);uniform(gl,p,'rect',frame.rect);uniform(gl,p,'spriteScale',scale);uniform(gl,p,'spriteWidth',frame.width);uniform(gl,p,'spriteOffsetX',frame.offset*facing);uniform(gl,p,'flipX',facing<0?1:0);
   gl.disable(gl.CULL_FACE);gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);gl.depthMask(true);render(gl,g);gl.disable(gl.BLEND);return {calls:1,triangles:2};
  }};
 }
