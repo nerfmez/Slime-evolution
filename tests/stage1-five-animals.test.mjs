@@ -12,6 +12,7 @@ const html=readFileSync('index.html','utf8');
 test('Stage 1 exposes five real-animal-derived families',()=>{
  for(const name of ['Moss Frog','Spark Hedgehog','Pond Turtle','Water Calf','Forest Panda'])assert.match(enemies,new RegExp(name));
  assert.match(enemies,/STAGE1_FAMILIES=\['thorn','moss','petal','crystal','panda'\]/);
+ assert.match(enemies,/startsWith\('elite-'\)/);
 });
 
 test('each animal has a distinct skill identity',()=>{
@@ -32,6 +33,7 @@ test('walk hit cast and death frames are wired to the shared atlas',()=>{
 test('main renderer and test menu use the five-animal pass',()=>{
  assert.match(main,/createStageOneAnimalSprites/);
  assert.match(main,/STAGE1_SPRITE_TYPES/);
+ assert.match(main,/if\(!proofCamera\)/);
  assert.match(html,/ทดสอบครบ 5 ชนิด/);
  assert.match(html,/Water Calf · Water Shot/);
  assert.match(html,/Forest Panda · Roll/);
