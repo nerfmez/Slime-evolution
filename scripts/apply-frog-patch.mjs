@@ -49,10 +49,11 @@ if(!hasNaturalHop){
   bundle=replaceOnce(bundle,'frogAttack:0,windup:0','frogAttack:0,frogHopPhase:0,frogHopActive:!1,frogRest:.08+this.serial%5*.03,frogHopCount:0,windup:0','frog hop state');
  }
  if(!bundle.includes('frogMoveScale')){
-  bundle=replaceOnce(bundle,
-   '}:n.windup=0,d){if(!f){',
-   '}:n.windup=0;let frogMoveScale=1;if(n.type===`thorn`&&!n.elite&&!n.boss){if(n.frogHopActive){if((n.frogHopPhase||0)>=1)n.frogHopActive=!1,n.frogHopPhase=0,n.frogHopCount=(n.frogHopCount||0)+1,n.frogRest=.18+.16*(.5+.5*Math.sin(n.id*12.9898+n.frogHopCount*4.17));else n.frogHopPhase=Math.min(1,(n.frogHopPhase||0)+e/.46)}else n.frogRest=Math.max(0,(n.frogRest||0)-e),n.frogHopPhase=0,d&&n.frogRest<=0&&(n.frogHopActive=!0,n.frogHopPhase=Math.min(1,e/.46));let fp=n.frogHopPhase||0;frogMoveScale=n.frogHopActive&&fp>.16&&fp<.86?2.1:0}if(d&&frogMoveScale>0){if(!f){',
-   'frog hop gate');
+  const gateMatch=bundle.match(/:n\.windup=0,([A-Za-z_$][A-Za-z0-9_$]*)\)\{/);
+  if(!gateMatch)throw Error('frog hop gate: movement anchor not found');
+  const moving=gateMatch[1];
+  const gateNext=':n.windup=0;let frogMoveScale=1;if(n.type===`thorn`&&!n.elite&&!n.boss){if(n.frogHopActive){if((n.frogHopPhase||0)>=1)n.frogHopActive=!1,n.frogHopPhase=0,n.frogHopCount=(n.frogHopCount||0)+1,n.frogRest=.18+.16*(.5+.5*Math.sin(n.id*12.9898+n.frogHopCount*4.17));else n.frogHopPhase=Math.min(1,(n.frogHopPhase||0)+e/.46)}else n.frogRest=Math.max(0,(n.frogRest||0)-e),n.frogHopPhase=0,'+moving+'&&n.frogRest<=0&&(n.frogHopActive=!0,n.frogHopPhase=Math.min(1,e/.46));let fp=n.frogHopPhase||0;frogMoveScale=n.frogHopActive&&fp>.16&&fp<.86?2.1:0}if('+moving+'&&frogMoveScale>0){';
+  bundle=replaceOnce(bundle,gateMatch[0],gateNext,'frog hop gate');
   bundle=replaceOnce(bundle,'let o=Math.min(i.speed*e,Math.hypot(l-n.x,u-n.z));','let o=Math.min(i.speed*e*frogMoveScale,Math.hypot(l-n.x,u-n.z));','frog hop travel speed');
  }
  if(!bundle.includes('n.frogHopActive=!1,n.frogHopPhase=0,n.frogRest=.26')){
