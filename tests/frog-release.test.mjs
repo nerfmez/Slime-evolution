@@ -4,7 +4,7 @@ import {readFileSync,statSync} from 'node:fs';
 const bundlePath='published/2026-09-14/assets/main-critter-v4.js';
 const atlasPath='published/2026-09-14/assets/enemies/frog-moveset.png';
 
-test('authoritative release contains directional Moss Frog renderer, not old normal Thorn sprite request',()=>{
+test('authoritative release contains directional 30-percent-smaller Moss Frog renderer, not old normal Thorn sprite request',()=>{
  const js=readFileSync(bundlePath,'utf8');
  assert.match(js,/name:`Moss Frog`/);
  assert.match(js,/frog-moveset\.png\?v=20260915-facing1/);
@@ -12,6 +12,7 @@ test('authoritative release contains directional Moss Frog renderer, not old nor
  assert.match(js,/globalThis\.__slimeFrogFacing=Fh/);
  assert.match(js,/uniform float flipX/);
  assert.match(js,/spriteOffsetX',c\.o\*l/);
+ assert.match(js,/spriteScale',\(t\.scale\|\|1\)\*\.714/);
  assert.match(js,/this\.frogDead/);
  assert.match(js,/frogAttack/);
  assert.doesNotMatch(js,/fetch\(`\.\/assets\/enemies\/thorn-sprite\.png`\)/);
