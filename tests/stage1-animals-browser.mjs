@@ -3,9 +3,9 @@ import {mkdirSync,writeFileSync} from 'node:fs';
 import {spawn} from 'node:child_process';
 import {chromium} from 'playwright';
 
-const server=spawn(process.execPath,['node_modules/vite/bin/vite.js','--host','127.0.0.1','--port','4173'],{stdio:['ignore','pipe','pipe']});
+const server=spawn(process.execPath,['node_modules/vite/bin/vite.js','preview','--host','127.0.0.1','--port','4173'],{stdio:['ignore','pipe','pipe']});
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
-async function waitServer(){for(let i=0;i<80;i++){try{const r=await fetch('http://127.0.0.1:4173/');if(r.ok)return;}catch{}await sleep(150);}throw Error('Vite did not start');}
+async function waitServer(){for(let i=0;i<80;i++){try{const r=await fetch('http://127.0.0.1:4173/');if(r.ok)return;}catch{}await sleep(150);}throw Error('Vite preview did not start');}
 
 mkdirSync('/tmp/stage1-animal-review',{recursive:true});
 let browser,page;
@@ -31,5 +31,5 @@ try{
   await page.screenshot({path:`/tmp/stage1-animal-review/${mode}.png`,fullPage:true,timeout:60000});
  }
  assert.deepEqual(errors,[],'page emitted JavaScript errors');assert.deepEqual(missing,[],'game requested missing files');
- writeFileSync('/tmp/stage1-animal-review/report.json',JSON.stringify({modes:modes.map(x=>x[1]),errors,missing,verification:'Chromium software WebGL2 render; physical iPad/Android FPS not measured'},null,2));
+ writeFileSync('/tmp/stage1-animal-review/report.json',JSON.stringify({modes:modes.map(x=>x[1]),errors,missing,verification:'Packaged build + migrated static assets rendered in Chromium software WebGL2; physical iPad/Android FPS not measured'},null,2));
 }catch(error){writeFileSync('/tmp/stage1-animal-review/error.txt',error.stack||String(error));if(page)await page.screenshot({path:'/tmp/stage1-animal-review/failure.png',fullPage:true}).catch(()=>{});throw error;}finally{if(browser)await browser.close();server.kill('SIGTERM');}
