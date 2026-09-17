@@ -1,0 +1,83 @@
+name: Import verified three-species cleanup once
+on:
+  push:
+    branches: [feature/water-calf-from-frog-canon]
+    paths: [.github/workflows/import-roster-cleanup-once.yml]
+permissions:
+  contents: write
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify exact parent and apply only the reviewed cleanup files
+        env:
+          TRANSFER_URL: 'https://sdmntprwestcentralus.oaiusercontent.com/files/00000000-bf58-81fb-8217-7796c28b3301/raw?se=2026-09-17T13%3A31%3A24Z&sp=r&sv=2026-02-06&sr=b&scid=ce2ad7b7-d4d2-5492-a947-7aeddabae8c5&skoid=27fbae2c-124f-4566-a0d8-1b07a5a41c53&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2026-09-17T08%3A43%3A37Z&ske=2026-09-18T08%3A43%3A37Z&sks=b&skv=2026-02-06&sig=X5Aeqqwz%2B1alPou4xnc7U8IWiJQZB6xG/5KQmuD1oGY%3D'
+        run: |
+          set -euo pipefail
+          curl --fail --location --max-time 90 "$TRANSFER_URL" -o /tmp/roster-cleanup.zip
+          echo '53e5710874a1184c3755177beb958867fbcbbb03e45d385d11a670f4fe36ae3b  /tmp/roster-cleanup.zip' | sha256sum --check -
+          python3 - <<'PY'
+          from pathlib import Path
+          import hashlib,json,zipfile
+          allowed=set('''game/assets/main-critter-v4.js
+          game/assets/enemy-roster.js
+          game/index.html
+          game/review/index.html
+          game/review/slime.html
+          game/review/frames.json
+          AGENTS.md
+          HANDOFF.md
+          docs/ROSTER-CLEANUP.md
+          docs/roster-cleanup-proof.json
+          roster-parent-manifest.json
+          tests/roster-cleanup.test.mjs
+          tests/roster-browser.mjs
+          tests/water-calf.test.mjs'''.splitlines())
+          with zipfile.ZipFile('/tmp/roster-cleanup.zip') as z:
+              assert set(z.namelist())==allowed
+              assert sum(f.file_size for f in z.infolist())<2000000
+              before=json.loads(z.read('roster-parent-manifest.json'))
+              actual={str(p.relative_to('game')) for p in Path('game').rglob('*') if p.is_file()}
+              assert actual=={e['path'] for e in before},'Parent game inventory changed; do not overwrite'
+              for e in before:
+                  assert hashlib.sha256(Path('game',e['path']).read_bytes()).hexdigest()==e['sha256'],e['path']
+              z.extractall('.')
+          proof=json.loads(Path('docs/roster-cleanup-proof.json').read_text())
+          for e in proof['removed']:
+              p=Path('game',e['path'])
+              assert hashlib.sha256(p.read_bytes()).hexdigest()==e['sha256'],str(p)
+              p.unlink()
+          p=Path('tests/frog-canon.mjs');s=p.read_text()
+          old=r'/thorn-sprite\.png|\/enemies\/crystal(?:\.|-elite)/i'
+          assert old in s
+          s=s.replace(old,r'/\/enemies\/(?:thorn|moss|petal|crystal)(?:[.-])/i')
+          s=s.replace('no obsolete normal Thorn sprite or Crystal model requested','no retired enemy model or sprite requested')
+          p.write_text(s)
+          PY
+          node --input-type=module <<'JS'
+          import {readFile,writeFile} from 'node:fs/promises';
+          import {treeHash} from './scripts/canon.mjs';
+          const c=JSON.parse(await readFile('CANON.json','utf8'));
+          if(c.tree!=='575c237cbc97440bb0bae088dac277bdbcd293b9')throw Error('Not the verified Water parent');
+          c.previousCandidateTree=c.tree;c.tree=await treeHash('game');
+          c.name='Moss Frog + Water Calf + Ancient Bloom — active roster';
+          c.kind='scoped-three-species-candidate';
+          await writeFile('CANON.json',JSON.stringify(c,null,2)+'\n');
+          console.log('NEW GAME TREE',c.tree);
+          JS
+          node --check game/assets/main-critter-v4.js
+          npm test
+          npm run build
+      - name: Commit reviewed files only to the candidate branch
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REF" = 'refs/heads/feature/water-calf-from-frog-canon'
+          git add -- game tests docs AGENTS.md HANDOFF.md CANON.json roster-parent-manifest.json
+          git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m 'Keep Frog, Water and boss only; remove retired monsters, model fallbacks and 57 obsolete files'
+          git push origin HEAD:feature/water-calf-from-frog-canon
+          echo 'Candidate updated; main and live production are not changed by this importer.' >> "$GITHUB_STEP_SUMMARY"
