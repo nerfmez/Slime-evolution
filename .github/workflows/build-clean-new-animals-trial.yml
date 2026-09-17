@@ -21,6 +21,16 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Restore exact Water Calf atlas from latest uploaded art
+        run: |
+          cat tools/water-calf-atlas-b64/*.txt | tr -d '\n' | base64 -d > public/assets/enemies/water-calf-atlas.webp
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('public/assets/enemies/water-calf-atlas.webp').read_bytes()
+          assert len(p)==40614, len(p)
+          assert p[:4]==b'RIFF' and p[8:12]==b'WEBP', p[:12]
+          print('Exact Water Calf atlas:', len(p), 'bytes, valid WebP header')
+          PY
       - name: Apply clean trial source changes
         run: |
           node tools/apply-clean-new-animals-trial.mjs
@@ -75,7 +85,7 @@ jobs:
           page.on('pageerror',e=>errors.push('pageerror: '+e.message));
           page.on('console',m=>{if(m.type()==='error')errors.push('console: '+m.text())});
           page.on('response',r=>{const u=r.url();if(r.status()>=400)errors.push('HTTP '+r.status()+' '+u);if(u.includes('/assets/enemies/')){const name=u.split('/').pop().split('?')[0];if(!['frog-moveset.png','water-calf-atlas.webp'].includes(name))badEnemyRequests.push(name);}});
-          let response=await page.goto('http://127.0.0.1:4173/',{waitUntil:'load'});
+          const response=await page.goto('http://127.0.0.1:4173/',{waitUntil:'load'});
           if(!response?.ok())throw new Error('index HTTP '+response?.status());
           await page.waitForTimeout(3500);
           let err=await page.locator('#error').evaluate(el=>({hidden:el.hidden,text:el.textContent}));
