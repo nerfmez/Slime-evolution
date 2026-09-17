@@ -1,49 +1,136 @@
-name: Source-first main validation
+name: Source-first release gate
 
 on:
   push:
-    branches: [main]
+    branches: [main, fix/release-integrity]
   pull_request:
     branches: [main]
+  workflow_dispatch:
 
 permissions:
   contents: read
 
+concurrency:
+  group: slime-release-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   validate:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
+    env:
+      EXPECTED_COMMIT: ${{ github.sha }}
+      LIBGL_ALWAYS_SOFTWARE: '1'
+      WEBKIT_DISABLE_DMABUF_RENDERER: '1'
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-
-      - name: Install and build source
+      - name: Test the guard against missing, stale and corrupt releases
+        run: node --test tests/release-guard.test.mjs
+      - name: Build root source, audit public assets, stamp and hash every output file
         run: |
           npm install
           npm run build
-          test -s dist/index.html
-          test -s dist/assets/enemies/water-calf-atlas.webp
-          test ! -e dist/assets/enemies/crystal.bin
-          test ! -e dist/assets/enemies/crystal.json
-          test ! -e dist/assets/enemies/crystal.png
-          test ! -e dist/assets/enemies/crystal-elite.png
-
-      - name: Install Chromium verifier
+      - name: Install browser verifiers
         run: |
-          npm install --no-save playwright
-          npx playwright install --with-deps chromium
-
-      - name: Boot built game and verify Water Calf runtime
+          npm install --no-save playwright@1.62.0
+          npx playwright install --with-deps chromium webkit
+      - name: Test actual dist over strict HTTP in Chromium and WebKit
         run: |
-          npx vite preview --host 127.0.0.1 --port 4173 >/tmp/slime-vite.log 2>&1 &
-          VITE_PID=$!
-          trap 'kill $VITE_PID || true' EXIT
+          node scripts/release-guard.mjs serve >/tmp/slime-static.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill $SERVER_PID || true' EXIT
           for i in {1..30}; do
-            if curl -fsS http://127.0.0.1:4173/ >/dev/null; then
-              break
-            fi
+            curl -fsS http://127.0.0.1:4173/release.json >/dev/null && break
             sleep 1
           done
-          SMOKE_URL=http://127.0.0.1:4173/ node tests/source-smoke.mjs
+          SMOKE_URL=http://127.0.0.1:4173/ TEST_MISSING_ASSET=1 BROWSER=chromium node tests/source-smoke.mjs
+          SMOKE_URL=http://127.0.0.1:4173/ TEST_MISSING_ASSET=1 BROWSER=webkit xvfb-run -a node tests/source-smoke.mjs
+      - name: Save screenshots and exact runtime results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: runtime-proof-${{ github.sha }}
+          path: test-results/
+          if-no-files-found: ignore
+      - name: Save only the tested deployable artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: verified-dist-${{ github.sha }}
+          path: dist/
+          if-no-files-found: error
+      - name: Report validation without claiming deployment
+        run: echo 'Source/asset/runtime checks passed. Hosting is NOT updated until the deploy job and production verification pass.' >> "$GITHUB_STEP_SUMMARY"
+
+  deploy:
+    needs: validate
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      VERCEL_ORG_ID: team_wUPNV5SYxHR0mz3URq89uGm0
+      VERCEL_PROJECT_ID: prj_dmWGye4WkusoSFye1PIIAxgt5KM3
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+      EXPECTED_COMMIT: ${{ github.sha }}
+    steps:
+      - name: Require publishing authorization; never report an undeployed build as live
+        run: |
+          if [ -z "$VERCEL_TOKEN" ]; then
+            echo '::error::NOT DEPLOYED: add repository Actions secret VERCEL_TOKEN with access to the existing slime-evolution project. Do not paste the token into chat.'
+            echo 'NOT DEPLOYED. Build passed, but this workflow has no Vercel publishing credential. Existing websites are unchanged.' >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/download-artifact@v4
+        with:
+          name: verified-dist-${{ github.sha }}
+          path: dist/
+      - name: Install release tools
+        run: |
+          npm install --no-save playwright@1.62.0 vercel
+          npx playwright install --with-deps chromium
+      - name: Upload tested files to the existing project without changing its live domain
+        id: stage
+        run: |
+          set -euo pipefail
+          mkdir -p .vercel/output
+          cp -a dist .vercel/output/static
+          printf '{"version":3,"routes":[{"src":"/release.json","headers":{"cache-control":"no-store"},"continue":true},{"src":"/.*","headers":{"cache-control":"public, max-age=0, must-revalidate"},"continue":true},{"handle":"filesystem"}]}' > .vercel/output/config.json
+          printf '{"projectId":"%s","orgId":"%s"}' "$VERCEL_PROJECT_ID" "$VERCEL_ORG_ID" > .vercel/project.json
+          npx vercel deploy --prebuilt --prod --skip-domain --yes --token "$VERCEL_TOKEN" > /tmp/slime-staged-url.txt
+          URL=$(tail -n1 /tmp/slime-staged-url.txt)
+          case "$URL" in https://*.vercel.app) ;; *) echo 'Invalid staged URL'; exit 1;; esac
+          echo "url=$URL/" >> "$GITHUB_OUTPUT"
+      - name: Verify every uploaded file and boot the staged deployment
+        env:
+          SMOKE_URL: ${{ steps.stage.outputs.url }}
+          SMOKE_OUTPUT: test-results/staged
+        run: node tests/source-smoke.mjs
+      - name: Promote only the current tested commit to the original production domain
+        env:
+          STAGED_URL: ${{ steps.stage.outputs.url }}
+        run: |
+          set -euo pipefail
+          LATEST=$(git ls-remote origin refs/heads/main | cut -f1)
+          test "$LATEST" = "$EXPECTED_COMMIT" || { echo 'A newer commit exists. Refusing stale promotion.'; exit 1; }
+          npx vercel promote "$STAGED_URL" --yes --token "$VERCEL_TOKEN"
+      - name: Verify the original live domain before declaring success
+        env:
+          SMOKE_URL: https://slime-evolution-five.vercel.app/
+          SMOKE_OUTPUT: test-results/production
+        run: |
+          node tests/source-smoke.mjs
+          echo "DEPLOYED AND VERIFIED: https://slime-evolution-five.vercel.app/ — $EXPECTED_COMMIT" >> "$GITHUB_STEP_SUMMARY"
+      - name: Save live deployment evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: deployment-proof-${{ github.sha }}
+          path: test-results/
+          if-no-files-found: ignore

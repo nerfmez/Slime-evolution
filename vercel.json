@@ -1,5 +1,12 @@
 {
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
-  "installCommand": "npm install"
+  "installCommand": "npm install",
+  "headers": [
+    {"source":"/", "headers":[{"key":"Cache-Control","value":"no-store"}]},
+    {"source":"/index.html", "headers":[{"key":"Cache-Control","value":"no-store"}]},
+    {"source":"/slime-motion.html", "headers":[{"key":"Cache-Control","value":"no-store"}]},
+    {"source":"/release.json", "headers":[{"key":"Cache-Control","value":"no-store"}]},
+    {"source":"/assets/(.*)", "headers":[{"key":"Cache-Control","value":"public, max-age=0, must-revalidate"}]}
+  ]
 }

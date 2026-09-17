@@ -1,75 +1,103 @@
-import { chromium } from 'playwright';
+import assert from 'node:assert/strict';
+import { mkdir, writeFile } from 'node:fs/promises';
+import { chromium, webkit } from 'playwright';
+import { verifyRemote } from '../scripts/release-guard.mjs';
 
-const url = process.env.SMOKE_URL || 'http://127.0.0.1:4173/';
-const browser = await chromium.launch({
-  headless: true,
-  args: [
-    '--use-gl=angle',
-    '--use-angle=swiftshader',
-    '--enable-unsafe-swiftshader',
-    '--enable-webgl',
-    '--ignore-gpu-blocklist'
-  ]
+const url=process.env.SMOKE_URL || 'http://127.0.0.1:4173/';
+const sha=process.env.EXPECTED_COMMIT || process.env.GITHUB_SHA;
+const engine=process.env.BROWSER || 'chromium';
+const output=process.env.SMOKE_OUTPUT || `test-results/${engine}`;
+await mkdir(output,{recursive:true});
+await verifyRemote(url,sha);
+const browser=await (engine==='webkit'?webkit:chromium).launch({
+  headless:engine!=='webkit',
+  ...(engine==='chromium'?{args:['--use-gl=angle','--use-angle=swiftshader','--enable-unsafe-swiftshader','--enable-webgl','--ignore-gpu-blocklist']}: {})
 });
-
-try {
-  const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
-  const pageErrors = [];
-  const failedRequests = [];
-  const consoleErrors = [];
-
-  page.on('pageerror', error => pageErrors.push(error.message));
-  page.on('requestfailed', request => failedRequests.push(`${request.url()} :: ${request.failure()?.errorText || 'failed'}`));
-  page.on('console', message => {
-    if (message.type() === 'error') consoleErrors.push(message.text());
-  });
-
-  const response = await page.goto(url, { waitUntil: 'networkidle', timeout: 30000 });
-  if (!response || !response.ok()) {
-    throw new Error(`page load failed: ${response?.status() ?? 'no response'}`);
+const report={commit:sha,url,engine,cases:[]};
+const extraHTTPHeaders=process.env.VERCEL_AUTOMATION_BYPASS_SECRET?{'x-vercel-protection-bypass':process.env.VERCEL_AUTOMATION_BYPASS_SECRET}:{};
+async function state(page){return page.evaluate(()=>({
+  build:document.querySelector('meta[name="slime-build"]')?.content,
+  errorHidden:document.getElementById('error')?.hidden===true,
+  errorText:document.getElementById('error')?.textContent||'',
+  frames:Number(document.getElementById('stats')?.dataset.frames||0),
+  status:document.getElementById('status')?.textContent||'',
+  roster:document.getElementById('roster')?.textContent||'',
+  canvas:!!document.getElementById('world')?.width
+}));}
+async function ready(page){
+  await page.waitForFunction(()=>!document.getElementById('error')?.hidden || Number(document.getElementById('stats')?.dataset.frames||0)>2,{},{timeout:60000});
+  const s=await state(page);
+  assert.equal(s.build,sha,'Wrong loaded build');
+  assert.ok(s.errorHidden,`Scene error: ${s.errorText}`);
+  assert.ok(s.frames>2 && s.canvas,`Render did not start: ${JSON.stringify(s)}`);
+  return s;
+}
+async function healthy(page,errors){
+  const before=(await state(page)).frames;
+  await page.waitForFunction(n=>Number(document.getElementById('stats')?.dataset.frames||0)>n+2,before,{timeout:30000});
+  const s=await state(page);
+  assert.ok(s.errorHidden,`Scene error: ${s.errorText}`);
+  assert.deepEqual(errors,[],'Runtime/network errors');
+  return s;
+}
+try{
+  for(const [name,viewport] of [['tablet',{width:1024,height:1366}],['phone',{width:390,height:844}]]){
+    const context=await browser.newContext({viewport,hasTouch:true,deviceScaleFactor:1,extraHTTPHeaders});
+    const page=await context.newPage(),errors=[],requests=new Set();
+    page.on('pageerror',e=>errors.push(`JS: ${e.message}`));
+    page.on('console',m=>{if(m.type()==='error'&&!m.text().includes('favicon.ico'))errors.push(`console: ${m.text()}`);});
+    page.on('requestfailed',r=>errors.push(`Network: ${r.url()} ${r.failure()?.errorText}`));
+    page.on('request',r=>{
+      const u=new URL(r.url());requests.add(u.pathname);
+      if(u.protocol.startsWith('http') && u.origin!==new URL(url).origin)errors.push(`External dependency: ${r.url()}`);
+      if(/\/assets\/enemies\/crystal(?:[.-]|\/)/.test(u.pathname))errors.push(`Removed Crystal requested: ${u.pathname}`);
+    });
+    page.on('response',r=>{
+      if(r.status()>=400 && !r.url().endsWith('/favicon.ico'))errors.push(`HTTP ${r.status()}: ${r.url()}`);
+      if(r.headers()['content-type']?.startsWith('text/html') && /\.(png|webp|json|bin|js|css)(?:\?|$)/.test(r.url()))errors.push(`HTML fallback: ${r.url()}`);
+    });
+    try{
+      const response=await page.goto(url,{waitUntil:'load',timeout:60000});
+      assert.ok(response?.ok(),'Page HTTP failure');
+      await ready(page);
+      await page.evaluate(()=>{const x=document.getElementById('mobs');x.value='12';x.dispatchEvent(new Event('change',{bubbles:true}));});
+      const modes=[];
+      for(const mode of ['water','thorn','moss','petal','all','elites','boss']){
+        await page.evaluate(mode=>{
+          const select=document.getElementById('enemy-mode');
+          if(!select||![...select.options].some(o=>o.value===mode))throw Error(`Missing mode ${mode}`);
+          select.value=mode;select.dispatchEvent(new Event('change',{bubbles:true}));
+          document.getElementById('restart')?.click();
+        },mode);
+        const s=await healthy(page,errors);
+        if(mode==='water'){
+          assert.ok(s.roster.includes('Water Calf'),`Water Calf missing: ${s.roster}`);
+          assert.ok(requests.has('/assets/enemies/water-calf-atlas.webp'),'Water Calf atlas was not requested');
+          await page.screenshot({path:`${output}/${name}-water.png`});
+        }
+        modes.push({mode,frames:s.frames,roster:s.roster});
+      }
+      await page.reload({waitUntil:'load',timeout:60000});await ready(page);await healthy(page,errors);
+      report.cases.push({name,result:'pass',modes,requestedFiles:requests.size});
+    }catch(e){
+      await page.screenshot({path:`${output}/${name}-failure.png`}).catch(()=>{});
+      report.cases.push({name,result:'fail',error:e.message,state:await state(page).catch(()=>null),errors});throw e;
+    }finally{await context.close();}
   }
-
-  let result = null;
-  for (let i = 0; i < 40; i++) {
-    result = await page.evaluate(() => ({
-      errorHidden: document.getElementById('error')?.hidden ?? false,
-      errorText: document.getElementById('error')?.textContent ?? '',
-      roster: document.getElementById('roster')?.textContent ?? '',
-      frames: Number(document.getElementById('stats')?.dataset.frames || 0),
-      status: document.getElementById('status')?.textContent ?? ''
-    }));
-    if (!result.errorHidden || result.frames > 2) break;
-    await page.waitForTimeout(250);
+  if(process.env.TEST_MISSING_ASSET==='1'){
+    const context=await browser.newContext({viewport:{width:390,height:844},extraHTTPHeaders});const page=await context.newPage();
+    try{
+      await page.route('**/assets/grass-painted.png*',route=>route.fulfill({status:404,contentType:'text/plain',body:'Injected missing grass'}));
+      await page.goto(url,{waitUntil:'load'});
+      await page.waitForFunction(()=>document.getElementById('error')?.hidden===false,{},{timeout:30000});
+      const s=await state(page);
+      assert.match(s.errorText,/grass-painted\.png.*404/,'Missing grass must produce an explicit path + HTTP error, not a fake success');
+      assert.equal(s.frames,0,'Must not report a booted scene when mandatory grass is missing');
+      report.cases.push({name:'injected-grass-404',result:'correctly rejected',error:s.errorText});
+    }finally{await context.close();}
   }
-
-  if (!result?.errorHidden) {
-    throw new Error(`scene error: ${result?.errorText || 'unknown'} | status=${result?.status || ''}`);
-  }
-  if ((result?.frames || 0) < 3) {
-    throw new Error(`render loop did not advance: ${result?.frames || 0} | status=${result?.status || ''} | pageErrors=${pageErrors.join(' | ')} | requestFailures=${failedRequests.join(' | ')} | consoleErrors=${consoleErrors.join(' | ')}`);
-  }
-
-  await page.evaluate(() => {
-    const select = document.getElementById('enemy-mode');
-    if (!select) throw new Error('enemy-mode select missing');
-    select.value = 'water';
-    select.dispatchEvent(new Event('change', { bubbles: true }));
-  });
-
-  await page.waitForTimeout(1000);
-  result = await page.evaluate(() => ({
-    errorHidden: document.getElementById('error')?.hidden ?? false,
-    errorText: document.getElementById('error')?.textContent ?? '',
-    roster: document.getElementById('roster')?.textContent ?? '',
-    frames: Number(document.getElementById('stats')?.dataset.frames || 0)
-  }));
-
-  if (!result.errorHidden) throw new Error(`scene error after Water Calf reset: ${result.errorText}`);
-  if (!result.roster.includes('Water Calf')) throw new Error(`Water Calf missing from roster: ${result.roster}`);
-  if (pageErrors.length) throw new Error(`page errors: ${pageErrors.join(' | ')}`);
-  if (failedRequests.length) throw new Error(`request failures: ${failedRequests.join(' | ')}`);
-
-  console.log('source-first runtime smoke passed', result);
-} finally {
+  console.log('RUNTIME VERIFIED',JSON.stringify(report));
+}finally{
+  await writeFile(`${output}/report.json`,JSON.stringify(report,null,2)+'\n');
   await browser.close();
 }
