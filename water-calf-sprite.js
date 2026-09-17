@@ -1,8 +1,27 @@
 import {program,geometry,render,uniform} from './gl.js';
+import {EnemyWorld} from './enemies.js';
 
 const ATLAS_URL='./assets/enemies/water-calf-atlas.webp?v=20260917-exact1';
 const DEATH_FRAMES=[9,10,11,12];
 const DEATH_FRAME_TIME=.105;
+const DEATH_LIFE=DEATH_FRAME_TIME*DEATH_FRAMES.length+.08;
+
+function patchWaterCalfDeathPoses(){
+ const proto=EnemyWorld.prototype;if(proto.__waterCalfExactSpritePatch)return;proto.__waterCalfExactSpritePatch=true;
+ const reset=proto.reset;proto.reset=function(...args){const out=reset.apply(this,args);this.__waterCalfCorpses=[];return out;};
+ const update=proto.update;proto.update=function(dt,player,limit,storm){
+  this.__waterCalfCorpses=this.__waterCalfCorpses||[];
+  if(this.enemies?.some(e=>e.__waterCalfCorpse))this.enemies=this.enemies.filter(e=>!e.__waterCalfCorpse);
+  const before=new Map((this.enemies||[]).filter(e=>e.type==='crystal'&&!e.isBoss).map(e=>[e.id,e]));
+  const out=update.call(this,dt,player,limit,storm),live=new Set((this.enemies||[]).map(e=>e.id));
+  if(dt>0){
+   for(const corpse of this.__waterCalfCorpses)corpse.__animalDeathAge=(corpse.__animalDeathAge||0)+dt;
+   for(const [id,old] of before)if(!live.has(id)&&old.hp<=0&&!old.__waterCalfCorpseMade){old.__waterCalfCorpseMade=true;this.__waterCalfCorpses.push({...old,__animalCorpse:true,__waterCalfCorpse:true,__animalDeathAge:0,hit:0,skillWindup:0,castPose:0});}
+  }
+  this.__waterCalfCorpses=this.__waterCalfCorpses.filter(e=>(e.__animalDeathAge||0)<DEATH_LIFE);this.enemies.push(...this.__waterCalfCorpses);return out;
+ };
+}
+patchWaterCalfDeathPoses();
 
 function loadImage(url){return new Promise((resolve,reject)=>{const image=new Image();image.decoding='async';image.onload=()=>resolve(image);image.onerror=()=>reject(Error('โหลดภาพ Water Calf ไม่สำเร็จ: '+url));image.src=url;});}
 function facingFor(e){const h=Math.sin(Number.isFinite(e?.yaw)?e.yaw:0);let f=e?.__waterCalfFacing===-1?-1:1;if(h>.12)f=1;else if(h<-.12)f=-1;if(e)e.__waterCalfFacing=f;return f;}
