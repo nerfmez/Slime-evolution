@@ -1,7 +1,7 @@
-name: Frog Water Boss regression
+name: Frog Spark Water Boss regression
 on:
   push:
-    branches: [main, feature/water-calf-from-frog-canon]
+    branches: [main, feature/water-calf-from-frog-canon, feature/spark-hedgehog-approved]
   pull_request:
     branches: [main]
   workflow_dispatch:
@@ -39,7 +39,7 @@ jobs:
         run: |
           npm install --no-save --package-lock=false playwright@1.62.0
           npx playwright install --with-deps ${{ matrix.browser }}
-      - name: Frog, Water damage, boss, spawn modes and every skill preset on actual game
+      - name: Frog, Water, Spark damage, boss, spawn modes and every skill preset on actual game
         run: |
           set -euo pipefail
           node scripts/canon.mjs serve >/tmp/game-static.log 2>&1 &
@@ -52,16 +52,17 @@ jobs:
           xvfb-run -a node tests/frog-canon.mjs
           xvfb-run -a node tests/water-browser.mjs
           xvfb-run -a node tests/roster-browser.mjs
+          xvfb-run -a node tests/spark-browser.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: three-species-proof-${{ matrix.browser }}
+          name: four-species-proof-${{ matrix.browser }}
           path: test-results/
           retention-days: 14
       - uses: actions/upload-artifact@v4
         if: success() && matrix.browser == 'chromium'
         with:
-          name: three-species-tested-package
+          name: four-species-tested-package
           path: dist/
           retention-days: 14
   audit-live:

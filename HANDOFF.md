@@ -1,3 +1,9 @@
+# Current handoff — Spark Hedgehog approved-art integration
+
+Read docs/SPARK-HEDGEHOG.md first. Added `spark` independently at 60 seconds using the final supplied Run/Attack/Hurt/Death poses. One alpha atlas, common body scale/foot pivot/facing, separate telegraphed melee attack state. No old enemies restored and no other creature replaced. Ten exact main-bundle hooks reverse back to main 7ed257a5 before the existing provenance checks. Run tests/spark-browser.mjs in both browsers in addition to the commands below. All hosting remains the same original Vercel project.
+
+## Previous cleanup provenance (historical)
+
 # Current handoff — three-species cleanup
 
 User asked to remove OLD monsters and keep finished Frog, new Water Calf and Ancient Bloom boss, then add new independent species gradually. Implemented on the tested Water candidate from PR #14, not on old Vite/source files.

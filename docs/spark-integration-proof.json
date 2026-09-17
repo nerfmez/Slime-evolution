@@ -1,0 +1,68 @@
+{
+  "parentCommit": "7ed257a58aae2f8900fb33d5e614a48ab0533338",
+  "parentGameTree": "8e9c7d28889efa8ba635caeba0be40960a8eb573",
+  "beforeBundleSHA256": "75b8c38f80c119d948fbbd548d4050a009267884d40cbaebe68b638af85ae782",
+  "afterBundleSHA256": "d6ecc839ec747a287215739ad498f8d44d93b34578d388196f02f6ce13749a25",
+  "reverse": [
+    {
+      "label": "Expose renderer evidence only in existing QA hook",
+      "start": 296218,
+      "old": "get waterRenderer(){return waterRenderer},canStand:P",
+      "new": "get waterRenderer(){return waterRenderer},get sparkRenderer(){return sparkRenderer},canStand:P"
+    },
+    {
+      "label": "Load the single Spark atlas",
+      "start": 294160,
+      "old": "waterRenderer=await createWaterCalfRenderer(H,{program:T,geometry:E,uniform:D,render:je});Br=",
+      "new": "waterRenderer=await createWaterCalfRenderer(H,{program:T,geometry:E,uniform:D,render:je});sparkRenderer=await createSparkHedgehogRenderer(H,{program:T,geometry:E,uniform:D,render:je});Br="
+    },
+    {
+      "label": "Draw Spark in all supported cameras",
+      "start": 287661,
+      "old": "H.useProgram(U)}for(let e of J.bullets)if(e.kind!==`water-shot`)",
+      "new": "H.useProgram(U)}if(sparkRenderer){for(const enemy of [...t,...J.sparkDead||[]])if(enemy.type===`spark`&&dr(enemy.x,enemy.z,2)){const drawn=sparkRenderer.draw(enemy,X,W.player,spriteCamera(W.camera));Yn+=drawn.calls;Xn+=drawn.triangles}H.useProgram(U)}for(let e of J.bullets)if(e.kind!==`water-shot`)"
+    },
+    {
+      "label": "Independent sprite renderer handle",
+      "start": 280327,
+      "old": "Br,waterRenderer,Vr",
+      "new": "Br,waterRenderer,sparkRenderer,Vr"
+    },
+    {
+      "label": "Preserve approved death sprite before reward removal",
+      "start": 137301,
+      "old": "e.type===`water`&&this.waterDead.push({...e,waterDeath:0}),this.defeated.push(e)",
+      "new": "e.type===`water`&&this.waterDead.push({...e,waterDeath:0}),e.type===`spark`&&this.sparkDead.push({...e,sparkDeath:0}),this.defeated.push(e)"
+    },
+    {
+      "label": "Use shared navigation and collision with separate Spark attack",
+      "start": 136027,
+      "old": "if(n.type===`water`?d=waterRanged(this,n,e,t,s,f,i.damage):n.windup=0,d)",
+      "new": "if(n.type===`water`?d=waterRanged(this,n,e,t,s,f,i.damage):n.type===`spark`?d=sparkMelee(this,n,e,t,s,f,i.damage):n.windup=0,d)"
+    },
+    {
+      "label": "Spark damage belongs only to its impact frame",
+      "start": 135196,
+      "old": "continue}s<i.radius+(this.playerRadius||.25)+.07&&n.attack<=0",
+      "new": "continue}n.type!==`spark`&&s<i.radius+(this.playerRadius||.25)+.07&&n.attack<=0"
+    },
+    {
+      "label": "Tick Spark corpse lifetime",
+      "start": 132989,
+      "old": "tickWaterWorld(this,e),this.frogDead",
+      "new": "tickWaterWorld(this,e),tickSparkWorld(this,e),this.frogDead"
+    },
+    {
+      "label": "Reset Spark corpse list",
+      "start": 130171,
+      "old": "this.waterDead=[],this.waterSplashes=[]",
+      "new": "this.waterDead=[],this.waterSplashes=[],this.sparkDead=[]"
+    },
+    {
+      "label": "Import independent Spark module",
+      "start": 157,
+      "old": "import {createWaterCalfRenderer,waterRanged,tickWaterWorld,finishWaterBullets} from './water-calf.js';",
+      "new": "import {createWaterCalfRenderer,waterRanged,tickWaterWorld,finishWaterBullets} from './water-calf.js';\nimport {createSparkHedgehogRenderer,sparkMelee,tickSparkWorld} from './spark-hedgehog.js';"
+    }
+  ]
+}

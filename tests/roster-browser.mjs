@@ -43,7 +43,7 @@ try{
    w.reset('auto',time);w.update(.05,p,100);
    snapshots.push({time,unlocked:w.unlocked(),types:[...new Set(w.enemies.map(e=>e.type))],count:w.enemies.length});
   }
-  const modes=[];for(const mode of ['all','thorn','water','elites','elite-water','moss','petal','elite-thorn','elite-moss','elite-petal']){
+  const modes=[];for(const mode of ['all','thorn','spark','water','elites','elite-water','moss','petal','elite-thorn','elite-moss','elite-petal']){
    w.reset(mode,180);w.update(.05,p,100);modes.push({requested:mode,mode:w.mode,types:[...new Set(w.enemies.map(e=>e.type))],elite:w.enemies.map(e=>e.elite),count:w.enemies.length});
   }
   const denied=[];for(const[type,elite]of[['moss',false],['petal',false],['thorn',true],['moss',true],['petal',true],['crystal',false]])denied.push(w.spawn(p,type,elite));
@@ -55,13 +55,13 @@ try{
   const transition={normalCount,afterNormalCount:w.enemies.filter(e=>!e.boss).length,bossCount,afterBossCount:w.enemies.filter(e=>e.boss).length,serialUnchanged:w.serial===nextId};
   return {snapshots,modes,denied,earlyElite,waterElites,transition,models:q.modelAssets,graphics:{view:q.state.thornView,quality:q.state.quality,grass:q.state.grass,sentinel:localStorage.getItem('roster-save-sentinel')},options:[...document.querySelector('#enemy-mode').options].map(e=>e.value)};
  });
- for(const row of result.snapshots){assert.ok(row.count>0);assert.deepEqual(row.unlocked,row.time<180?['thorn']:['thorn','water']);assert.ok(row.types.every(t=>row.unlocked.includes(t)));}
- for(const row of result.modes){assert.ok(row.count>0,row.requested);assert.ok(row.types.every(t=>['thorn','water'].includes(t)),row.requested);}
+ for(const row of result.snapshots){assert.ok(row.count>0);assert.deepEqual(row.unlocked,row.time<60?['thorn']:row.time<180?['thorn','spark']:['thorn','spark','water']);assert.ok(row.types.every(t=>row.unlocked.includes(t)));}
+ for(const row of result.modes){assert.ok(row.count>0,row.requested);assert.ok(row.types.every(t=>['thorn','spark','water'].includes(t)),row.requested);}
  assert.ok(result.denied.every(v=>v===false));assert.equal(result.earlyElite,false);assert.deepEqual(result.waterElites,['water']);
  assert.equal(result.transition.bossCount,1);assert.equal(result.transition.afterBossCount,1);assert.equal(result.transition.serialUnchanged,true);
  assert.deepEqual(result.models,['boss_walk','boss_run','boss_charge','boss_push','boss_spell']);
  assert.deepEqual(result.graphics,{view:'sprite',quality:1,grass:1200,sentinel:'keep'});
- assert.deepEqual(result.options,['auto','all','thorn','water','elites','elite-water','boss']);
+ assert.deepEqual(result.options,['auto','all','thorn','spark','water','elites','elite-water','boss']);
  const attacks=[];
  for(const[name,combo,distance]of[['vine_lunge',0,9],['root_slam',0,4],['seed_volley',1,4],['bloom_burst',2,4]]){
   const attack=await page.evaluate(({combo,distance})=>{
@@ -86,7 +86,7 @@ try{
  for(const camera of ['game','side','top']){
   const state=await page.evaluate(camera=>{
    const q=__slimeGameQA,w=q.world,p=q.state.player;w.reset('all',180);w.update(.05,p,12);
-   w.enemies=w.enemies.slice(0,2);w.enemies.forEach((e,i)=>{e.x=p[0]-2+i*4;e.z=p[2]-.5});
+   w.enemies=w.enemies.filter(e=>e.type!=='spark').slice(0,2);w.enemies.forEach((e,i)=>{e.x=p[0]-2+i*4;e.z=p[2]-.5});
    q.state.camera=camera;q.state.paused=true;q.draw();const gl=document.querySelector('#world').getContext('webgl2');gl.finish();
    return {camera,types:w.enemies.map(e=>e.type),gl:gl.getError(),errorHidden:document.querySelector('#error').hidden};
   },camera);
@@ -100,7 +100,7 @@ try{
   for(const option of select.options){select.value=option.value;select.dispatchEvent(new Event('change',{bubbles:true}));q.draw();out.push({id:option.value,targets:q.world.enemies.map(e=>e.type)});}
   document.getElementById('lab-close').click();return out;
  });
- assert.ok(skills.length>=10);assert.ok(skills.every(s=>s.targets.every(t=>['thorn','water'].includes(t))));
+ assert.ok(skills.length>=10);assert.ok(skills.every(s=>s.targets.every(t=>['thorn','spark','water'].includes(t))));
  assert.ok(!requests.some(u=>/\/enemies\/(?:thorn|moss|petal|crystal)(?:[.-])/.test(u)),'no removed model/atlas requested');
  assert.deepEqual(errors,[]);
  report={...report,passed:true,result,attacks,death,cameras,skills,errors,requests,cancellations};
