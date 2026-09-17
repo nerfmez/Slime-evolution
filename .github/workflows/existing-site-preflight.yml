@@ -1,0 +1,42 @@
+name: Existing Vercel project deployment preflight
+on:
+  push:
+    branches: [ops/existing-site-deployment]
+    paths: [.github/workflows/existing-site-preflight.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  check-access:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check configured deployment access to the selected original project
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: |
+          node --input-type=module <<'JS'
+          import {readFile,appendFile} from 'node:fs/promises';
+          const c=JSON.parse(await readFile('CANON.json','utf8'));
+          const summary=s=>appendFile(process.env.GITHUB_STEP_SUMMARY,s+'\n');
+          if(c.production.projectId!=='prj_dmWGye4WkusoSFye1PIIAxgt5KM3'||c.production.teamId!=='team_wUPNV5SYxHR0mz3URq89uGm0')throw Error('Unexpected production project: refusing to proceed');
+          if(!process.env.VERCEL_TOKEN){
+            console.error('::error title=DEPLOY_AUTH_NOT_CONFIGURED::Repository secret VERCEL_TOKEN is not configured. No files uploaded, no hosting changes made.');
+            await summary('## Deployment blocked before upload\nRepository secret `VERCEL_TOKEN` is not configured. Game files and the original production website were not changed. The current game is already tested at `ca25f1ce`. Do not send the old URL as an updated release.');
+            process.exit(1);
+          }
+          const url=new URL('https://api.vercel.com/v9/projects/'+c.production.projectId);
+          url.searchParams.set('teamId',c.production.teamId);
+          const r=await fetch(url,{headers:{Authorization:'Bearer '+process.env.VERCEL_TOKEN},signal:AbortSignal.timeout(20000)});
+          if(!r.ok)throw Error('Existing-project authorization check failed with HTTP '+r.status);
+          const p=await r.json();
+          if(p.id!==c.production.projectId||p.accountId!==c.production.teamId||p.name!==c.production.project)throw Error('Existing-project identity mismatch');
+          console.log('DEPLOY_AUTH_READY: original project identity verified; no upload performed');
+          await summary('## Existing project access verified\n`slime-evolution` project/team match CANON.json. This was a read-only authorization check, not a deployment.');
+          JS
