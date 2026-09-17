@@ -24,26 +24,4 @@ test('charge precedes firing; no obsolete crystal attack or off-centre collision
  b.life=0;finishWaterBullets(world);assert.equal(world.waterSplashes.length,1);
  world.waterDead=[{waterDeath:.6}];tickWaterWorld(world,.1);assert.equal(world.waterDead.length,0);
 });
-test('everything outside the named replacement is byte-identical to finished frog',async()=>{
- const baseline=JSON.parse(await readFile(new URL('../baseline-manifest.json',import.meta.url)));
- const changed=new Set(['index.html','assets/main-critter-v4.js']);
- const removed=new Set(['assets/enemies/crystal.bin','assets/enemies/crystal.json','assets/enemies/crystal.png','assets/enemies/crystal-elite.png']);
- let same=0;
- for(const f of baseline){const path=new URL('../game/'+f.path,import.meta.url);
-  if(removed.has(f.path)){await assert.rejects(readFile(path),{code:'ENOENT'});continue;}
-  const bytes=await readFile(path);if(!changed.has(f.path)){assert.equal(sha(bytes),f.sha256,f.path);same++;}
- }
- assert.equal(same,1305);
- // Reverse the allowlisted edits and recover the exact original bundle hash.
- const record=JSON.parse(await readFile(new URL('../docs/water-calf-edits.json',import.meta.url)));
- let text=await readFile(new URL('../game/assets/main-critter-v4.js',import.meta.url),'utf8');
- const header="import {createWaterCalfRenderer,waterRanged,tickWaterWorld,finishWaterBullets} from './water-calf.js';\n";
- assert.ok(text.startsWith(header));text=text.slice(header.length);
- const suffix='\nif(new URLSearchParams(location.search).has("qa"))globalThis.__slimeGameQA={get world(){return J},get combat(){return Y},get state(){return W},get waterRenderer(){return waterRenderer},canStand:P,draw:Qr};\n';
- assert.ok(text.endsWith(suffix));text=text.slice(0,-suffix.length);
- // Empty-new edits are restored at their exact context; use a recorded full reverse diff instead.
- const patch=JSON.parse(await readFile(new URL('../docs/water-calf-reverse.json',import.meta.url)));
- for(const e of patch){assert.equal(text.slice(e.start,e.start+e.new.length),e.new,e.label);text=text.slice(0,e.start)+e.old+text.slice(e.start+e.new.length);}
- assert.equal(sha(Buffer.from(text)),record.baselineBundleSHA256);
- console.log('Preserved: 1305 baseline files; only 2 game files changed, 4 Crystal files removed, 3 Water files added.');
-});
+// Full Frog + Water provenance is verified by roster-cleanup.test.mjs.

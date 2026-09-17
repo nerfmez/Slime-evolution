@@ -1,0 +1,576 @@
+{
+  "parentCommit": "06ebad851824a054a963b9eeb3b1e58ff5fe00d8",
+  "beforeBundleSHA256": "6a19738a00c748c1e33c090c1a67599e66d6b7ef7665598f66b2526d1019d62e",
+  "afterBundleSHA256": "75b8c38f80c119d948fbbd548d4050a009267884d40cbaebe68b638af85ae782",
+  "reverse": [
+    {
+      "label": "registry wiring",
+      "start": 0,
+      "old": "import {createWaterCalfRenderer",
+      "new": "import {normalEnemies as normalRoster,eliteEnemies as eliteRoster,unlockedEnemies,normalizeEnemyMode,modelAssetNames,spriteCamera} from './enemy-roster.js';\nimport {createWaterCalfRenderer"
+    },
+    {
+      "label": "QA for actual loaded model set and skill regression",
+      "start": 295496,
+      "old": "canStand:P,draw:Qr};",
+      "new": "canStand:P,draw:Qr,get modelAssets(){return Object.keys(zr)},get skillLab(){return Z}};"
+    },
+    {
+      "label": "remove retired model palette shaders",
+      "start": 258570,
+      "old": " // Preserve every texture region's original hue and relative contrast.\n // Select only moss greens / crystal blues; retain skin, shell and stone regions.\n if(enemyPalette==1.){\n  float moss=smoothstep(.025,.16,source.g-max(source.r,source.b));\n  // Pale stone on the upper shell only; exclude green moss and the head/legs.\n  float shell=smoothstep(.36,.54,vLocal.y)*(1.-smoothstep(.25,.48,vLocal.z));\n  float stoneValue=dot(source,vec3(.30,.59,.11));\n  float stone=shell*(1.-moss)*smoothstep(.30,.52,stoneValue);\n  stone*=1.-smoothstep(.10,.22,source.r-source.g);\n  vec3 chalk=vec3(.94,.95,.96)*(stoneValue*.68+.30);\n  source=mix(source,chalk,stone*.90);\n  source=mix(source,source*vec3(1.07,.91,1.12)+vec3(.018,.008,.018),moss*.75);\n }else if(enemyPalette==2.){\n  float crystal=smoothstep(.10,.35,source.b-source.r)*smoothstep(.24,.55,source.g);\n  float luma=dot(source,vec3(.30,.59,.11));\n  vec3 mineral=mix(source,vec3(luma),.24)*vec3(.98,1.02,.91)+vec3(.035,.012,.008);\n  source=mix(source,mineral,crystal);\n }\n",
+      "new": ""
+    },
+    {
+      "label": "remove old Mossback weight shader",
+      "start": 245044,
+      "old": " if(enemyPalette==1.){\n  float phase=enemyMotion.x,weight=enemyMotion.y;\n  // Rigid weight shift, leaving the shell's shape intact.\n  float roll=sin(phase)*.014*weight;\n  mat2 tilt=mat2(cos(roll),sin(roll),-sin(roll),cos(roll));\n  p.xy=tilt*(p.xy-vec2(0.,.30))+vec2(0.,.30);\n  localNormal.xy=tilt*localNormal.xy;\n  // Two weighted steps per gait cycle: a slower rise and a shorter landing.\n  float stepPhase=fract(phase/3.14159265);\n  float lift=smoothstep(0.,.68,stepPhase)*(1.-smoothstep(.68,1.,stepPhase));\n  p.y+=lift*.048*weight;\n  p.y+=(1.+sin(time*2.1+enemyMotion.z))*.002*(1.-weight*.65);\n }",
+      "new": ""
+    },
+    {
+      "label": "remove old model fallback UI state",
+      "start": 1515,
+      "old": "s(`thorn-view`).options[0].disabled&&(e.thornView=`model`)",
+      "new": "e.thornView=`sprite`"
+    },
+    {
+      "label": "migrate obsolete graphics choice without deleting saved settings",
+      "start": 1125,
+      "old": "thornView:[`sprite`,`model`]",
+      "new": "thornView:[`sprite`]"
+    },
+    {
+      "label": "frog camera setup",
+      "start": 109175,
+      "old": "D(e,i,'vp',r),D(e,i,'origin'",
+      "new": "D(e,i,'vp',r),D(e,i,'cameraFacing',view),D(e,i,'origin'"
+    },
+    {
+      "label": "frog draw camera default",
+      "start": 109005,
+      "old": "{draw(t,r,o,s=8){let c=Fg(t)",
+      "new": "{draw(t,r,o,s=8,view=[0,12,15]){let c=Fg(t)"
+    },
+    {
+      "label": "frog camera uniform",
+      "start": 107856,
+      "old": "uniform float spriteScale,spriteWidth,spriteOffsetX;out vec2 UV;out vec3 world;void main(){vec3 f=normalize(vec3(0,12,15)),",
+      "new": "uniform float spriteScale,spriteWidth,spriteOffsetX;uniform vec3 cameraFacing;out vec2 UV;out vec3 world;void main(){vec3 f=normalize(cameraFacing),"
+    },
+    {
+      "label": "frog corpse active-camera draw",
+      "start": 288110,
+      "old": "Br.draw(e,X,W.player,8)",
+      "new": "Br.draw(e,X,W.player,8,spriteCamera(W.camera))"
+    },
+    {
+      "label": "frog active-camera draw",
+      "start": 287969,
+      "old": "Br.draw(e,X,W.player,W.thornFrames)",
+      "new": "Br.draw(e,X,W.player,W.thornFrames,spriteCamera(W.camera))"
+    },
+    {
+      "label": "frog sprite in every supported camera",
+      "start": 287910,
+      "old": "if(W.camera===`game`&&Br){",
+      "new": "if(Br){"
+    },
+    {
+      "label": "boss-only model render",
+      "start": 287281,
+      "old": "for(let e of t){if(e.type===`water`||e.type===`thorn`&&!e.elite&&W.camera===`game`&&Br)continue;let t=e.boss?`boss_`+(e.clip||`walk`):e.flying?`petal-fly`:e.type,n=zr[t];if(!n)continue;let r=Se(e,n),i=Math.floor(r);n.mesh=n.frames[i],D(H,U,`enemyFrameMix`,Cn(H,n,e,t,r,W.time)),D(H,U,`enemyMotion`,[(e.walkPhase||0)*Math.PI*2,e.walkBlend,e.id]),D(H,U,`enemyLift`,e.boss?.12:e.type===`moss`?.22:.18),D(H,U,`enemyPalette`,e.elite||e.boss?0:e.type===`moss`?1:0),D(H,U,`enemyHit`,+(e.hit>0)),e.scale,qr(e.elite?{...n,tex:zr[e.type].eliteTex}:n,Ce(e))}",
+      "new": "for(let e of t){if(!e.boss)continue;let t=`boss_`+(e.clip||`walk`),n=zr[t];if(!n)throw Error(`Missing active boss clip: `+t);let r=Se(e,n),i=Math.floor(r);n.mesh=n.frames[i],D(H,U,`enemyFrameMix`,Cn(H,n,e,t,r,W.time)),D(H,U,`enemyMotion`,[(e.walkPhase||0)*Math.PI*2,e.walkBlend,e.id]),D(H,U,`enemyLift`,.12),D(H,U,`enemyPalette`,0),D(H,U,`enemyHit`,+(e.hit>0)),qr(n,Ce(e))}"
+    },
+    {
+      "label": "no Thorn model fallback; required frog image must load",
+      "start": 295321,
+      "old": "try{Br=await Fe(H)}catch(e){W.thornView=`model`,B(`thorn-view`).value=`model`,B(`thorn-view`).options[0].disabled=!0,$r.apply(),console.warn(e)}",
+      "new": "Br=await Fe(H);"
+    },
+    {
+      "label": "load active models only",
+      "start": 295141,
+      "old": "zr=Object.fromEntries(await Promise.all([...Object.keys(ft).filter(e=>e!==`water`),`petal-fly`,...[`walk`,`run`,`charge`,`push`,`spell`].map(e=>`boss_`+e)].map(async e=>[e,await Sn(H,e)]))),await Promise.all(Object.keys(ft).filter(e=>e!==`water`).map(async e=>{zr[e].eliteTex=await O(H,`./assets/enemies/`+e+`-elite.png`)}));",
+      "new": "zr=Object.fromEntries(await Promise.all(modelAssetNames.map(async e=>[e,await Sn(H,e)])));"
+    },
+    {
+      "label": "keep normal grass interaction without Petal flight override",
+      "start": 242165,
+      "old": "e.radius+(e.flying?.7:.36)",
+      "new": "e.radius+.36"
+    },
+    {
+      "label": "remove retired Petal trail renderer",
+      "start": 231379,
+      "old": "for(let e of t.flightTrails||[]){if(!r(e.x,e.z,1))continue;let t=Math.min(1,(1-e.age/e.life)/.56);d(e.ox,e.oz,e.x,e.z,e.y,fn,.08,t*.86,!1),d(e.ox,e.oz,e.x,e.z,e.y-.06,un.wind,.05,t*.7,!1);let n=e.x-e.ox,i=e.z-e.oz,a=Math.hypot(n,i)||1;for(let r=0;r<3;r++){let o=.32+r*.22,s=e.ox+n*o,c=e.oz+i*o;d(s-n/a*.1,c-i/a*.1,s+n/a*.1,c+i/a*.1,e.y+.02+r*.02,fn,.018,t*.66,!1)}}",
+      "new": ""
+    },
+    {
+      "label": "remove retired trail storage",
+      "start": 129885,
+      "old": "this.flightTrails=[],",
+      "new": ""
+    },
+    {
+      "label": "remove Petal trail updater",
+      "start": 100966,
+      "old": "for(let n of e.flightTrails||[])n.age+=t;e.flightTrails=(e.flightTrails||[]).filter(e=>e.age<e.life);",
+      "new": ""
+    },
+    {
+      "label": "remove retired flight flag",
+      "start": 100456,
+      "old": "t.dash=null,t.flying=!1,t.clip",
+      "new": "t.dash=null,t.clip"
+    },
+    {
+      "label": "remove all retired elite special AI",
+      "start": 100929,
+      "old": "else t.type===`thorn`&&c>2&&c<7?Ee(t,`thorn_charge`,.62,r[0],r[2],.7,i.damage):t.type===`moss`&&c<3.6?Ee(t,`moss_pillar_line`,.92,r[0],r[2],1.18,Math.round(i.damage*1.48)):t.type===`petal`&&c>1.5&&c<7.2?Ee(t,`petal_swoop`,.48,r[0],r[2],.6,i.damage):void 0",
+      "new": ""
+    },
+    {
+      "label": "remove Petal trail emitter",
+      "start": 100284,
+      "old": "a.kind===`petal_swoop`&&(t.trailClock=(t.trailClock||0)+n,(t.trailClock>=.085||Math.hypot(t.x-o,t.z-s)>=.1)&&(t.trailClock=0,(e.flightTrails??(e.flightTrails=[])).push({x:t.x,z:t.z,ox:t.x-a.x*.62,oz:t.z-a.z*.62,y:.16+(t.lift||0),age:0,life:.34}))),",
+      "new": ""
+    },
+    {
+      "label": "remove homing Petal dive",
+      "start": 100121,
+      "old": "if(a.left-=n,a.kind===`petal_swoop`){let e=r[0]-t.x,n=r[2]-t.z,i=Math.hypot(e,n)||1;a.x=e/i,a.z=n/i}",
+      "new": "a.left-=n;"
+    },
+    {
+      "label": "remove Petal flight state",
+      "start": 99905,
+      "old": "let a=t.dash?.kind===`petal_swoop`||t.special?.kind===`petal_swoop`;if(t.flying=!!a,a&&(t.flightClock=(t.flightClock||0)+n*(t.special?30/46:1)),t.lift=(t.lift||0)+((a?t.special?.11:.22:0)-(t.lift||0))*(1-Math.exp(-n*12)),",
+      "new": "if(t.lift=(t.lift||0)*(Math.exp(-n*12)),"
+    },
+    {
+      "label": "remove retired attack cooldowns",
+      "start": 99701,
+      "old": "thorn_charge:4.6,petal_swoop:2.2,moss_pillar_line:4.25,",
+      "new": ""
+    },
+    {
+      "label": "remove Mossback pillar attack",
+      "start": 99667,
+      "old": "else if(n.kind===`moss_pillar_line`)for(let t=0;t<7;t++){let r=(t+1)/7;e.pendingHits.push({...n,x:n.ox+(n.x-n.ox)*r,z:n.oz+(n.z-n.oz)*r,r:.58,timer:t*.075})}",
+      "new": ""
+    },
+    {
+      "label": "boss dash duration unchanged",
+      "start": 99279,
+      "old": "left:n.kind===`thorn_charge`?.58:n.kind===`petal_swoop`?5:Math.min(.92,Math.max(.42,a/8.8))",
+      "new": "left:Math.min(.92,Math.max(.42,a/8.8))"
+    },
+    {
+      "label": "keep boss dash only",
+      "start": 99203,
+      "old": "if(n.kind===`thorn_charge`||n.kind===`petal_swoop`||n.kind===`vine_lunge`){let e=n.kind===`thorn_charge`?5.2:n.kind===`petal_swoop`?4.9:8.8;",
+      "new": "if(n.kind===`vine_lunge`){let e=8.8;"
+    },
+    {
+      "label": "remove Petal flight model transform",
+      "start": 98551,
+      "old": "function Ce(e){let t=e.scale||1;e.flying&&(t*=1.05+Math.sin((e.flightClock||0)*16)*.045);let n=w(e.x,.015+(e.lift||0)-(e.sink||0),e.z,t,t,t,e.yaw);if(!e.flying)return n;let r=e.dash?-.2:-.08,i=Math.sin((e.flightClock||0)*16)*.07,a=Math.cos(r),o=Math.sin(r),s=Math.cos(i),c=Math.sin(i);return he(n,he(new Float32Array([1,0,0,0,0,a,o,0,0,-o,a,0,0,0,0,1]),new Float32Array([s,c,0,0,-c,s,0,0,0,0,1,0,0,0,0,1])))}",
+      "new": "function Ce(e){let t=e.scale||1;return w(e.x,.015+(e.lift||0)-(e.sink||0),e.z,t,t,t,e.yaw)}"
+    },
+    {
+      "label": "remove retired model animation routes",
+      "start": 98376,
+      "old": "function Se(e,t){return((e.boss?e.clip===`walk`?e.anim/t.duration:e.clip===`run`?e.clipTime/t.duration:Math.min(.999,e.clipTime/(e.clipDuration||t.duration)):e.flying?(e.flightClock||0)/t.duration:e.walkPhase!=null&&[`thorn`,`moss`].includes(e.type)?e.walkPhase:e.anim/t.duration)%1+1)%1*t.frames.length}",
+      "new": "function Se(e,t){return((e.clip===`walk`?e.anim/t.duration:e.clip===`run`?e.clipTime/t.duration:Math.min(.999,e.clipTime/(e.clipDuration||t.duration)))%1+1)%1*t.frames.length}"
+    },
+    {
+      "label": "remove old Mossback pillar mesh mode",
+      "start": 98162,
+      "old": "let o=a.kind===`moss_pillar_line`?1:12",
+      "new": "let o=12"
+    },
+    {
+      "label": "boss circular telegraph",
+      "start": 98028,
+      "old": "[`thorn_charge`,`petal_swoop`,`seed_volley`]",
+      "new": "[`seed_volley`]"
+    },
+    {
+      "label": "boss telegraph width",
+      "start": 98022,
+      "old": "e.kind===`moss_pillar_line`?.58:.28",
+      "new": ".28"
+    },
+    {
+      "label": "boss telegraph distance",
+      "start": 97946,
+      "old": "i=e.kind===`thorn_charge`?3:e.kind===`petal_swoop`?8:Math.min(r,8)",
+      "new": "i=Math.min(r,8)"
+    },
+    {
+      "label": "retired telegraphs",
+      "start": 97852,
+      "old": "[`thorn_charge`,`petal_swoop`,`vine_lunge`,`moss_pillar_line`,`seed_volley`]",
+      "new": "[`vine_lunge`,`seed_volley`]"
+    },
+    {
+      "label": "active EXP map",
+      "start": 145690,
+      "old": "{thorn:2,moss:5,petal:6,water:10}",
+      "new": "{thorn:2,water:10}"
+    },
+    {
+      "label": "remove old Mossback cyclone resistance",
+      "start": 147531,
+      "old": "r.boss?.02:r.type===`moss`?.15:.5",
+      "new": "r.boss?.02:.5"
+    },
+    {
+      "label": "remove old Mossback knockback resistance",
+      "start": 143163,
+      "old": "e.boss?.08:e.type===`moss`?.25:1",
+      "new": "e.boss?.08:1"
+    },
+    {
+      "label": "remove old Mossback knockback resistance",
+      "start": 158964,
+      "old": "e.boss?.08:e.type===`moss`?.25:1",
+      "new": "e.boss?.08:1"
+    },
+    {
+      "label": "remove Petal flight damage multiplier",
+      "start": 143021,
+      "old": "e.boss?.72:e.flying?1.5:1",
+      "new": "e.boss?.72:1"
+    },
+    {
+      "label": "remove Petal gait",
+      "start": 138551,
+      "old": "n.anim+=c/(n.type===`petal`?.75:1)",
+      "new": "n.anim+=c"
+    },
+    {
+      "label": "boss special AI only",
+      "start": 136418,
+      "old": "((n.elite&&n.type!==`water`)||n.boss)&&ke(this,n,",
+      "new": "n.boss&&ke(this,n,"
+    },
+    {
+      "label": "only eligible active elites",
+      "start": 135658,
+      "old": "let e=mt.filter(e=>this.spawnedTypes.has(e));",
+      "new": "let e=Object.keys(Te).filter(e=>this.spawnedTypes.has(e));"
+    },
+    {
+      "label": "explicit species timings",
+      "start": 131946,
+      "old": "unlocked(){return this.mode===`boss`?[`boss`]:this.mode===`elites`?mt:this.mode.startsWith(`elite-`)?[this.mode.slice(6)]:this.mode===`all`?mt:this.mode===`auto`?mt.slice(0,Math.min(4,1+Math.floor(this.time/60))):[this.mode]}",
+      "new": "unlocked(){return unlockedEnemies(this.mode,this.time)}"
+    },
+    {
+      "label": "reject obsolete saved modes",
+      "start": 131388,
+      "old": "this.mode=e,this.time=t",
+      "new": "this.mode=normalizeEnemyMode(e),this.time=t"
+    },
+    {
+      "label": "remove old elites, keep Water Calf Alpha",
+      "start": 99374,
+      "old": "Te={thorn:{name:`Thorn Alpha`,hp:176,speed:.98,radius:.58,damage:16,xp:12,scale:1.62,stride:.68},moss:{name:`Mossback Alpha`,hp:245,speed:.79,radius:.644,damage:19,xp:15,scale:1.55,stride:1.6},petal:{name:`Petal Skitter Alpha`,hp:148,speed:2.45,radius:.336,damage:18,xp:18,scale:1.55},water:{name:`Water Calf Alpha`,hp:314,speed:1.01,radius:.518,damage:23,xp:30,scale:1.55}}",
+      "new": "Te=eliteRoster"
+    },
+    {
+      "label": "normal roster",
+      "start": 130673,
+      "old": "var ft={thorn:{name:`Moss Frog`,stride:.42,speed:1.18,radius:.3,hp:18,damage:5},moss:{name:`Mossback`,stride:1.03,speed:.72,radius:.46,hp:48,damage:9},petal:{name:`Petal Skitter`,speed:1.65,radius:.24,hp:14,damage:4},water:{name:`Water Calf`,speed:.85,radius:.37,hp:28,damage:6}};",
+      "new": "var ft=normalRoster;"
+    }
+  ],
+  "removed": [
+    {
+      "path": "assets/enemies/moss-elite.png",
+      "sha256": "f9e5fae913b1c204b01f40a45ca63b5ec57180f2f4a15adaa8c4b3fa6ba0f4c9",
+      "bytes": 6653214
+    },
+    {
+      "path": "assets/enemies/moss.bin",
+      "sha256": "16c2283abd18088d2d649cffa0d12eededc10c561c36914eba8be14770082657",
+      "bytes": 1129192
+    },
+    {
+      "path": "assets/enemies/moss.json",
+      "sha256": "05c755e4001d509bb8faee20d67905c5149b0fe4dc77f193296188cb30d58413",
+      "bytes": 167
+    },
+    {
+      "path": "assets/enemies/moss.png",
+      "sha256": "39eee021ae0676fdb350f75d106f97a4e8b74e89043e830de37c31a9ac31dd6e",
+      "bytes": 6834549
+    },
+    {
+      "path": "assets/enemies/petal-elite.png",
+      "sha256": "ce77ef84148aeeae845a3a331fddd7055439f1c8462d96ef58f622c06d340c52",
+      "bytes": 6812319
+    },
+    {
+      "path": "assets/enemies/petal-fly.bin",
+      "sha256": "1a5a63cd349995b3dcef50124826c21835784bd0fa4c0f66574e7c629bcc6bec",
+      "bytes": 606992
+    },
+    {
+      "path": "assets/enemies/petal-fly.jpg",
+      "sha256": "d0a0d5bdef3c2125eee69d37216890de8afce77556f94f46f093e0581f3143ea",
+      "bytes": 3324870
+    },
+    {
+      "path": "assets/enemies/petal-fly.json",
+      "sha256": "15c8d43c1b6269b7cd1b0c7bbac60a5a7ffc556660584d1ff2c8f693f8a343fd",
+      "bytes": 178
+    },
+    {
+      "path": "assets/enemies/petal.bin",
+      "sha256": "6aefbeac44d788bcb4eb0acd8aa9c83e619d73ecef7cb0bc7cdf5c5408e32f19",
+      "bytes": 804176
+    },
+    {
+      "path": "assets/enemies/petal.jpg",
+      "sha256": "d0a0d5bdef3c2125eee69d37216890de8afce77556f94f46f093e0581f3143ea",
+      "bytes": 3324870
+    },
+    {
+      "path": "assets/enemies/petal.json",
+      "sha256": "c0a81a09400a057cde945be95a49149364d911f6aecaa729aae2b06b923ca0f9",
+      "bytes": 158
+    },
+    {
+      "path": "assets/enemies/thorn-elite.png",
+      "sha256": "bf1ca7e96bbbaa40b53452c82452238f25f5c7a5ac063ccaa90c38c8f57d48bc",
+      "bytes": 5866132
+    },
+    {
+      "path": "assets/enemies/thorn-sprite.json",
+      "sha256": "174fd6b25f3ab5988789acdc9d5185f90a6d90722ba6bef653ed749f4327424d",
+      "bytes": 123
+    },
+    {
+      "path": "assets/enemies/thorn-sprite.png",
+      "sha256": "0045b341ef6540f074f9d5d91377e213b37d2e1c796e637f22b64de732d08558",
+      "bytes": 1119876
+    },
+    {
+      "path": "assets/enemies/thorn.bin",
+      "sha256": "21b240edec5f35b0a4500bb4b7443291fa7f01da2ac28cfb76398167039cf602",
+      "bytes": 546432
+    },
+    {
+      "path": "assets/enemies/thorn.jpg",
+      "sha256": "8951479ad331a2697a3af6965e7f1f936293b2f2a03605c88f8fb2a552ba801e",
+      "bytes": 2563489
+    },
+    {
+      "path": "assets/enemies/thorn.json",
+      "sha256": "0e35c66b8f6e52c349e8ac3c1a754da57fa1e2c56d0b3d2bf2772524630a56a3",
+      "bytes": 152
+    },
+    {
+      "path": "assets/main-CT954LmH.js",
+      "sha256": "e5803aca6d871d8484aa8d5ed056c85c00aa0785398b46b7800bfdb6f18eb208",
+      "bytes": 313756
+    },
+    {
+      "path": "assets/main-critter-v1.js",
+      "sha256": "d8236ecc21e43b5ea6995641ed2cbd25ee773d45ca55344b7e2fb601e1bedbf0",
+      "bytes": 312161
+    },
+    {
+      "path": "assets/main-critter-v2.js",
+      "sha256": "b627047ddd26a70d4adf2d6b6efea7a84003515201a1e05a8600055dd6e72577",
+      "bytes": 312191
+    },
+    {
+      "path": "assets/main-critter-v3.js",
+      "sha256": "1df823781cb72379f8790c75e389b6d791c345302ecc0cc4c1c9ff966e52f1f7",
+      "bytes": 312191
+    },
+    {
+      "path": "review/frames/petal-flight-wind-00.png",
+      "sha256": "8d2d937d7a608543678d29d1fd5d5c5b9d5c108c8f490f525adb7c275cf95dac",
+      "bytes": 4836
+    },
+    {
+      "path": "review/frames/petal-flight-wind-01.png",
+      "sha256": "bdd1268eec2a658f74bbeaf037ea0fee8dd078f6d1cac16ed0de9b8b7b67237e",
+      "bytes": 4930
+    },
+    {
+      "path": "review/frames/petal-flight-wind-02.png",
+      "sha256": "b3496ce2d26998fe4a99a153fc260333216881ceeae8dc3e234b2e45424940a9",
+      "bytes": 4962
+    },
+    {
+      "path": "review/frames/petal-flight-wind-03.png",
+      "sha256": "4a4a4776cf2d07a7ce02c678bec4f5f1ab455ed90ae0b8571e45673945f7a2d8",
+      "bytes": 5016
+    },
+    {
+      "path": "review/frames/stage-one-moss-00.png",
+      "sha256": "11ae7eef8143b3b2fec1c8462a789d6298d56d6aeefdef4d9898e6be557b9396",
+      "bytes": 54568
+    },
+    {
+      "path": "review/frames/stage-one-moss-01.png",
+      "sha256": "ffbc604917bb8832a287b6e0cf7d73df9eb288cd6519a08d7918b4c16a8c6e65",
+      "bytes": 54798
+    },
+    {
+      "path": "review/frames/stage-one-moss-02.png",
+      "sha256": "0c153fb0c9ef588b935e55be3e450ba2870f1a536e54f1dba88d7da7ca0196fd",
+      "bytes": 55634
+    },
+    {
+      "path": "review/frames/stage-one-moss-03.png",
+      "sha256": "7de124f7361ba528ed1544f2933b39cd04cbbd1d82af271bfb3047f9eac95ba6",
+      "bytes": 56630
+    },
+    {
+      "path": "review/frames/stage-one-moss-04.png",
+      "sha256": "948de1155fe7bff396fffa80d5d046b439a93590460879b1d0124e12d02f3bef",
+      "bytes": 56120
+    },
+    {
+      "path": "review/frames/stage-one-moss-05.png",
+      "sha256": "f984f3c9f95adc06b430e315bd59b1ff5349912dadf9038577ca1bcdd883f58d",
+      "bytes": 54825
+    },
+    {
+      "path": "review/frames/stage-one-moss-06.png",
+      "sha256": "d20f912a6168865bae44981b1b152e6b4bf71b8f12b24e7c95368c63e3ff8ed9",
+      "bytes": 53912
+    },
+    {
+      "path": "review/frames/stage-one-moss-07.png",
+      "sha256": "05380870b047d1f06e4fd6b506ed5668d1ca97f5c2bd7149d68c704b661ae2a6",
+      "bytes": 54506
+    },
+    {
+      "path": "review/frames/stage-one-petal-00.png",
+      "sha256": "9e97e13acf95449f6daef6b4e0949d1dcc140ef8fb7469a833089012c0a260ab",
+      "bytes": 16249
+    },
+    {
+      "path": "review/frames/stage-one-petal-01.png",
+      "sha256": "0f1a0581d6088cbffe329053ffca8ec96f90b05dba8cd8fe0f875c6e213820dd",
+      "bytes": 16768
+    },
+    {
+      "path": "review/frames/stage-one-petal-02.png",
+      "sha256": "b1a2c04e330bedecbbeef2037039e8ccc3010adde045904ae6f245c2e4fd3374",
+      "bytes": 17054
+    },
+    {
+      "path": "review/frames/stage-one-petal-03.png",
+      "sha256": "d913bc7661546de4fbc8fc412a83322758e191bbbe69575192ee8834f99c7285",
+      "bytes": 17569
+    },
+    {
+      "path": "review/frames/stage-one-petal-04.png",
+      "sha256": "027aa42b88096a10440a3e3e63a9b5ae5e624baf2dd2ef1531eb22a36d3f6005",
+      "bytes": 17680
+    },
+    {
+      "path": "review/frames/stage-one-petal-05.png",
+      "sha256": "a0ad01276cd8da92f296855faddf01e9e080173180617fc3ff9a3992be3d123a",
+      "bytes": 17401
+    },
+    {
+      "path": "review/frames/stage-one-petal-06.png",
+      "sha256": "959a7d9625c561a49f75fae68d168654cf87335187d977cd42ee6df45304c1c2",
+      "bytes": 16696
+    },
+    {
+      "path": "review/frames/stage-one-petal-07.png",
+      "sha256": "81f24d6ffbb7c959ed498770c30c4ccbe1509362631d38f1dda5af7447b2d5ba",
+      "bytes": 16138
+    },
+    {
+      "path": "review/frames/stage-one-petal-fly-00.png",
+      "sha256": "d2b8733042aa44db559a5cf8e39a141b4ee17f216dbe8f51e0ced002149abe2a",
+      "bytes": 15616
+    },
+    {
+      "path": "review/frames/stage-one-petal-fly-01.png",
+      "sha256": "c2fdd659c640806135f3c5c7444b50972b8d9d51468698c53d810c647791dc45",
+      "bytes": 13769
+    },
+    {
+      "path": "review/frames/stage-one-petal-fly-02.png",
+      "sha256": "c77184a3026d661d764965a02646cab4414a6e0aab7aeed4d210b0359d0785fa",
+      "bytes": 13805
+    },
+    {
+      "path": "review/frames/stage-one-petal-fly-03.png",
+      "sha256": "0b4b3d53f3fce8af0695a32123266e8c6bf827ca36bc1e4fd97913ae89c80e1a",
+      "bytes": 15628
+    },
+    {
+      "path": "review/frames/stage-one-petal-fly-04.png",
+      "sha256": "f19ab537e98cac758db1216f0b9ddb2527d42a07c5c21975117b73092fda77d7",
+      "bytes": 15258
+    },
+    {
+      "path": "review/frames/stage-one-petal-fly-05.png",
+      "sha256": "c3f0b88ad3fc5ec1299b91c4c7de286b4331da3b340264c655645c3e0b2186a0",
+      "bytes": 15233
+    },
+    {
+      "path": "review/frames/stage-one-thorn-00.png",
+      "sha256": "5fcd3af3c72a0b4bdf34c180421c777a365f8e16eafd953e4bf6c31282413700",
+      "bytes": 24724
+    },
+    {
+      "path": "review/frames/stage-one-thorn-01.png",
+      "sha256": "9061581d25c8ef00d252216a82f8084779f05a3341e7ee61edd70b7decefcb3f",
+      "bytes": 24666
+    },
+    {
+      "path": "review/frames/stage-one-thorn-02.png",
+      "sha256": "abaec970103a5ff2e239e3c88f574b0d6cedfe00f27619f9f39f2efa27841a30",
+      "bytes": 24645
+    },
+    {
+      "path": "review/frames/stage-one-thorn-03.png",
+      "sha256": "0d407c0792b8ea3090be2aadac0e6ad6dba67d6358201eacbfa883063a6fc856",
+      "bytes": 24823
+    },
+    {
+      "path": "review/frames/stage-one-thorn-04.png",
+      "sha256": "e288ae885010f9be791b0f417d022efea4b96f6a4c518f4e1667c8fd7f87bb2a",
+      "bytes": 24844
+    },
+    {
+      "path": "review/frames/stage-one-thorn-05.png",
+      "sha256": "23ce736a51e7b120c768b910057837ac87966619adfbda62c016b3f8c872298b",
+      "bytes": 24826
+    },
+    {
+      "path": "review/frames/stage-one-thorn-06.png",
+      "sha256": "a3a8adf9c5462f921875d4566f0ea5b9f510b99d0f00b677b8b191e8c3501862",
+      "bytes": 24746
+    },
+    {
+      "path": "review/frames/stage-one-thorn-07.png",
+      "sha256": "6c8183ed3a37f0e52a68fa22f87cb81b4b24b461ddbdb5ac98bee12da771eb4a",
+      "bytes": 24711
+    },
+    {
+      "path": "review/thorn-directions.png",
+      "sha256": "6c065616a016240436ef0ef5ffd1fec3799d603113dc4484a2390acaf91d0314",
+      "bytes": 277863
+    },
+    {
+      "path": "review/thorn.html",
+      "sha256": "6c1151e9314de9f5d9f710064800eed892edb53519c9084a3a77c7c5e7e18476",
+      "bytes": 4001
+    }
+  ]
+}

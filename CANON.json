@@ -1,10 +1,10 @@
 {
-  "name": "Water Calf candidate on complete Moss Frog canon",
+  "name": "Moss Frog + Water Calf + Ancient Bloom — active roster",
   "commit": "cf841e09ad37da59a8edb1911200d6a41979c5cc",
   "originalPath": "published/2026-09-14",
-  "tree": "575c237cbc97440bb0bae088dac277bdbcd293b9",
+  "tree": "8e9c7d28889efa8ba635caeba0be40960a8eb573",
   "directory": "game",
-  "kind": "scoped-water-calf-candidate-not-yet-production",
+  "kind": "scoped-three-species-candidate",
   "archiveBranch": "archive/before-frog-canon-cleanup-20260917",
   "production": {
     "url": "https://slime-evolution-five.vercel.app",
@@ -13,5 +13,6 @@
     "teamId": "team_wUPNV5SYxHR0mz3URq89uGm0"
   },
   "baselineCommit": "cf841e09ad37da59a8edb1911200d6a41979c5cc",
-  "baselineTree": "8290f60b6708eae7689ded9568264b70d5363eda"
+  "baselineTree": "8290f60b6708eae7689ded9568264b70d5363eda",
+  "previousCandidateTree": "575c237cbc97440bb0bae088dac277bdbcd293b9"
 }
