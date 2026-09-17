@@ -1,0 +1,94 @@
+name: Water Calf source-first replacement
+on:
+  push:
+    branches: [fix/source-first-animals]
+permissions:
+  contents: write
+jobs:
+  replace:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/source-first-animals
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Replace Crystal slot with Water Calf at source level
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          enemies=Path('enemies.js')
+          s=enemies.read_text()
+          old="crystal:{name:'Crystal Warden',eliteName:'Crystal Alpha',speed:.85,radius:.37,hp:28,damage:6,eliteScale:1.44,skill:'crystal_burst'},"
+          new="water:{name:'Water Calf',eliteName:'Water Calf Alpha',stride:.92,speed:.82,radius:.43,hp:30,damage:6,eliteScale:1.38,skill:'water_shot'},"
+          if old not in s: raise SystemExit('Crystal enemy definition not found')
+          s=s.replace(old,new)
+          s=s.replace('crystal_burst','water_shot').replace('crystal','water').replace('CRYSTAL BURST','WATER SHOT')
+          old_branch="if(kind==='water_shot'){this.blast(e.skillTargetX,e.skillTargetZ,e.skillRadius,e.damage*1.34,kind,e.skillColor);e.skillKind='';return;}"
+          new_branch="if(kind==='water_shot'){const dx=e.skillTargetX-e.x,dz=e.skillTargetZ-e.z,d=Math.hypot(dx,dz)||1;this.bullets.push({x:e.x+dx/d*Math.max(.72,e.radius*.88),z:e.z+dz/d*Math.max(.72,e.radius*.88),vx:dx/d*4.8,vz:dz/d*4.8,life:3.0,damage:e.damage*1.34,radius:.16,kind:'water',color:[.30,.72,1.00]});e.skillKind='';return;}"
+          if old_branch not in s: raise SystemExit('Water Shot execute branch target not found')
+          s=s.replace(old_branch,new_branch)
+          s=s.replace("else if(e.type==='water'&&distance>2.2&&distance<7.4)this.startSkill(e,'water_shot',.90,1.62,player);","else if(e.type==='water'&&distance>1.8&&distance<7.8)this.startSkill(e,'water_shot',.72,0,player);")
+          s=s.replace("vx:dx/Math.max(d,.001)*3.8,vz:dz/Math.max(d,.001)*3.8,life:3,damage:e.damage,radius:.08,kind:'water',color:[.45,.78,.95]","vx:dx/Math.max(d,.001)*4.2,vz:dz/Math.max(d,.001)*4.2,life:3,damage:e.damage,radius:.16,kind:'water',color:[.30,.72,1.00]")
+          if 'crystal' in s.lower(): raise SystemExit('Crystal reference remained in enemies.js')
+          enemies.write_text(s)
+
+          main=Path('main.js')
+          s=main.read_text()
+          s=s.replace("import {createThornSprite} from './thorn-sprite.js';","import {createThornSprite} from './thorn-sprite.js';\nimport {createWaterCalfSprite} from './water-calf-sprite.js';")
+          s=s.replace('crystalShardGeometry','projectileGeometry').replace('crystalShard','projectileMesh')
+          s=s.replace("let enemyAssets={},thornSprite,fireVFX,soulVFX,vegetationDepth;","let enemyAssets={},thornSprite,waterCalfSprite,fireVFX,soulVFX,vegetationDepth;")
+          needle="if(e.type==='thorn'&&!e.isElite&&state.thornView==='sprite'&&state.camera==='game'&&thornSprite&&!proofCamera)continue;"
+          if needle not in s: raise SystemExit('Enemy render skip target not found')
+          s=s.replace(needle,needle+"\n  if(e.type==='water'&&waterCalfSprite&&!proofCamera)continue;")
+          s=s.replace("e.type==='crystal'","e.type==='water'").replace("'crystal_burst'","'water_shot'")
+          frog_draw="if(state.thornView==='sprite'&&state.camera==='game'&&thornSprite&&!proofCamera){\n  for(const e of visibleEnemies)if(e.type==='thorn'&&!e.isElite){const n=thornSprite.draw(e,vp,state.player,state.thornFrames);draws+=n.calls;tris+=n.triangles;}\n  gl.useProgram(prog);\n }"
+          if frog_draw not in s: raise SystemExit('Billboard insertion target not found')
+          s=s.replace(frog_draw,frog_draw+"\n if(waterCalfSprite&&!proofCamera){\n  for(const e of visibleEnemies)if(e.type==='water'){const n=waterCalfSprite.draw(e,vp,state.player);draws+=n.calls;tris+=n.triangles;}\n  gl.useProgram(prog);\n }")
+          old_bullets="for(const b of enemyWorld.bullets){uniform(gl,prog,'enemySkillColor',b.color||[.45,.78,.95]);const scale=b.kind==='seed_volley'?1.65:1;draw(projectileMesh,27,model(b.x,b.kind==='seed_volley'?.52:.40,b.z,scale,scale,scale,Math.atan2(b.vx,b.vz)),1);}"
+          new_bullets="for(const b of enemyWorld.bullets){if(b.kind==='water'&&waterCalfSprite){const n=waterCalfSprite.drawProjectile(b,vp,state.player);draws+=n.calls;tris+=n.triangles;gl.useProgram(prog);continue;}uniform(gl,prog,'enemySkillColor',b.color||[.45,.78,.95]);const scale=b.kind==='seed_volley'?1.65:1;draw(projectileMesh,27,model(b.x,b.kind==='seed_volley'?.52:.40,b.z,scale,scale,scale,Math.atan2(b.vx,b.vz)),1);}"
+          if old_bullets not in s: raise SystemExit('Projectile render target not found')
+          s=s.replace(old_bullets,new_bullets)
+          old_windup="uniform(gl,prog,'enemySkillColor',[.45,.78,.95]);for(const e of visibleEnemies)if(e.windup>0)draw(projectileMesh,27,model(e.x,.65,e.z,.4+(1-e.windup/.6)*.5,.4+(1-e.windup/.6)*.5,.4+(1-e.windup/.6)*.5,e.yaw),.80);"
+          if old_windup not in s: raise SystemExit('Old ranged windup target not found')
+          s=s.replace(old_windup,"uniform(gl,prog,'enemySkillColor',[.30,.72,1.00]);")
+          s=s.replace("['thorn','moss','petal','crystal']","['thorn','moss','petal','water']")
+          s=s.replace("Object.keys(ENEMY_TYPES).map(async key=>[key,await loadEnemyAsset(gl,key)])","Object.keys(ENEMY_TYPES).filter(key=>key!=='water').map(async key=>[key,await loadEnemyAsset(gl,key)])")
+          thorn_init="try{thornSprite=await createThornSprite(gl);}catch(error){state.thornView='model';$('thorn-view').value='model';$('thorn-view').options[0].disabled=true;console.warn(error);}gl.useProgram(prog);"
+          if thorn_init not in s: raise SystemExit('Sprite init target not found')
+          s=s.replace(thorn_init,"try{thornSprite=await createThornSprite(gl);}catch(error){state.thornView='model';$('thorn-view').value='model';$('thorn-view').options[0].disabled=true;console.warn(error);}waterCalfSprite=await createWaterCalfSprite(gl);gl.useProgram(prog);")
+          if 'crystal' in s.lower(): raise SystemExit('Crystal reference remained in main.js')
+          main.write_text(s)
+
+          index=Path('index.html')
+          s=index.read_text().replace('<option value="crystal">Crystal Warden</option>','<option value="water">Water Calf</option>')
+          if 'Crystal Warden' in s or 'value="crystal"' in s: raise SystemExit('Crystal option remained in index.html')
+          index.write_text(s)
+          PY
+          rm -f public/assets/enemies/crystal.bin public/assets/enemies/crystal.json public/assets/enemies/crystal.png public/assets/enemies/crystal-elite.png
+      - name: Validate source-only replacement
+        run: |
+          test -s public/assets/enemies/water-calf-atlas.webp
+          test ! -e public/assets/enemies/crystal.bin
+          test ! -e public/assets/enemies/crystal.json
+          test ! -e public/assets/enemies/crystal.png
+          test ! -e public/assets/enemies/crystal-elite.png
+          node --check enemies.js
+          node --check main.js
+          node --check water-calf-sprite.js
+          ! grep -in 'crystal' enemies.js main.js index.html
+          npm install
+          npm run build
+      - name: Commit validated source replacement
+        run: |
+          rm -f .github/workflows/water-calf-source-first.yml
+          git add -A
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'Replace Crystal Warden with Water Calf from source'
+          git push origin HEAD:fix/source-first-animals
