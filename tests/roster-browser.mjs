@@ -18,6 +18,14 @@ await page.addInitScript(()=>{
  localStorage.setItem('slime.graphics.v1',JSON.stringify({preset:'custom',quality:1,grass:1200,thornFrames:16,thornView:'model',ambientLife:false,showStats:true}));
  localStorage.setItem('roster-save-sentinel','keep');
 });
+async function capture(name){
+ // A frozen software WebKit canvas can present the preceding buffer. Redraw the
+ // same state and finish GPU work before capturing, as in the Water pose tests.
+ await page.waitForTimeout(100);
+ await page.evaluate(()=>{__slimeGameQA.draw();document.querySelector('#world').getContext('webgl2').finish()});
+ await page.waitForTimeout(150);
+ await page.screenshot({path:`test-results/roster-${engine}-${name}.png`,timeout:45000});
+}
 let report={engine,url,passed:false};
 try{
  const address=new URL(url);address.searchParams.set('qa','1');
@@ -71,7 +79,7 @@ try{
   if(name==='root_slam'||name==='bloom_burst')assert.ok(attack.hazards>0);
   attacks.push(attack);await page.waitForTimeout(200);
  }
- await page.screenshot({path:`test-results/roster-${engine}-boss.png`,timeout:45000});
+ await capture('boss');
  const death=await page.evaluate(()=>{const q=__slimeGameQA,w=q.world;w.enemies[0].hp=0;w.update(.05,q.state.player,100);return {finished:w.finished,bossDefeated:w.bossDefeated}});
  assert.deepEqual(death,{finished:true,bossDefeated:true});
  const cameras=[];
@@ -83,7 +91,7 @@ try{
    return {camera,types:w.enemies.map(e=>e.type),gl:gl.getError(),errorHidden:document.querySelector('#error').hidden};
   },camera);
   assert.equal(state.gl,0);assert.equal(state.errorHidden,true);assert.deepEqual(state.types,['thorn','water']);cameras.push(state);
-  await page.waitForTimeout(300);await page.screenshot({path:`test-results/roster-${engine}-${camera}.png`,timeout:45000});
+  await capture(camera);
  }
  // Exercise every existing skill preset through the unchanged UI/controller, with active targets.
  const skills=await page.evaluate(()=>{
