@@ -1,0 +1,68 @@
+name: Verify original production after tested main
+on:
+  workflow_run:
+    workflows: [Frog Spark Water Boss regression]
+    types: [completed]
+    branches: [main]
+permissions:
+  contents: read
+concurrency:
+  group: original-production-verification
+  cancel-in-progress: true
+jobs:
+  audit:
+    if: github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      EXPECTED_SHA: ${{ github.event.workflow_run.head_sha }}
+      LIBGL_ALWAYS_SOFTWARE: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Build the exact tested main commit
+        run: GITHUB_SHA="$EXPECTED_SHA" npm run build
+      - name: Wait for the original production URL to serve the tested commit
+        run: |
+          node --input-type=module <<'JS'
+          import {readFile,writeFile} from 'node:fs/promises';
+          const c=JSON.parse(await readFile('CANON.json','utf8'));
+          const expected=process.env.EXPECTED_SHA;
+          let found=false,last;
+          for(let attempt=0;attempt<36;attempt++){
+            try{
+              const u=new URL('/release.json',c.production.url);u.searchParams.set('verify',expected+'-'+attempt);
+              const r=await fetch(u,{signal:AbortSignal.timeout(15000)});
+              if(!r.ok)throw Error('HTTP '+r.status());
+              last=await r.json();
+              if(last.repositoryCommit===expected&&last.canonicalTree===c.tree){found=true;break;}
+              console.log('Waiting for original deployment',attempt,last.repositoryCommit);
+            }catch(e){last={error:e.message};console.log(last);}
+            await new Promise(resolve=>setTimeout(resolve,10000));
+          }
+          const report={url:c.production.url,expectedCommit:expected,expectedTree:c.tree,passed:found,actual:last};
+          await writeFile('test-results/production-release.json',JSON.stringify(report,null,2));
+          if(!found)throw Error('Original production has not served the tested commit. Do not claim deployed.');
+          console.log('Original production release matches',expected);
+          JS
+      - name: Compare every deployed game file to the tested package
+        run: npm run audit:live
+      - name: Install browser for the actual original-domain test
+        run: |
+          npm install --no-save --package-lock=false playwright@1.62.0
+          npx playwright install --with-deps chromium
+      - name: Verify Spark gameplay and capture every pose on the live original site
+        env:
+          SMOKE_URL: https://slime-evolution-five.vercel.app/
+          BROWSER: chromium
+        run: xvfb-run -a node tests/spark-browser.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: original-production-spark-proof
+          path: test-results/
+          retention-days: 14

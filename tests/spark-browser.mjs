@@ -5,13 +5,13 @@ const engine=process.env.BROWSER||'chromium',base=process.env.SMOKE_URL||'http:/
 await mkdir('test-results',{recursive:true});
 const browser=await({chromium,webkit}[engine]).launch({headless:true,...(engine==='chromium'?{args:['--use-gl=angle','--use-angle=swiftshader','--enable-unsafe-swiftshader','--enable-webgl','--ignore-gpu-blocklist']}:{})});
 const page=await browser.newPage({viewport:{width:1000,height:700},deviceScaleFactor:1});
-page.setDefaultTimeout(45000);let report={engine,passed:false},errors=[];
+page.setDefaultTimeout(45000);let report={engine,url:base,passed:false},errors=[];
 page.on('pageerror',e=>errors.push(e.message));page.on('response',r=>{if(r.status()>=400&&!r.url().endsWith('favicon.ico'))errors.push(`${r.status()} ${r.url()}`)});
 await page.addInitScript(()=>{const raf=requestAnimationFrame.bind(window);window.__sparkFreeze=false;window.requestAnimationFrame=f=>raf(t=>{if(!__sparkFreeze)f(t)});localStorage.setItem('slime.graphics.v1',JSON.stringify({preset:'low',showStats:false}));});
-async function capture(name){await page.evaluate(()=>{__slimeGameQA.draw();document.querySelector('#world').getContext('webgl2').finish()});await page.waitForTimeout(180);await page.screenshot({path:`test-results/spark-${engine}-${name}.png`});}
+// Let the previous buffer present before redrawing the same frozen state (WebKit software compositor).
+async function capture(name){await page.waitForTimeout(150);await page.evaluate(()=>{__slimeGameQA.draw();document.querySelector('#world').getContext('webgl2').finish()});await page.waitForTimeout(180);await page.screenshot({path:`test-results/spark-${engine}-${name}.png`});}
 try{
  const url=new URL(base);url.searchParams.set('qa','1');assert.ok((await page.goto(url.href,{waitUntil:'load',timeout:60000})).ok());
- // Optional chaining on an undeclared identifier still throws. Poll the window property until the game is ready.
  await page.waitForFunction(()=>document.querySelector('#error')?.hidden===false||(window.__slimeGameQA?.sparkRenderer&&document.querySelector('.skill-card')),null,{timeout:60000});
  assert.equal(await page.locator('#error').evaluate(e=>e.hidden),true,await page.locator('#error').textContent());
  await page.locator('.skill-card').first().click({force:true});
@@ -43,8 +43,18 @@ try{
    Object.assign(e,{x:p[0]-1.6,z:p[2]-.1,yaw:Math.PI/2,sparkFacing:1,walkBlend:0,hit:0},data);w.enemies=[e];q.state.camera='game';q.draw();return {...q.sparkRenderer.stats.last,gl:document.querySelector('#world').getContext('webgl2').getError()};
   },{name,data});assert.equal(result.gl,0);cells.push(result);await capture(name);
  }
+ const runCells=[];
+ for(let frame=0;frame<6;frame++){
+  const result=await page.evaluate(frame=>{const q=__slimeGameQA,w=q.world,p=q.state.player;w.reset('spark',60);w.update(.05,p,12);const e=w.enemies[0];Object.assign(e,{x:p[0]-1.6,z:p[2]-.1,yaw:Math.PI/2,sparkFacing:1,walkBlend:1,walkPhase:(frame+.1)/6,hit:0});w.enemies=[e];q.draw();return {...q.sparkRenderer.stats.last};},frame);
+  assert.equal(result.cell,frame);assert.equal(result.facing,1);runCells.push(result);await capture(`run-${frame}`);
+ }
+ const leftCells=[];
+ for(const [name,data,cell]of[['run',{walkBlend:1,walkPhase:.22},1],['hurt',{hit:.2},12],['death',{sparkDeath:.2},13]]){
+  const result=await page.evaluate(data=>{const q=__slimeGameQA,w=q.world,p=q.state.player;w.reset('spark',60);w.update(.05,p,12);const e=w.enemies[0];Object.assign(e,{x:p[0]+1.6,z:p[2]-.1,yaw:-Math.PI/2,sparkFacing:-1,walkBlend:0,hit:0},data);w.enemies=[e];q.draw();return {...q.sparkRenderer.stats.last};},data);
+  assert.equal(result.cell,cell);assert.equal(result.facing,-1);leftCells.push(result);await capture(`left-${name}`);
+ }
  const mixed=await page.evaluate(()=>{const q=__slimeGameQA,w=q.world,p=q.state.player;w.reset('all',180);w.update(.05,p,12);w.enemies=w.enemies.slice(0,3);w.enemies.forEach((e,i)=>{e.x=p[0]-3+i*3;e.z=p[2]-.5;e.walkBlend=1;e.walkPhase=.2});q.draw();return w.enemies.map(e=>e.type)});assert.deepEqual(mixed,['thorn','spark','water']);await capture('mixed-roster');
  for(const camera of ['side','top']){await page.evaluate(camera=>{__slimeGameQA.state.camera=camera;__slimeGameQA.draw()},camera);await capture(camera);}
- assert.deepEqual(errors,[]);report={engine,passed:true,atlas,simulation,cells,mixed,errors};console.log('SPARK GAMEPLAY VERIFIED',JSON.stringify(report));
+ assert.deepEqual(errors,[]);report={engine,url:base,passed:true,atlas,simulation,cells,runCells,leftCells,mixed,errors};console.log('SPARK GAMEPLAY VERIFIED',JSON.stringify(report));
 }catch(e){report={...report,error:e.stack,errors};await page.screenshot({path:`test-results/spark-${engine}-failure.png`}).catch(()=>{});console.error(report);process.exitCode=1;}
 finally{await writeFile(`test-results/spark-${engine}.json`,JSON.stringify(report,null,2));await browser.close();}
