@@ -14,7 +14,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Fetch only the supplied change set and verify SHA256
+      - name: Fetch only supplied changes and verify their checksum
         env:
           TRANSFER_URL: 'https://sdmntprnznorth.oaiusercontent.com/files/00000000-97a4-820b-890b-9c3aa86dfdf7/raw?se=2026-09-17T12%3A53%3A01Z&sp=r&sv=2026-02-06&sr=b&scid=e4f7e098-ce40-5c2f-bcac-5dda4bb0b6b7&skoid=27fbae2c-124f-4566-a0d8-1b07a5a41c53&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2026-09-17T00%3A47%3A44Z&ske=2026-09-18T00%3A47%3A44Z&sks=b&skv=2026-02-06&sig=ULEzA2RBC0h2KPURSSeTmxGFf66wjXPMXcAfqQaJM1w%3D'
         run: |
@@ -25,7 +25,7 @@ jobs:
           from pathlib import Path
           import json,zipfile
           c=json.loads(Path('CANON.json').read_text())
-          assert c['tree']=='8290f60b6708eae7689ded9568264b70d5363eda','Not the finished Frog baseline'
+          assert c['tree']=='8290f60b6708eae7689ded9568264b70d5363eda','Wrong baseline'
           allowed=set('''art/elephant/hit.png
           art/elephant/walk.png
           art/elephant/provenance.json
@@ -47,19 +47,13 @@ jobs:
               assert set(z.namelist())==allowed
               assert sum(f.file_size for f in z.infolist())<14000000
               z.extractall('.')
-          for f in ['crystal.bin','crystal.json','crystal.png','crystal-elite.png']:
-              Path('game/assets/enemies',f).unlink()
-          p=Path('tests/frog-canon.mjs');s=p.read_text()
-          old=r'/thorn-sprite\.png|water-calf|elephant/i'
-          assert old in s
-          s=s.replace(old,r'/thorn-sprite\.png|\/enemies\/crystal(?:\.|-elite)/i')
-          s=s.replace('no obsolete normal Thorn sprite or elephant experiment requested','no obsolete normal Thorn sprite or Crystal model requested')
-          p.write_text(s)
+          for f in ['crystal.bin','crystal.json','crystal.png','crystal-elite.png']:Path('game/assets/enemies',f).unlink()
+          p=Path('tests/frog-canon.mjs');s=p.read_text();old=r'/thorn-sprite\.png|water-calf|elephant/i';assert old in s;s=s.replace(old,r'/thorn-sprite\.png|\/enemies\/crystal(?:\.|-elite)/i');s=s.replace('no obsolete normal Thorn sprite or elephant experiment requested','no obsolete normal Thorn sprite or Crystal model requested');p.write_text(s)
           p=Path('package.json');v=json.loads(p.read_text());v['scripts']['test']='node --test tests/*.test.mjs';p.write_text(json.dumps(v,indent=2)+'\n')
-          p=Path('AGENTS.md');s=p.read_text();s='# Current candidate — Water Calf, 2026-09-17\n\nThe owner supplied the three elephant PNGs and authorized continuing from the recovered Frog baseline. This branch implements ONLY the Crystal -> Water Calf replacement. Read docs/WATER-CALF.md and the exact-byte regression tests. CANON.json now pins the candidate tree and separately preserves baselineTree/baselineCommit. Do not reinstate the old root or an abandoned elephant implementation. Do not call this branch deployed.\n\n## Historical recovery constraints (baseline reference)\n\n'+s;p.write_text(s)
-          p=Path('HANDOFF.md');s=p.read_text();s='# Current Water Calf candidate\n\nSee docs/WATER-CALF.md. Only two existing game files are edited, four dedicated Crystal files removed, and three runtime Water files added. All other 1,305 Frog-release game files remain exact. Source PNGs are stored unchanged in art/elephant. Main/live promotion is separate from branch verification.\n\n## Recovery history\n\n'+s;p.write_text(s)
+          p=Path('AGENTS.md');p.write_text('# Current candidate — Water Calf, 2026-09-17\n\nThe owner supplied three elephant PNGs and authorized continuing from the recovered Frog baseline. This branch changes ONLY Crystal -> Water Calf. Read docs/WATER-CALF.md and exact-byte regression tests. CANON.json pins the candidate tree and preserves baselineTree/baselineCommit separately. Do not reinstate the old root or abandoned elephant work. Do not call this branch deployed.\n\n## Historical recovery reference\n\n'+p.read_text())
+          p=Path('HANDOFF.md');p.write_text('# Current Water Calf candidate\n\nRead docs/WATER-CALF.md. Two existing game files edited, four Crystal files removed, three runtime Water files added. Other 1,305 Frog game files are exact. Original PNGs: art/elephant. Production promotion is separate.\n\n## Recovery history\n\n'+p.read_text())
           PY
-      - name: Pin candidate bytes without losing the original canon identity
+      - name: Pin and test candidate, preserving the original canon identity
         run: |
           node --input-type=module <<'JS'
           import {readFile,writeFile} from 'node:fs/promises';
@@ -69,93 +63,14 @@ jobs:
           c.baselineCommit=c.commit;c.baselineTree=c.tree;c.tree=await treeHash('game');
           c.kind='scoped-water-calf-candidate-not-yet-production';
           await writeFile('CANON.json',JSON.stringify(c,null,2)+'\n');
-          console.log('CANDIDATE TREE',c.tree,'BASELINE TREE',c.baselineTree);
+          console.log(c);
           JS
           npm test
           npm run build
-      - name: Install permanent two-browser regression workflow
-        run: |
-          cat > .github/workflows/canon.yml <<'YAML'
-          name: Frog baseline and Water Calf regression
-          on:
-            push:
-              branches: [main, feature/water-calf-from-frog-canon]
-            pull_request:
-              branches: [main]
-            workflow_dispatch:
-              inputs:
-                audit_live:
-                  type: boolean
-                  default: false
-                  description: Compare current candidate with original production URL only after deployment
-          permissions:
-            contents: read
-          jobs:
-            runtime:
-              name: Game regression / ${{ matrix.browser }}
-              runs-on: ubuntu-latest
-              timeout-minutes: 20
-              strategy:
-                fail-fast: false
-                matrix:
-                  browser: [chromium, webkit]
-              env:
-                LIBGL_ALWAYS_SOFTWARE: '1'
-                WEBKIT_DISABLE_DMABUF_RENDERER: '1'
-                BROWSER: ${{ matrix.browser }}
-              steps:
-                - uses: actions/checkout@v4
-                - uses: actions/setup-node@v4
-                  with:
-                    node-version: '22'
-                - run: npm test && npm run build
-                - name: Install pinned browser verifier
-                  run: |
-                    npm install --no-save --package-lock=false playwright@1.62.0
-                    npx playwright install --with-deps ${{ matrix.browser }}
-                - name: Finished Frog regression and actual Water Calf gameplay
-                  run: |
-                    set -euo pipefail
-                    node scripts/canon.mjs serve >/tmp/game-static.log 2>&1 &
-                    SERVER_PID=$!
-                    trap 'kill $SERVER_PID || true' EXIT
-                    for i in {1..30}; do
-                      if curl -fsS http://127.0.0.1:4173/release.json >/dev/null; then break; fi
-                      sleep 1
-                    done
-                    xvfb-run -a node tests/frog-canon.mjs
-                    xvfb-run -a node tests/water-browser.mjs
-                - uses: actions/upload-artifact@v4
-                  if: always()
-                  with:
-                    name: water-calf-proof-${{ matrix.browser }}
-                    path: test-results/
-                    retention-days: 14
-                - uses: actions/upload-artifact@v4
-                  if: success() && matrix.browser == 'chromium'
-                  with:
-                    name: water-calf-tested-package
-                    path: dist/
-                    retention-days: 14
-            audit-live:
-              if: github.event_name == 'workflow_dispatch' && inputs.audit_live
-              runs-on: ubuntu-latest
-              steps:
-                - uses: actions/checkout@v4
-                - uses: actions/setup-node@v4
-                  with:
-                    node-version: '22'
-                - run: npm run build && npm run audit:live
-                - uses: actions/upload-artifact@v4
-                  if: always()
-                  with:
-                    name: original-domain-candidate-audit
-                    path: test-results/
-          YAML
-      - name: Commit only into the isolated candidate branch
+      - name: Commit only game/art/docs/tests into candidate branch
         run: |
           test "$GITHUB_REF" = 'refs/heads/feature/water-calf-from-frog-canon'
-          git add -- game art tools tests docs baseline-manifest.json CANON.json AGENTS.md HANDOFF.md package.json .github/workflows/canon.yml
-          git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m 'Replace only Crystal slot using exact supplied elephant art; preserve 1305 finished-Frog files'
+          git add -- game art tools tests docs baseline-manifest.json CANON.json AGENTS.md HANDOFF.md package.json
+          git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m 'Replace only Crystal using exact elephant art; preserve 1305 finished-Frog files'
           git push origin HEAD:feature/water-calf-from-frog-canon
-          echo 'Imported into candidate branch only. No production deployment and no main change.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Candidate imported and byte/unit checked; browser verification is next. No main change or deployment.' >> "$GITHUB_STEP_SUMMARY"
