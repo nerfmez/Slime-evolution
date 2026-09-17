@@ -1,3 +1,9 @@
+# Current Water Calf candidate
+
+Read docs/WATER-CALF.md. Two existing game files edited, four Crystal files removed, three runtime Water files added. Other 1,305 Frog game files are exact. Original PNGs: art/elephant. Production promotion is separate.
+
+## Recovery history
+
 # Recovery handoff — 2026-09-17
 
 ## One authority

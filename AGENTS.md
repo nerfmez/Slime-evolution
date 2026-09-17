@@ -1,3 +1,9 @@
+# Current candidate — Water Calf, 2026-09-17
+
+The owner supplied three elephant PNGs and authorized continuing from the recovered Frog baseline. This branch changes ONLY Crystal -> Water Calf. Read docs/WATER-CALF.md and exact-byte regression tests. CANON.json pins the candidate tree and preserves baselineTree/baselineCommit separately. Do not reinstate the old root or abandoned elephant work. Do not call this branch deployed.
+
+## Historical recovery reference
+
 # Slime — canonical baseline (owner correction, 2026-09-17)
 
 Read CANON.json and HANDOFF.md before any game change. The owner explicitly selected the COMPLETE FINISHED MOSS FROG game as canon, not the old root Vite prototype and not the elephant experiments.

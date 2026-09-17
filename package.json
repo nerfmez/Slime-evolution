@@ -6,8 +6,10 @@
   "scripts": {
     "build": "node scripts/canon.mjs build",
     "dev": "node scripts/canon.mjs serve",
-    "test": "node --test tests/canon.test.mjs",
+    "test": "node --test tests/*.test.mjs",
     "audit:live": "node scripts/canon.mjs audit"
   },
-  "engines": {"node": ">=22"}
+  "engines": {
+    "node": ">=22"
+  }
 }

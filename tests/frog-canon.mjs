@@ -64,7 +64,7 @@ try {
   await page.waitForFunction(n=>__canonQA.frames>n+3,startFrames,{timeout:30000});
   const live=await page.evaluate(()=>({status:document.querySelector('#status')?.textContent,roster:document.querySelector('#roster')?.textContent,stats:document.querySelector('#stats')?.textContent,error:document.querySelector('#error')?.textContent,errorHidden:document.querySelector('#error')?.hidden,choosing:document.querySelector('#skill-choice')?.hidden===false,frames:__canonQA.frames,webgl:!!document.querySelector('#world')?.getContext('webgl2')}));
   assert.equal(live.errorHidden,true,live.error);assert.equal(live.choosing,false);assert.ok(live.webgl);assert.match(live.roster,/Moss Frog/);
-  assert.equal([...urls].some(u=>/thorn-sprite\.png|water-calf|elephant/i.test(u)),false,'no obsolete normal Thorn sprite or elephant experiment requested');
+  assert.equal([...urls].some(u=>/thorn-sprite\.png|\/enemies\/crystal(?:\.|-elite)/i.test(u)),false,'no obsolete normal Thorn sprite or Crystal model requested');
   assert.deepEqual(problems,[],'no failed gameplay requests or JavaScript errors');
   report={...report,probes,decoded,live,problems,ignoredCancellations,requests:[...urls],runtimePassed:true};
   await writeFile(`test-results/${label}.json`,JSON.stringify(report,null,2));

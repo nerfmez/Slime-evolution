@@ -1,15 +1,17 @@
 {
-  "name": "Moss Frog complete — owner-approved recovery baseline",
+  "name": "Water Calf candidate on complete Moss Frog canon",
   "commit": "cf841e09ad37da59a8edb1911200d6a41979c5cc",
   "originalPath": "published/2026-09-14",
-  "tree": "8290f60b6708eae7689ded9568264b70d5363eda",
+  "tree": "575c237cbc97440bb0bae088dac277bdbcd293b9",
   "directory": "game",
-  "kind": "complete-playable-snapshot-not-recovered-authoring-source",
+  "kind": "scoped-water-calf-candidate-not-yet-production",
   "archiveBranch": "archive/before-frog-canon-cleanup-20260917",
   "production": {
     "url": "https://slime-evolution-five.vercel.app",
     "project": "slime-evolution",
     "projectId": "prj_dmWGye4WkusoSFye1PIIAxgt5KM3",
     "teamId": "team_wUPNV5SYxHR0mz3URq89uGm0"
-  }
+  },
+  "baselineCommit": "cf841e09ad37da59a8edb1911200d6a41979c5cc",
+  "baselineTree": "8290f60b6708eae7689ded9568264b70d5363eda"
 }
