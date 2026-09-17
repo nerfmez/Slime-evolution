@@ -1,0 +1,103 @@
+name: Verify original production Frog Water Boss deployment
+on:
+  push:
+    branches: [ops/existing-site-deployment]
+    paths: [.github/workflows/verify-original-site.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: verify-original-slime-production
+  cancel-in-progress: false
+env:
+  RELEASE_COMMIT: 7ed257a58aae2f8900fb33d5e614a48ab0533338
+  RELEASE_TREE: 8e9c7d28889efa8ba635caeba0be40960a8eb573
+  SMOKE_URL: https://slime-evolution-five.vercel.app/
+jobs:
+  audit:
+    name: Verify exact original URL, commit and all deployed bytes
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 7ed257a58aae2f8900fb33d5e614a48ab0533338
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Confirm production is the intended deployment, not the old site
+        run: |
+          node --input-type=module <<'JS'
+          import assert from 'node:assert/strict';
+          import {mkdir,writeFile,readFile} from 'node:fs/promises';
+          const c=JSON.parse(await readFile('CANON.json','utf8'));
+          assert.equal(new URL(process.env.SMOKE_URL).origin,c.production.url);
+          assert.equal(c.tree,process.env.RELEASE_TREE);
+          const r=await fetch(new URL('release.json',process.env.SMOKE_URL),{cache:'no-store',signal:AbortSignal.timeout(30000)});
+          assert.equal(r.status,200,'live release metadata must exist');
+          const release=await r.json();
+          assert.equal(release.repositoryCommit,process.env.RELEASE_COMMIT,'stale or wrong deployment');
+          assert.equal(release.canonicalTree,process.env.RELEASE_TREE,'wrong gameplay tree');
+          assert.equal(release.files,1254,'unexpected file count');
+          await mkdir('test-results',{recursive:true});
+          await writeFile('test-results/live-release.json',JSON.stringify({url:process.env.SMOKE_URL,checkedAt:new Date().toISOString(),...release},null,2));
+          console.log('LIVE COMMIT VERIFIED',JSON.stringify(release));
+          JS
+      - name: Build locally from pinned game and compare every served file
+        run: |
+          GITHUB_SHA="$RELEASE_COMMIT" npm run build
+          npm run audit:live
+      - name: Confirm obsolete enemy files are actually absent from hosting
+        run: |
+          node --input-type=module <<'JS'
+          import assert from 'node:assert/strict';
+          import {writeFile} from 'node:fs/promises';
+          const paths=['assets/enemies/thorn.bin','assets/enemies/moss.bin','assets/enemies/petal.bin','assets/enemies/crystal.bin'];
+          const results=[];
+          for(const path of paths){const r=await fetch(new URL(path,process.env.SMOKE_URL),{signal:AbortSignal.timeout(30000)});results.push({path,status:r.status});assert.equal(r.status,404,`${path}: retired model must not remain live`);}
+          await writeFile('test-results/removed-live-assets.json',JSON.stringify(results,null,2));
+          console.log('RETIRED ASSETS ABSENT',JSON.stringify(results));
+          JS
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: original-site-live-byte-audit
+          path: test-results/
+          retention-days: 14
+  browser:
+    name: Original live game / ${{ matrix.browser }}
+    needs: audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium, webkit]
+    env:
+      LIBGL_ALWAYS_SOFTWARE: '1'
+      WEBKIT_DISABLE_DMABUF_RENDERER: '1'
+      BROWSER: ${{ matrix.browser }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 7ed257a58aae2f8900fb33d5e614a48ab0533338
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install pinned browser verifier
+        run: |
+          npm install --no-save --package-lock=false playwright@1.62.0
+          npx playwright install --with-deps ${{ matrix.browser }}
+      - name: Test Frog, Water damage, boss, menus and all skill presets on original HTTPS URL
+        run: |
+          xvfb-run -a node tests/frog-canon.mjs
+          xvfb-run -a node tests/water-browser.mjs
+          xvfb-run -a node tests/roster-browser.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: original-site-live-${{ matrix.browser }}
+          path: test-results/
+          retention-days: 14
