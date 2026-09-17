@@ -2,8 +2,8 @@ import {program,geometry,render,uniform} from './gl.js';
 import {EnemyWorld} from './enemies.js';
 
 export const STAGE1_SPRITE_TYPES=new Set(['thorn','moss','petal','crystal','panda']);
-const ATLAS_ROWS={moss:0,petal:1,crystal:2,panda:3};
-const RENDER_SCALE={moss:.72,petal:.82,crystal:.86,panda:.92};
+const ATLAS_ROWS={moss:0,petal:1,panda:3};
+const RENDER_SCALE={moss:.72,petal:.82,panda:.92};
 const DEATH_LIFE=.58;
 const CELL=128;
 
@@ -58,15 +58,11 @@ function makeAtlas(){
   E(x-2,y,36,27,'#71944f');E(x-2,y,29,21,'#8ead60','#506a43',2);L([[x-25,y],[x+22,y]],'#506a43',1.7);L([[x-11,y-20],[x-8,y+20]],'#506a43',1.7);L([[x+8,y-20],[x+11,y+19]],'#506a43',1.7);E(x-25,y+25,12,6,'#afc47a');E(x+11,y+25,12,6,'#afc47a');E(x+34,y+4,16,13,'#dce2a8');eye(x+40,y);P([[x-8,y-27],[x,y-40],[x+9,y-27],[x+2,y-21]],'#6e994f',ink,1.8);
   if(f===2)L([[x+37,y-1],[x+44,y+2]],ink,3);if(f===3||f===4){c.strokeStyle=f===3?'rgba(109,194,91,.75)':'rgba(211,239,166,.9)';c.lineWidth=f===3?4:5;c.beginPath();c.ellipse(x,y,45,34,0,0,Math.PI*2);c.stroke();if(f===4){c.strokeStyle='rgba(91,148,74,.85)';c.lineWidth=2;c.beginPath();c.ellipse(x,y,55,41,0,0,Math.PI*2);c.stroke();}}
  }
- function elephant(f){let x=59,y=77;if(f===1){x+=2;y-=2}if(f===2)y+=6;ground(x,109,41);if(f===5){E(x-3,80,34,18,'#849fa5');E(x+30,82,15,12,'#9ab3b7');L([[x+39,88],[x+47,97]],ink,3);return;}
-  E(x-4,y,34,26,'#8ba6ab');E(x-22,y+25,9,12,'#78979d');E(x+8,y+25,9,12,'#78979d');E(x+27,y-3,20,20,'#9cb6b9');E(x+17,y-4,14,17,'#78989e');E(x+39,y-4,12,16,'#78989e');P([[x+38,y+7],[x+49,y+13],[x+50,y+29],[x+45,y+40],[x+39,y+39],[x+43,y+28],[x+35,y+17]],'#9cb6b9',ink,2);eye(x+32,y-7);P([[x-7,y-27],[x+1,y-38],[x+10,y-28],[x+3,y-23]],'#708b51',ink,1.7);
-  if(f===2)L([[x+28,y-8],[x+36,y-5]],ink,3);if(f===3)drop(x+54,y+29,.55);if(f===4){L([[x+48,y+26],[x+75,y+19],[x+103,y+22]],'#50bbed',7);drop(x+108,y+22,.5);}
- }
  function panda(f){let x=62,y=78;if(f===1){x+=2;y-=2}if(f===2)y+=6;ground(x,109,42);if(f===5){E(x,81,32,17,'#eadfbe');E(x-20,70,10,10,'#3b403c');E(x+20,70,10,10,'#3b403c');L([[x-7,83],[x-1,83]],ink,2.3);return;}
   E(x-20,y-26,10,10,'#3c413d');E(x+20,y-26,10,10,'#3c413d');E(x,y,34,29,'#eee2c3');E(x-14,y-5,11,14,'#424743');E(x+14,y-5,11,14,'#424743');eye(x-13,y-5);eye(x+13,y-5);E(x,y+9,6,4,'#302f2c');E(x-30,y+25,14,8,'#424743');E(x+30,y+25,14,8,'#424743');P([[x,y-28],[x+7,y-39],[x+16,y-29],[x+7,y-23]],'#6e914f',ink,1.7);
   if(f===2){L([[x-17,y-7],[x-10,y-4]],ink,3);L([[x+10,y-4],[x+17,y-7]],ink,3);}if(f===3){c.strokeStyle='rgba(148,133,101,.8)';c.lineWidth=3;c.beginPath();c.arc(x-47,y+5,18,-1.2,1.2);c.stroke();}if(f===4){c.strokeStyle='rgba(150,133,100,.8)';c.lineWidth=4;c.beginPath();c.ellipse(x,y,41,35,0,0,Math.PI*2);c.stroke();}
  }
- for(let f=0;f<6;f++){cell(f,0,hedge);cell(f,1,turtle);cell(f,2,elephant);cell(f,3,panda);}return canvas;
+ for(let f=0;f<6;f++){cell(f,0,hedge);cell(f,1,turtle);cell(f,3,panda);}return canvas;
 }
 
 export async function createStageOneAnimalSprites(gl){

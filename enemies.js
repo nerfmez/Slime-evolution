@@ -8,9 +8,7 @@ export const ENEMY_TYPES={
  moss:{name:'Spark Hedgehog',eliteName:'Spark Hedgehog Alpha',stride:.55,speed:.96,radius:.34,hp:26,damage:5,eliteScale:1.46,skill:'chain_spark'},
  petal:{name:'Pond Turtle',eliteName:'Pond Turtle Alpha',stride:.72,speed:.66,radius:.44,hp:46,damage:6,eliteScale:1.40,skill:'shell_guard'},
  crystal:{name:'Water Calf',eliteName:'Water Calf Alpha',stride:.78,speed:.82,radius:.38,hp:30,damage:5,eliteScale:1.44,skill:'water_shot'},
- panda:{name:'Forest Panda',eliteName:'Forest Panda Alpha',stride:.88,speed:.74,radius:.50,hp:58,damage:8,eliteScale:1.38,skill:'panda_roll'},
- // Boss remains the current Stage 1 review boss while the normal ecosystem is replaced.
- boss:{name:'Ancient Bloom Colossus',stride:2.35,speed:.92,radius:1.82,hp:1200,sourceHp:12000,damage:26,skill:'boss_cycle'}
+ panda:{name:'Forest Panda',eliteName:'Forest Panda Alpha',stride:.88,speed:.74,radius:.50,hp:58,damage:8,eliteScale:1.38,skill:'panda_roll'}
 };
 
 const N=67,ORIGIN=33;
@@ -51,7 +49,6 @@ export class EnemyWorld{
  }
  random(){this.seed=(Math.imul(this.seed,1664525)+1013904223)>>>0;return this.seed/4294967296;}
  unlocked(){
-  if(this.mode==='boss')return ['boss'];
   if(this.mode==='all'||this.mode==='elites')return [...STAGE1_FAMILIES];
   if(this.mode.startsWith('elite-'))return [this.mode.slice(6)];
   if(this.mode!=='auto')return [this.mode];
@@ -93,10 +90,9 @@ export class EnemyWorld{
  }
  unlockedEliteFamilies(){return STAGE1_FAMILIES.filter(k=>this.spawnCounts[k]>0);}
  spawnElite(player){const unlocked=this.unlockedEliteFamilies();if(!unlocked.length)return null;const type=unlocked[this.eliteCycle++%unlocked.length],e=this.spawn(player,type,{elite:true});if(e){this.noticeText=e.name+' APPROACHES';this.noticeTime=2.1;}return e;}
- spawnBoss(player){if(this.bossSpawned)return this.enemies.find(e=>e.isBoss)||null;const e=this.spawn(player,'boss',{boss:true});if(e){this.bossSpawned=true;this.noticeText='⚠ BOSS HAS AWAKENED ⚠\nANCIENT BLOOM COLOSSUS';this.noticeTime=3.0;}return e;}
  startSkill(e,kind,windup,radius,player){
-  const dx=player[0]-e.x,dz=player[2]-e.z,d=Math.hypot(dx,dz)||1;e.skillKind=kind;e.skillLabel=SKILL_LABELS[kind]||kind.toUpperCase();e.skillWindup=windup;e.skillRadius=radius;e.skillTargetX=player[0];e.skillTargetZ=player[2];e.skillDirX=dx/d;e.skillDirZ=dz/d;e.skillColor=skillColor(kind);e.animState=e.isBoss?(kind==='vine_lunge'?'charge':kind==='root_slam'?'push':'spell'):'cast';e.castPose=windup+.22;
-  const bossCd={vine_lunge:4.10,root_slam:3.55,seed_volley:3.40,bloom_burst:4.00}[kind];e.skillCooldown=(bossCd||ANIMAL_COOLDOWNS[kind]||4.2)*(e.isElite&&!e.isBoss?.78:1);
+  const dx=player[0]-e.x,dz=player[2]-e.z,d=Math.hypot(dx,dz)||1;e.skillKind=kind;e.skillLabel=SKILL_LABELS[kind]||kind.toUpperCase();e.skillWindup=windup;e.skillRadius=radius;e.skillTargetX=player[0];e.skillTargetZ=player[2];e.skillDirX=dx/d;e.skillDirZ=dz/d;e.skillColor=skillColor(kind);e.animState='cast';e.castPose=windup+.22;
+  e.skillCooldown=(ANIMAL_COOLDOWNS[kind]||4.2)*(e.isElite?.78:1);
  }
  blast(x,z,radius,damage,kind,color=skillColor(kind)){if(Math.hypot(x-this.player[0],z-this.player[2])<=radius)this.damage(Math.max(1,Math.round(damage)));this.effects.push({x,z,r:radius,kind,color,age:0,life:.42});}
  lineEffect(e,tx,tz,kind,count=7){for(let i=1;i<=count;i++){const t=i/count;this.effects.push({x:lerp(e.x,tx,t),z:lerp(e.z,tz,t),r:.13+.05*Math.sin(t*Math.PI),kind,color:e.skillColor,age:0,life:.24});}}
@@ -132,7 +128,6 @@ export class EnemyWorld{
    if(e.skillDash<=0)this.finishDash(e);return true;
   }
   e.skillCooldown=Math.max(0,e.skillCooldown-dt);if(e.skillCooldown>0)return false;
-  if(e.isBoss){if(distance>6.2)this.startSkill(e,'vine_lunge',.94,4.80,player);else{const kind=['root_slam','seed_volley','bloom_burst'][e.bossCycle++%3],data={root_slam:[1.02,7.20],seed_volley:[.86,0],bloom_burst:[1.08,8.00]}[kind];this.startSkill(e,kind,data[0],data[1],player);}return true;}
   if(e.type==='thorn'&&distance>.8&&distance<3.5)this.startSkill(e,'poison_tongue',.36,0,player);
   else if(e.type==='moss'&&distance>1.1&&distance<6.1)this.startSkill(e,'chain_spark',.48,0,player);
   else if(e.type==='petal'&&distance<4.8)this.startSkill(e,'shell_guard',.50,e.radius*2.35,player);
@@ -145,8 +140,7 @@ export class EnemyWorld{
   if(dt<=0||this.hp<=0||this.finished)return;dt=Math.min(dt,.05);this._lastDt=dt;this.player=player;this.time+=dt;this.hurt=Math.max(0,this.hurt-dt);this.noticeTime=Math.max(0,this.noticeTime-dt);this.navClock-=dt;
   if(this.poisonTime>0){this.poisonTime=Math.max(0,this.poisonTime-dt);this.poisonTick-=dt;if(this.poisonTick<=0){this.damage(1);this.poisonTick=.72;}}
   if(this.navClock<=0){this.rebuild(player);this.navClock=.4;}
-  if(this.initial){if(this.mode==='boss')this.spawnBoss(player);else if(this.mode==='elites')for(const type of STAGE1_FAMILIES){this.spawnCounts[type]=1;this.spawn(player,type,{elite:true});}else if(this.mode.startsWith('elite-')){const type=this.mode.slice(6);this.spawnCounts[type]=1;for(let i=0;i<Math.min(4,limit);i++)this.spawn(player,type,{elite:true});}else if(this.mode==='auto')this.spawn(player,'thorn');else{const types=this.unlocked();for(let i=0;i<Math.min(8,limit);i++)this.spawn(player,types[i%types.length]);}this.initial=false;}
-  if(limit>0&&!this.bossSpawned&&this.time>=300&&(this.mode==='auto'||this.mode==='all'))this.spawnBoss(player);
+  if(this.initial){if(this.mode==='elites')for(const type of STAGE1_FAMILIES){this.spawnCounts[type]=1;this.spawn(player,type,{elite:true});}else if(this.mode.startsWith('elite-')){const type=this.mode.slice(6);this.spawnCounts[type]=1;for(let i=0;i<Math.min(4,limit);i++)this.spawn(player,type,{elite:true});}else if(this.mode==='auto')this.spawn(player,'thorn');else{const types=this.unlocked();for(let i=0;i<Math.min(8,limit);i++)this.spawn(player,types[i%types.length]);}this.initial=false;}
   this.spawnClock-=dt;
   if(!this.bossSpawned&&this.mode!=='boss'&&this.mode!=='elites'&&this.spawnClock<=0&&this.time<300){const type=this.mode==='auto'?this.rollStageOneType():this.unlocked()[Math.floor(this.random()*this.unlocked().length)];if(this.enemies.length<limit)this.spawn(player,type);const p=clamp(this.time/300,0,1);this.spawnClock=Math.max(.38,lerp(1.48,.38,Math.pow(p,.82)));}
   if(this.enemies.length>limit&&!this.bossSpawned)this.enemies.length=limit;
@@ -167,7 +161,6 @@ export class EnemyWorld{
    e.walkBlend+=(Math.min(1,walked/Math.max(e.speed*dt,.0001))-e.walkBlend)*(1-Math.exp(-dt*12));
   }
   const dead=this.enemies.filter(e=>e.hp<=0);for(const e of dead)this.defeated.push(e);this.enemies=this.enemies.filter(e=>e.hp>0);this.kills+=dead.length;
-  if(dead.some(e=>e.isBoss)){this.finished=true;this.noticeText='ANCIENT BLOOM DEFEATED';this.noticeTime=3.0;}
   if(!this.bossSpawned&&this.mode==='auto'&&this.kills>=this.nextEliteKillTarget){this.nextEliteKillTarget=this.kills+eliteKillsPerSpawn(this.time);this.spawnElite(player);}
   for(const b of this.bullets){b.x+=b.vx*dt;b.z+=b.vz*dt;b.life-=dt;if(!enemyCanStand(b.x,b.z,b.radius||.08))b.life=0;if(Math.hypot(b.x-player[0],b.z-player[2])<.35+(b.radius||.08)){this.damage(b.damage??6);b.life=0;}}
   this.bullets=this.bullets.filter(b=>b.life>0);for(const fx of this.effects){fx.age+=dt;fx.life-=dt;}this.effects=this.effects.filter(fx=>fx.life>0);
