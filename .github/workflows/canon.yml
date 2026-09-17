@@ -1,4 +1,4 @@
-name: Frog baseline and Water Calf regression
+name: Frog Water Boss regression
 on:
   push:
     branches: [main, feature/water-calf-from-frog-canon]
@@ -9,7 +9,7 @@ on:
       audit_live:
         type: boolean
         default: false
-        description: Compare candidate to the original production URL only after deployment
+        description: Compare candidate to ORIGINAL production URL only after deployment
 permissions:
   contents: read
 concurrency:
@@ -33,12 +33,13 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - run: npm test && npm run build
+      - name: Verify exact art, independent roster timings, shared files and numerical boss parity
+        run: npm test && npm run build
       - name: Install pinned browser verifier
         run: |
           npm install --no-save --package-lock=false playwright@1.62.0
           npx playwright install --with-deps ${{ matrix.browser }}
-      - name: Finished Frog regression and actual Water Calf gameplay
+      - name: Frog, Water damage, boss, spawn modes and every skill preset on actual game
         run: |
           set -euo pipefail
           node scripts/canon.mjs serve >/tmp/game-static.log 2>&1 &
@@ -50,16 +51,17 @@ jobs:
           done
           xvfb-run -a node tests/frog-canon.mjs
           xvfb-run -a node tests/water-browser.mjs
+          xvfb-run -a node tests/roster-browser.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: water-calf-proof-${{ matrix.browser }}
+          name: three-species-proof-${{ matrix.browser }}
           path: test-results/
           retention-days: 14
       - uses: actions/upload-artifact@v4
         if: success() && matrix.browser == 'chromium'
         with:
-          name: water-calf-tested-package
+          name: three-species-tested-package
           path: dist/
           retention-days: 14
   audit-live:
