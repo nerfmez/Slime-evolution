@@ -1,0 +1,106 @@
+name: Build clean new-animal trial
+
+on:
+  push:
+    branches:
+      - stage1-new-animals-clean
+    paths:
+      - 'CLEAN_NEW_ANIMALS_TRIGGER'
+      - '.github/workflows/build-clean-new-animals-trial.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  build-test-publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Apply clean trial source changes
+        run: |
+          node tools/apply-clean-new-animals-trial.mjs
+          rm -f enemy-assets.js
+          find public/assets/enemies -maxdepth 1 -type f ! -name 'frog-moveset.png' ! -name 'water-calf-atlas.webp' -delete
+          echo 'Enemy assets kept:'
+          find public/assets/enemies -maxdepth 1 -type f -printf '%f\n' | sort
+          test "$(find public/assets/enemies -maxdepth 1 -type f | wc -l)" -eq 2
+          test -f public/assets/enemies/frog-moveset.png
+          test -f public/assets/enemies/water-calf-atlas.webp
+          ! test -f public/assets/enemies/thorn.bin
+          ! test -f public/assets/enemies/moss.bin
+          ! test -f public/assets/enemies/petal.bin
+          ! test -f public/assets/enemies/crystal.bin
+          ! test -f public/assets/enemies/boss.bin
+      - name: Source syntax checks
+        run: |
+          node --check main.js
+          node --check enemies.js
+          node --check stage1-animals.js
+          node --check thorn-sprite.js
+          node --check water-calf-sprite.js
+          grep -q "createWaterCalfSprite" main.js
+          grep -q "water-calf-atlas.webp" water-calf-sprite.js
+          ! grep -q "loadEnemyAsset" main.js
+          ! grep -q "Ancient Bloom" index.html
+      - name: Build exact trial from source
+        run: |
+          npm install
+          npm run build
+          rm -rf published/new-animals-clean
+          mkdir -p published/new-animals-clean
+          cp -R dist/. published/new-animals-clean/
+          test -f published/new-animals-clean/index.html
+          test -f published/new-animals-clean/assets/enemies/frog-moveset.png
+          test -f published/new-animals-clean/assets/enemies/water-calf-atlas.webp
+          test "$(find published/new-animals-clean/assets/enemies -maxdepth 1 -type f | wc -l)" -eq 2
+      - name: Install browser smoke-test runtime
+        run: |
+          npm install --no-save playwright@1.55.0
+          npx playwright install --with-deps chromium
+      - name: Run exact scene in Chromium WebGL2
+        run: |
+          python3 -m http.server 4173 --directory published/new-animals-clean >/tmp/slime-clean-http.log 2>&1 &
+          echo $! >/tmp/slime-clean-http.pid
+          for i in {1..40}; do curl -fsS http://127.0.0.1:4173/ >/dev/null && break || sleep .25; done
+          cat > smoke-clean.mjs <<'NODE'
+          import { chromium } from 'playwright';
+          const browser=await chromium.launch({headless:true,args:['--use-gl=angle','--use-angle=swiftshader','--enable-webgl','--ignore-gpu-blocklist']});
+          const page=await browser.newPage({viewport:{width:1366,height:768}});
+          const errors=[],badEnemyRequests=[];
+          page.on('pageerror',e=>errors.push('pageerror: '+e.message));
+          page.on('console',m=>{if(m.type()==='error')errors.push('console: '+m.text())});
+          page.on('response',r=>{const u=r.url();if(r.status()>=400)errors.push('HTTP '+r.status()+' '+u);if(u.includes('/assets/enemies/')){const name=u.split('/').pop().split('?')[0];if(!['frog-moveset.png','water-calf-atlas.webp'].includes(name))badEnemyRequests.push(name);}});
+          let response=await page.goto('http://127.0.0.1:4173/',{waitUntil:'load'});
+          if(!response?.ok())throw new Error('index HTTP '+response?.status());
+          await page.waitForTimeout(3500);
+          let err=await page.locator('#error').evaluate(el=>({hidden:el.hidden,text:el.textContent}));
+          if(!err.hidden)throw new Error('startup error: '+err.text);
+          await page.evaluate(()=>{const mode=document.querySelector('#enemy-mode');mode.value='crystal';mode.dispatchEvent(new Event('change',{bubbles:true}));document.querySelector('#restart').click();});
+          await page.waitForTimeout(4200);
+          err=await page.locator('#error').evaluate(el=>({hidden:el.hidden,text:el.textContent}));
+          const roster=await page.locator('#roster').textContent();
+          console.log('ROSTER:',roster);
+          console.log('ENEMY REQUESTS:',badEnemyRequests.length?badEnemyRequests.join(', '):'clean');
+          if(!err.hidden)throw new Error('Water Calf runtime error: '+err.text);
+          if(!/Water Calf/.test(roster||''))throw new Error('Water Calf not active: '+roster);
+          if(badEnemyRequests.length)throw new Error('legacy enemy asset requested: '+badEnemyRequests.join(', '));
+          if(errors.length)throw new Error(errors.join('\n'));
+          await browser.close();
+          NODE
+          node smoke-clean.mjs
+      - name: Stop smoke-test server
+        if: always()
+        run: kill $(cat /tmp/slime-clean-http.pid) || true
+      - name: Commit clean source and verified published trial
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A main.js enemies.js stage1-animals.js enemy-assets.js public/assets/enemies published/new-animals-clean
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "Materialize clean Stage 1 new-animal trial [skip ci]"
+          git push origin HEAD:stage1-new-animals-clean
