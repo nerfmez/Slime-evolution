@@ -1366,84 +1366,6 @@
     "note": "ภาพจากตัวเรนเดอร์เกม · ตัดพื้นหลังจากคลิปต้นฉบับ · เวลาในเกมปรับได้ · ยังไม่ใช่การวัด FPS เครื่องผู้เล่น"
   },
   {
-    "id": "stage-one-thorn",
-    "label": "Stage 1 · thorn · GLES poses",
-    "fps": 9.411764705882353,
-    "frames": [
-      "frames/stage-one-thorn-00.png",
-      "frames/stage-one-thorn-01.png",
-      "frames/stage-one-thorn-02.png",
-      "frames/stage-one-thorn-03.png",
-      "frames/stage-one-thorn-04.png",
-      "frames/stage-one-thorn-05.png",
-      "frames/stage-one-thorn-06.png",
-      "frames/stage-one-thorn-07.png"
-    ],
-    "target": "frames/stage-one-thorn-00.png",
-    "note": "โมเดลเดิมจาก Godot · มุมกล้องเกม · ภาพเรนเดอร์แยก ไม่ใช่ภาพเต็มเกม",
-    "referenceLabel": "ท่าเริ่มต้นจากโมเดลเดียวกัน",
-    "poses": [
-      0.0,
-      0.10625,
-      0.2125,
-      0.31875,
-      0.425,
-      0.53125
-    ]
-  },
-  {
-    "id": "stage-one-moss",
-    "label": "Stage 1 · moss · GLES poses",
-    "fps": 8.0,
-    "frames": [
-      "frames/stage-one-moss-00.png",
-      "frames/stage-one-moss-01.png",
-      "frames/stage-one-moss-02.png",
-      "frames/stage-one-moss-03.png",
-      "frames/stage-one-moss-04.png",
-      "frames/stage-one-moss-05.png",
-      "frames/stage-one-moss-06.png",
-      "frames/stage-one-moss-07.png"
-    ],
-    "target": "frames/stage-one-moss-00.png",
-    "note": "โมเดลเดิมจาก Godot · มุมกล้องเกม · ภาพเรนเดอร์แยก ไม่ใช่ภาพเต็มเกม",
-    "referenceLabel": "ท่าเริ่มต้นจากโมเดลเดียวกัน",
-    "poses": [
-      0.0,
-      0.125,
-      0.25,
-      0.375,
-      0.5,
-      0.625
-    ]
-  },
-  {
-    "id": "stage-one-petal",
-    "label": "Stage 1 · petal · GLES poses",
-    "fps": 8.0,
-    "frames": [
-      "frames/stage-one-petal-00.png",
-      "frames/stage-one-petal-01.png",
-      "frames/stage-one-petal-02.png",
-      "frames/stage-one-petal-03.png",
-      "frames/stage-one-petal-04.png",
-      "frames/stage-one-petal-05.png",
-      "frames/stage-one-petal-06.png",
-      "frames/stage-one-petal-07.png"
-    ],
-    "target": "frames/stage-one-petal-00.png",
-    "note": "โมเดลเดิมจาก Godot · มุมกล้องเกม · ภาพเรนเดอร์แยก ไม่ใช่ภาพเต็มเกม",
-    "referenceLabel": "ท่าเริ่มต้นจากโมเดลเดียวกัน",
-    "poses": [
-      0.0,
-      0.125,
-      0.25,
-      0.375,
-      0.5,
-      0.625
-    ]
-  },
-  {
     "id": "stage-one-crystal",
     "label": "Stage 1 · crystal · GLES poses",
     "fps": 8.0,
@@ -1467,30 +1389,6 @@
       0.375,
       0.5,
       0.625
-    ]
-  },
-  {
-    "id": "stage-one-petal-fly",
-    "label": "Stage 1 · petal-fly · GLES poses",
-    "fps": 43.926764293363114,
-    "frames": [
-      "frames/stage-one-petal-fly-00.png",
-      "frames/stage-one-petal-fly-01.png",
-      "frames/stage-one-petal-fly-02.png",
-      "frames/stage-one-petal-fly-03.png",
-      "frames/stage-one-petal-fly-04.png",
-      "frames/stage-one-petal-fly-05.png"
-    ],
-    "target": "frames/stage-one-petal-fly-00.png",
-    "note": "โมเดลเดิมจาก Godot · มุมกล้องเกม · ภาพเรนเดอร์แยก ไม่ใช่ภาพเต็มเกม",
-    "referenceLabel": "ท่าเริ่มต้นจากโมเดลเดียวกัน",
-    "poses": [
-      0.0,
-      0.022765164156447776,
-      0.04553032831289555,
-      0.06829549246934333,
-      0.0910606566257911,
-      0.11382582078223888
     ]
   },
   {
@@ -2101,32 +1999,6 @@
     "poses": [
       0.14,
       0.36
-    ]
-  },
-  {
-    "id": "petal-flight-wind",
-    "label": "Petal · ริ้วลมระหว่างบิน · GLES",
-    "frames": [
-      "frames/petal-flight-wind-00.png",
-      "frames/petal-flight-wind-01.png",
-      "frames/petal-flight-wind-02.png",
-      "frames/petal-flight-wind-03.png"
-    ],
-    "fps": 3,
-    "target": "frames/petal-flight-wind-00.png",
-    "note": "เรขาคณิตและ shader เดียวกับเกม · มุมผู้เล่น · แยกเอฟเฟกต์บนพื้นเรียบ ไม่ใช่ภาพเต็มเกม",
-    "referenceLabel": "ท่าแรกของเอฟเฟกต์เดียวกัน",
-    "times": [
-      0,
-      0.085,
-      0.17,
-      0.255
-    ],
-    "poses": [
-      0,
-      0.085,
-      0.17,
-      0.255
     ]
   },
   {

@@ -1,0 +1,140 @@
+[
+  {
+    "label": "no crystal charge mesh on water enemy",
+    "start": 292267,
+    "old": "for(let e of t)e.windup>0&&Q(or,27,",
+    "new": "for(let e of t)e.type!==`water`&&e.windup>0&&Q(or,27,"
+  },
+  {
+    "label": "draw actual elephant/shot/splash images using shared scene depth",
+    "start": 291438,
+    "old": "H.disable(H.BLEND),H.depthMask(!0);for(let e of J.bullets)Q(or,e.kind===`seed`?35:27,w(e.x,.4,e.z,1,1,1,Math.atan2(e.vx,e.vz)),1);",
+    "new": "H.disable(H.BLEND),H.depthMask(!0);if(waterRenderer){const camera=W.camera===`side`?[0,4,18]:W.camera===`top`?[0,21,.1]:[0,12,15];for(const enemy of [...t,...J.waterDead||[]])if(enemy.type===`water`&&dr(enemy.x,enemy.z,2)){const drawn=waterRenderer.draw(enemy,X,W.player,camera);Yn+=drawn.calls;Xn+=drawn.triangles}for(const bullet of J.bullets)if(bullet.kind===`water-shot`){const drawn=waterRenderer.drawProjectile(bullet,X,W.player,camera);Yn+=drawn.calls;Xn+=drawn.triangles}for(const splash of J.waterSplashes||[]){const drawn=waterRenderer.drawSplash(splash,X,W.player,camera);Yn+=drawn.calls;Xn+=drawn.triangles}H.useProgram(U)}for(let e of J.bullets)if(e.kind!==`water-shot`)Q(or,e.kind===`seed`?35:27,w(e.x,.4,e.z,1,1,1,Math.atan2(e.vx,e.vz)),1);"
+  },
+  {
+    "label": "remove unused Crystal palette selector",
+    "start": 290809,
+    "old": "e.type===`moss`?1:e.type===`crystal`?2:0",
+    "new": "e.type===`moss`?1:0"
+  },
+  {
+    "label": "remove unused Crystal lighting selector",
+    "start": 290745,
+    "old": "e.type===`moss`?.22:e.type===`crystal`?.25:.18",
+    "new": "e.type===`moss`?.22:.18"
+  },
+  {
+    "label": "do not draw obsolete Crystal model",
+    "start": 290387,
+    "old": "if(e.type===`thorn`&&!e.elite&&W.camera===`game`&&Br)continue;",
+    "new": "if(e.type===`water`||e.type===`thorn`&&!e.elite&&W.camera===`game`&&Br)continue;"
+  },
+  {
+    "label": "required actual elephant atlas at boot",
+    "start": 297939,
+    "old": "try{Br=await Fe(H)}",
+    "new": "waterRenderer=await createWaterCalfRenderer(H,{program:T,geometry:E,uniform:D,render:je});try{Br=await Fe(H)}"
+  },
+  {
+    "label": "no Crystal/Water elite model texture load",
+    "start": 297810,
+    "old": "Promise.all(Object.keys(ft).map(async e=>{zr[e].eliteTex",
+    "new": "Promise.all(Object.keys(ft).filter(e=>e!==`water`).map(async e=>{zr[e].eliteTex"
+  },
+  {
+    "label": "no Crystal/Water 3D model load",
+    "start": 297654,
+    "old": "[...Object.keys(ft),`petal-fly`",
+    "new": "[...Object.keys(ft).filter(e=>e!==`water`),`petal-fly`"
+  },
+  {
+    "label": "one sprite renderer instance",
+    "start": 284584,
+    "old": "zr={},Br,Vr,",
+    "new": "zr={},Br,waterRenderer,Vr,"
+  },
+  {
+    "label": "preserve old slot EXP",
+    "start": 146433,
+    "old": "{thorn:2,moss:5,petal:6,crystal:10}",
+    "new": "{thorn:2,moss:5,petal:6,water:10}"
+  },
+  {
+    "label": "splash after shared bullet collision",
+    "start": 139979,
+    "old": "this.bullets=this.bullets.filter(e=>e.life>0)",
+    "new": "finishWaterBullets(this),this.bullets=this.bullets.filter(e=>e.life>0)"
+  },
+  {
+    "label": "death once; shared EXP/defeated path unchanged",
+    "start": 139502,
+    "old": "this.frogDead.push({...e,frogDeath:0}),this.defeated.push(e)",
+    "new": "this.frogDead.push({...e,frogDeath:0}),e.type===`water`&&this.waterDead.push({...e,waterDeath:0}),this.defeated.push(e)"
+  },
+  {
+    "label": "ranged facing",
+    "start": 139358,
+    "old": "n.type===`crystal`&&f&&(n.yaw=Math.atan2(a,o))",
+    "new": "n.type===`water`&&f&&(n.yaw=Math.atan2(a,o))"
+  },
+  {
+    "label": "replace Crystal firing at existing movement interface",
+    "start": 138297,
+    "old": "if(n.type===`crystal`&&!n.elite&&s<6.5&&f?(d=s>4.5,n.attack<=0&&n.windup===0&&(n.windup=.6,n.attack=2.7),n.windup>0&&(n.windup-=e,d=!1,n.windup<=0&&(n.windup=0,this.bullets.push({x:n.x,z:n.z,vx:a/Math.max(s,.001)*3.8,vz:o/Math.max(s,.001)*3.8,life:3})))):n.windup=0,d)",
+    "new": "if(n.type===`water`?d=waterRanged(this,n,e,t,s,f,i.damage):n.windup=0,d)"
+  },
+  {
+    "label": "age only Water Calf visual state",
+    "start": 135264,
+    "old": "e=Math.min(e,.05),this.frogDead",
+    "new": "e=Math.min(e,.05),tickWaterWorld(this,e),this.frogDead"
+  },
+  {
+    "label": "reset new enemy visual state",
+    "start": 132274,
+    "old": "this.flightTrails=[],this.frogDead=[]",
+    "new": "this.flightTrails=[],this.frogDead=[],this.waterDead=[],this.waterSplashes=[]"
+  },
+  {
+    "label": "new enemy has own ranged AI; all other elite AI unchanged",
+    "start": 137009,
+    "old": "(n.elite||n.boss)&&ke(this,n,",
+    "new": "((n.elite&&n.type!==`water`)||n.boss)&&ke(this,n,"
+  },
+  {
+    "label": "remove Crystal elite AI",
+    "start": 102958,
+    "old": ":t.type===`crystal`&&c>2.2&&c<7.4&&Ee(t,`crystal_burst`,.9,r[0],r[2],1.62,Math.round(i.damage*1.34))",
+    "new": ":void 0"
+  },
+  {
+    "label": "remove Crystal special cooldown",
+    "start": 100963,
+    "old": "crystal_burst:3.8,",
+    "new": ""
+  },
+  {
+    "label": "remove Crystal hazard mesh branch",
+    "start": 98376,
+    "old": "t(r,a.kind===`crystal_burst`?27:36,",
+    "new": "t(r,36,"
+  },
+  {
+    "label": "remove Crystal ground burst count",
+    "start": 98235,
+    "old": "moss_pillar_line`?1:a.kind===`crystal_burst`?7:12",
+    "new": "moss_pillar_line`?1:12"
+  },
+  {
+    "label": "normal slot",
+    "start": 130953,
+    "old": "crystal:{name:`Crystal Warden`",
+    "new": "water:{name:`Water Calf`"
+  },
+  {
+    "label": "elite slot",
+    "start": 99611,
+    "old": "crystal:{name:`Crystal Warden Alpha`",
+    "new": "water:{name:`Water Calf Alpha`"
+  }
+]

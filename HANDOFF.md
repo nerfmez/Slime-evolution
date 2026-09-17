@@ -1,26 +1,13 @@
-# Recovery handoff — 2026-09-17
+# Current handoff — three-species cleanup
 
-## One authority
-The owner has selected the fully finished Moss Frog replacement of ordinary Thorn as the canonical game. CANON.json pins both the historical commit and exact subtree. `game/` is that whole subtree unchanged; `dist/` is generated only by copying it after integrity verification. No elephant logic or recently rebuilt root prototype is in the active game.
+User asked to remove OLD monsters and keep finished Frog, new Water Calf and Ancient Bloom boss, then add new independent species gradually. Implemented on the tested Water candidate from PR #14, not on old Vite/source files.
 
-## Why the repeated failures happened
-The prior work confused the root Vite prototype with the completed frog release. That prototype lacked scene/card assets and had older systems. A separate Vercel test HTML used an external base URL pinned to commit 9f816c and resolved asset paths outside public/. Fixes on GitHub main did not update that hard-coded external URL or the original Vercel project. Tests of a different build could not validate the link sent to the owner.
+Read docs/ROSTER-CLEANUP.md. Only active game input is game/. New active registry: game/assets/enemy-roster.js. Keep Water Calf Alpha as the new Water variant; remove Thorn Alpha/Mossback/Petal old elites. Normal Frog retains internal ID thorn, which is NOT a request to restore old Thorn assets.
 
-## What was preserved
-`archive/before-frog-canon-cleanup-20260917` preserves main at 543bd352, including the old authoring files, intermediate Water Calf atlas/code and the complete historical release. `fix/release-integrity` and other experiment branches were not merged or deleted. The clean main is an ordinary descendant commit, so no history was destroyed.
+Current cleanup changes five pre-existing game files (main bundle, game index and three review files), adds one registry and removes 57 proven-retired files. Other 1,248 parent game files remain byte-identical, including all approved Frog/Water/boss art, cards, audio, player modules and skill assets. The two-level reverse audit recovers the exact finished-Frog main bundle. Boss attack constants and the normal 100-monster cap/frequency/boss transition are unchanged. Water still starts at 180 seconds, not at 60 seconds after deleting two list entries.
 
-This restoration is not source reconstruction. The authoring source corresponding exactly to all compiled frog-release features has not been recovered. Never "repair" that by building the older root code again. Future source restructuring must prove parity with the locked game first.
+Commands: npm test; npm run build; node scripts/canon.mjs serve. Browser tests: tests/frog-canon.mjs, tests/water-browser.mjs, tests/roster-browser.mjs with BROWSER=chromium or webkit. Capture evidence in test-results. CI browser rendering is not iPad FPS evidence. CI success and GitHub merge do not imply deployment.
 
-## Commands
-`npm test` checks byte-tree verification.
-`npm run build` validates all game bytes against CANON.json and writes dist/ plus release.json and asset-manifest.json. No npm dependency installation is needed to build.
-`npm run dev` serves the already-built dist on 127.0.0.1:4173, with real 404 responses, never an HTML fallback for missing images.
-`npm run audit:live` compares every expected file on the ORIGINAL production URL against the exact canonical SHA-256 values and writes test-results/live-audit.json. It does not publish anything.
+Historical identity: Frog cf841e0, recovered main 6e098d66, Water parent 06ebad85. Current reviewed tree is CANON.json.tree; baseline identity is preserved separately. Legacy Vite source is archived, never rebuilt into this game. Do not resurrect legacy files or patch scripts because their names look familiar.
 
-CI separately tests real frog runtime in Chromium and WebKit: actual image decoding, card selection, spawning, advancing frames and frog pose/facing/hop hooks. Screenshots are captured only after stopping animation scheduling in the TEST page, to avoid software-GPU capture starvation. Software-rendered screenshots are not iPad FPS measurements. An intentional canonical cancellation of player-slime-directions.webp?v=3 is logged separately, not mistaken for a missing file.
-
-## Production
-Existing project: slime-evolution; alias: slime-evolution-five.vercel.app. IDs are in CANON.json. Do not create another project. This checkout/configuration does NOT itself connect the Vercel project to GitHub. Check actual hosting state. A successful CI validation is not deployment. If the live audit passes already, report that exact fact rather than falsely claiming a new deploy. If it fails, report mismatches and do not send the stale site as a new validated release.
-
-## Next gameplay work
-First let the owner verify this finished-frog baseline. Then apply only the requested new animal replacement while preserving the rest. Do not continue the abandoned prototype-based elephant implementation.
+Hosting remains the existing slime-evolution-five.vercel.app project only. Check actual hosting data before asserting a version is live. Do not ask the user to test the unrelated broken Water Calf Test site.

@@ -1,0 +1,370 @@
+{
+  "userAttachments": {
+    "hit.png": "8d8ae4605cd61f43c7a132dab4d43ea81d7383c040c03c67dda18f45b4320d57",
+    "walk.png": "4a72eb13eab9da500580eef0b3aa11c54a0f602b1970fe9f05c014b646bbf74f",
+    "actions.png": "41ac5641b63e528700a373505751d35a30a882d3036595f0133fa01b0e934d22"
+  },
+  "regions": [
+    {
+      "name": "walk0",
+      "source": "walk.png",
+      "box": [
+        0,
+        0,
+        543,
+        362
+      ],
+      "bounds": [
+        54,
+        49,
+        452,
+        352
+      ],
+      "scale": 0.7,
+      "excludedNeighbourRegions": []
+    },
+    {
+      "name": "walk1",
+      "source": "walk.png",
+      "box": [
+        543,
+        0,
+        1086,
+        362
+      ],
+      "bounds": [
+        53,
+        49,
+        461,
+        340
+      ],
+      "scale": 0.7,
+      "excludedNeighbourRegions": []
+    },
+    {
+      "name": "walk2",
+      "source": "walk.png",
+      "box": [
+        1086,
+        0,
+        1629,
+        362
+      ],
+      "bounds": [
+        61,
+        49,
+        463,
+        345
+      ],
+      "scale": 0.7,
+      "excludedNeighbourRegions": []
+    },
+    {
+      "name": "walk3",
+      "source": "walk.png",
+      "box": [
+        1629,
+        0,
+        2172,
+        362
+      ],
+      "bounds": [
+        55,
+        56,
+        467,
+        354
+      ],
+      "scale": 0.7,
+      "excludedNeighbourRegions": []
+    },
+    {
+      "name": "walk4",
+      "source": "walk.png",
+      "box": [
+        0,
+        362,
+        543,
+        724
+      ],
+      "bounds": [
+        52,
+        9,
+        459,
+        310
+      ],
+      "scale": 0.7,
+      "excludedNeighbourRegions": []
+    },
+    {
+      "name": "walk5",
+      "source": "walk.png",
+      "box": [
+        543,
+        362,
+        1086,
+        724
+      ],
+      "bounds": [
+        54,
+        7,
+        465,
+        311
+      ],
+      "scale": 0.7,
+      "excludedNeighbourRegions": []
+    },
+    {
+      "name": "walk6",
+      "source": "walk.png",
+      "box": [
+        1086,
+        362,
+        1629,
+        724
+      ],
+      "bounds": [
+        47,
+        16,
+        467,
+        318
+      ],
+      "scale": 0.7,
+      "excludedNeighbourRegions": []
+    },
+    {
+      "name": "walk7",
+      "source": "walk.png",
+      "box": [
+        1629,
+        362,
+        2172,
+        724
+      ],
+      "bounds": [
+        60,
+        10,
+        482,
+        310
+      ],
+      "scale": 0.7,
+      "excludedNeighbourRegions": []
+    },
+    {
+      "name": "death0",
+      "source": "actions.png",
+      "box": [
+        0,
+        0,
+        384,
+        512
+      ],
+      "bounds": [
+        21,
+        162,
+        377,
+        451
+      ],
+      "scale": 0.8,
+      "excludedNeighbourRegions": []
+    },
+    {
+      "name": "death1",
+      "source": "actions.png",
+      "box": [
+        384,
+        0,
+        768,
+        512
+      ],
+      "bounds": [
+        18,
+        173,
+        370,
+        454
+      ],
+      "scale": 0.8,
+      "excludedNeighbourRegions": []
+    },
+    {
+      "name": "death2",
+      "source": "actions.png",
+      "box": [
+        768,
+        0,
+        1152,
+        512
+      ],
+      "bounds": [
+        15,
+        210,
+        379,
+        462
+      ],
+      "scale": 0.8,
+      "excludedNeighbourRegions": []
+    },
+    {
+      "name": "death3",
+      "source": "actions.png",
+      "box": [
+        1152,
+        0,
+        1536,
+        512
+      ],
+      "bounds": [
+        27,
+        250,
+        366,
+        461
+      ],
+      "scale": 0.8,
+      "excludedNeighbourRegions": []
+    },
+    {
+      "name": "charge",
+      "source": "actions.png",
+      "box": [
+        0,
+        512,
+        378,
+        920
+      ],
+      "bounds": [
+        9,
+        28,
+        365,
+        372
+      ],
+      "scale": 0.8,
+      "excludedNeighbourRegions": [
+        [
+          345,
+          700,
+          378,
+          920
+        ]
+      ]
+    },
+    {
+      "name": "shoot",
+      "source": "actions.png",
+      "box": [
+        350,
+        512,
+        726,
+        930
+      ],
+      "bounds": [
+        0,
+        83,
+        369,
+        373
+      ],
+      "scale": 0.8,
+      "excludedNeighbourRegions": [
+        [
+          350,
+          512,
+          400,
+          700
+        ]
+      ]
+    },
+    {
+      "name": "hit",
+      "source": "hit.png",
+      "box": [
+        0,
+        0,
+        1254,
+        1254
+      ],
+      "bounds": [
+        77,
+        209,
+        1169,
+        1063
+      ],
+      "scale": 0.267,
+      "excludedNeighbourRegions": []
+    },
+    {
+      "name": "shot0",
+      "source": "actions.png",
+      "box": [
+        728,
+        650,
+        996,
+        890
+      ],
+      "bounds": [
+        5,
+        46,
+        249,
+        200
+      ],
+      "scale": 1.02,
+      "excludedNeighbourRegions": []
+    },
+    {
+      "name": "shot1",
+      "source": "actions.png",
+      "box": [
+        1014,
+        650,
+        1288,
+        890
+      ],
+      "bounds": [
+        3,
+        30,
+        264,
+        199
+      ],
+      "scale": 1.02,
+      "excludedNeighbourRegions": []
+    },
+    {
+      "name": "splash",
+      "source": "actions.png",
+      "box": [
+        1290,
+        540,
+        1536,
+        910
+      ],
+      "bounds": [
+        7,
+        69,
+        236,
+        347
+      ],
+      "scale": 0.87,
+      "excludedNeighbourRegions": []
+    },
+    {
+      "name": "idle",
+      "source": "actions.png",
+      "box": [
+        0,
+        0,
+        384,
+        512
+      ],
+      "bounds": [
+        21,
+        162,
+        377,
+        451
+      ],
+      "scale": 0.8,
+      "excludedNeighbourRegions": []
+    }
+  ],
+  "atlas": {
+    "path": "game/assets/enemies/water-calf-atlas.webp",
+    "sha256": "bdb9cd0f0d4c168b05ced42c059363382886c06f511aca739a2978f9543d4e56",
+    "lossless": true
+  }
+}
