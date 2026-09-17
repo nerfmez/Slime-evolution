@@ -1,28 +1,15 @@
-# Slime Evolution agent instructions
+# Slime — canonical baseline (owner correction, 2026-09-17)
 
-Read `HANDOFF.md` and `docs/DREAM_LOOP.md` before changing code. The current-release section below overrides historical handoff entries.
+Read CANON.json and HANDOFF.md before any game change. The owner explicitly selected the COMPLETE FINISHED MOSS FROG game as canon, not the old root Vite prototype and not the elephant experiments.
 
-## Current release — 2026-09-14, critter v6 + spawn balance
-
-The newest playable upload is `published/2026-09-14/`; the root Vite source is older and must not be rebuilt over it. Read `docs/CRITTER_PICKUPS.md`. Run `node scripts/apply-critter-patch.mjs` to regenerate `assets/main-critter-v4.js` and `assets/critters-v4/`. Original and v1/v2/v3 assets remain for rollback.
-
-Current approved critter art is deliberately limited to THREE EXP bands with THREE animals each:
-- LOW 1–9: small frog / leaf bug / small rabbit.
-- MID 10–19: round bird / squirrel / little hedgehog.
-- HIGH 20+: fawn / moss turtle / tiny panda.
-The tiny panda rolls as a ball while moving. Every animal uses approved front/back art. Do not expand this back into nine reward tiers or 27 animals.
-
-Approved item animals: pink flower axolotl = Heal, blue magnet-horn creature = Magnet, golden radiant spiky creature = Nova. Use their supplied colors/shading without restyling. The item sprite images themselves must NOT contain baked glow, sparkles, aura clouds, coins, petals, hearts, or other effect particles. Item glow is added only at runtime by the renderer. Latest approved glow is a translucent circular ring around the item that slowly expands and contracts; it must not become a square/rectangular halo or a solid color patch. EXP has no item glow. Paper backgrounds, labels and sheet decoration are excluded from the game atlas.
-
-Preserve pickup behavior: no passive attraction until Magnet mod; +.42 range per rank; one short bounded escape; global magnet item still gathers EXP. Rewards, drop rates, skills, audio and localStorage keys stay unchanged.
-
-Current enemy-density balance: normal-run maximum is 100 monsters. Spawn frequency doubles once per full minute before the 05:00 boss transition: 00:00–00:59 = 1×, 01:00–01:59 = 2×, 02:00–02:59 = 4×, 03:00–03:59 = 8×, 04:00–04:59 = 16×. Preserve the multi-spawn accumulator so the later multipliers still have a real effect until the 100-monster cap is reached.
-
-Production target: Vercel project `slime-evolution`, project ID `prj_dmWGye4WkusoSFye1PIIAxgt5KM3`, team `team_wUPNV5SYxHR0mz3URq89uGm0`, alias `slime-evolution-five.vercel.app`. Deploy the pinned `published/2026-09-14` release, never the old root build. Old Sites is not the selected host.
-
-## Project rules
-- Latest user corrections override older reference images and designs.
-- Current Sun Fall smoke: wide grounded base tapering upward into thin swept anime/manga crests. Clockwise flow, then stretch, thin, peel, dissolve. No round puff/bead/fog-donut concept.
-- Baseline quality before tuner. Preserve tuners, localStorage keys and saves.
-- Keep fixes scoped. Preserve grass burning, other skills, monsters and original player animation unless requested.
-- Do not force-push or overwrite unrelated GitHub work.
+- `game/` is the ONLY runnable game input. It is a byte-for-byte copy of `cf841e09ad37da59a8edb1911200d6a41979c5cc:published/2026-09-14`, tree `8290f60b6708eae7689ded9568264b70d5363eda`.
+- The September 14 folder name is historical; the completed frog commit is September 16. Never choose a baseline by folder date, branch name or the presence of `main.js`.
+- This is a complete playable snapshot, including compiled modules. It is NOT a recovered unbundled authoring source. Do not describe the old root source as equivalent to it. Any future source recovery is a separate task with full behavioral/visual parity checks.
+- `npm run build` validates the locked game tree and copies it to `dist/`; it does not compile the obsolete Vite project, reconstruct missing files or import another version. A missing/changed game byte fails this recovery build.
+- Do not add a root `main.js`, `enemies.js`, `public/`, `published/` or `vite.config.js`. Historical code and elephant work are preserved on `archive/before-frog-canon-cleanup-20260917`; unfinished later experiments remain on their existing branches. They are not build inputs.
+- Do not put the elephant back until the owner approves continuing from this recovered baseline. Normal Thorn is Moss Frog; Thorn Alpha and all other baseline monsters remain as in the locked snapshot.
+- Preserve frog hop/rest, left/right facing and tongue offset, hit, seated tongue attack, death, and 30%-smaller size. Preserve the existing player art/animation, scene, grass, pickups, cards, skills, sound, menus, saves and localStorage keys.
+- The ONLY production destination is `slime-evolution-five.vercel.app`, Vercel project/team in CANON.json. No new projects, hosts, CDN/base-href wrappers or alternate test-site links.
+- GitHub commit, package validation, browser validation and live deployment are separate states. Never call a commit "live" or supply an old failing link as a new version. Test the ORIGINAL URL and compare served bytes with the canonical manifest.
+- Archive before removing obsolete active files; use a new ordinary commit, never rewrite history or force-push. Do not delete unrelated branches.
+- The image/code in the finished frog game may include archived alternatives internally. Do not prune them by filename guessing during restoration. Preserve exact bytes first; a later reviewed dependency-based cleanup can remove unreachable alternatives.

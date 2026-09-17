@@ -1,10 +1,5 @@
-node_modules/
 dist/
-.sites-runtime/
-android/.gradle/
-android/local.properties
-android/**/build/
-*.jks
-*.keystore
-
-.dream-loop/
+node_modules/
+test-results/
+.vercel/
+*.log

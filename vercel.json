@@ -1,5 +1,11 @@
 {
-  "buildCommand": "npm run build",
+  "buildCommand": "node scripts/canon.mjs build",
   "outputDirectory": "dist",
-  "installCommand": "npm install"
+  "installCommand": "node --version",
+  "headers": [
+    {"source": "/", "headers": [{"key": "Cache-Control", "value": "no-cache, must-revalidate"}]},
+    {"source": "/index.html", "headers": [{"key": "Cache-Control", "value": "no-cache, must-revalidate"}]},
+    {"source": "/release.json", "headers": [{"key": "Cache-Control", "value": "no-store"}]},
+    {"source": "/asset-manifest.json", "headers": [{"key": "Cache-Control", "value": "no-store"}]}
+  ]
 }

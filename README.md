@@ -1,17 +1,15 @@
-# Slime Evolution
+# Slime — finished Moss Frog canon
 
-เว็บเกม Slime roguelike — JavaScript, WebGL2, Vite.
-
-**เริ่มอ่าน [HANDOFF.md](HANDOFF.md)** ก่อนแก้: มีสถานะล่าสุด งานค้าง ข้อกำหนดผู้ใช้ วิธีรัน/ตรวจภาพ ค่าที่เซฟ และ workflow ทั้งหมด.
+The only active game is **`game/`**. It preserves the complete approved Moss Frog release, byte-for-byte, from commit `cf841e09ad37da59a8edb1911200d6a41979c5cc` (finished frog, September 16). See `CANON.json` for the exact tree and original hosting destination.
 
 ```sh
-npm install
-npm run dev -- --host 0.0.0.0
+npm test
 npm run build
+npm run dev
 ```
 
-- Node 22.12+ recommended; output `dist/`.
-- [VFX workflow](docs/DREAM_LOOP.md)
-- Saved-frame viewer: `/review/index.html?set=sunfall` (does not require WebGL).
-- Sun Fall smoke currently uses a broad grounded 3D bank tapering into swept manga-style crests. Visual refinement remains; no claim of complete reference match or verified mobile FPS.
-- Repository migration does not automatically deploy a new website. The old Sites domain is not linked to GitHub pushes.
+Node 22 or newer is required. Build needs no downloaded packages and writes `dist/`. There is no active Vite prototype and no external CDN wrapper. This is a preserved playable snapshot, not a claim of recovered authoring source.
+
+Old source and Water Calf experiments are preserved on `archive/before-frog-canon-cleanup-20260917`, not mixed into the current game. Read `AGENTS.md` and `HANDOFF.md` before editing.
+
+The selected site remains `https://slime-evolution-five.vercel.app/`. Run `npm run audit:live` to verify whether its actual files match this baseline; a GitHub commit alone does not update hosting.
