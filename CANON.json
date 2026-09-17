@@ -1,10 +1,10 @@
 {
-  "name": "Moss Frog + Water Calf + Ancient Bloom — active roster",
+  "name": "Moss Frog + Spark Hedgehog + Water Calf + Ancient Bloom",
   "commit": "cf841e09ad37da59a8edb1911200d6a41979c5cc",
   "originalPath": "published/2026-09-14",
-  "tree": "8e9c7d28889efa8ba635caeba0be40960a8eb573",
+  "tree": "d3c87890090c1b1427eccab5bc25ce517696b672",
   "directory": "game",
-  "kind": "scoped-three-species-candidate",
+  "kind": "scoped-spark-approved-sprites",
   "archiveBranch": "archive/before-frog-canon-cleanup-20260917",
   "production": {
     "url": "https://slime-evolution-five.vercel.app",
@@ -14,5 +14,5 @@
   },
   "baselineCommit": "cf841e09ad37da59a8edb1911200d6a41979c5cc",
   "baselineTree": "8290f60b6708eae7689ded9568264b70d5363eda",
-  "previousCandidateTree": "575c237cbc97440bb0bae088dac277bdbcd293b9"
+  "previousCandidateTree": "8e9c7d28889efa8ba635caeba0be40960a8eb573"
 }
