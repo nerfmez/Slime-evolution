@@ -1,11 +1,11 @@
 import {SCENERY,waterBlocked,rockBlocked} from './terrain.js';
 
-export const STAGE1_FAMILIES=['thorn','moss','petal','crystal'];
+export const STAGE1_FAMILIES=['thorn','moss','petal','water'];
 export const ENEMY_TYPES={
  thorn:{name:'Thorn Mite',eliteName:'Thorn Alpha',stride:.42,speed:1.18,radius:.30,hp:18,damage:5,eliteScale:1.62,eliteRadius:.58,skill:'charge'},
  moss:{name:'Mossback',eliteName:'Mossback Alpha',stride:1.03,speed:.72,radius:.46,hp:48,damage:9,eliteScale:1.38,skill:'moss_pillar_line'},
  petal:{name:'Petal Skitter',eliteName:'Petal Alpha',speed:1.65,radius:.24,hp:14,damage:4,eliteScale:1.58,skill:'petal_swoop'},
- crystal:{name:'Crystal Warden',eliteName:'Crystal Alpha',speed:.85,radius:.37,hp:28,damage:6,eliteScale:1.44,skill:'crystal_burst'},
+ water:{name:'Water Calf',eliteName:'Water Calf Alpha',stride:.92,speed:.82,radius:.43,hp:30,damage:6,eliteScale:1.38,skill:'water_shot'},
  // The Godot authoring value is 12,000 HP. This web test currently restores only
  // Inferno, so the runtime test scale is 1,200 to keep the intended ~30–50 s boss
  // review window. sourceHp preserves the authoritative balance target for later.
@@ -14,10 +14,10 @@ export const ENEMY_TYPES={
 
 const N=67,ORIGIN=33;
 const SKILL_COLORS={
- charge:[1.00,.56,.25],moss_pillar_line:[.51,.72,.37],petal_swoop:[1.00,.83,.42],crystal_burst:[.45,.87,1.00],
+ charge:[1.00,.56,.25],moss_pillar_line:[.51,.72,.37],petal_swoop:[1.00,.83,.42],water_shot:[.45,.87,1.00],
  vine_lunge:[.44,.83,.42],root_slam:[.84,.65,.34],seed_volley:[.72,.91,.36],bloom_burst:[1.00,.79,.36]
 };
-const SKILL_LABELS={charge:'ALPHA CHARGE',moss_pillar_line:'EARTHSPIKE PATH',petal_swoop:'WING DIVE',crystal_burst:'CRYSTAL BURST',vine_lunge:'VINE LUNGE',root_slam:'ROOT SLAM',seed_volley:'SEED VOLLEY',bloom_burst:'BLOOM BURST'};
+const SKILL_LABELS={charge:'ALPHA CHARGE',moss_pillar_line:'EARTHSPIKE PATH',petal_swoop:'WING DIVE',water_shot:'WATER SHOT',vine_lunge:'VINE LUNGE',root_slam:'ROOT SLAM',seed_volley:'SEED VOLLEY',bloom_burst:'BLOOM BURST'};
 
 export function enemyCanStand(x,z,r=.46){return Math.abs(x)<33&&Math.abs(z)<33&&!waterBlocked(x,z,r)&&!rockBlocked(x,z,r)&&!SCENERY.some(t=>t[2]===0&&Math.hypot(x-t[0],z-t[1])<r+.31);}
 export function lineOpen(x,z,tx,tz,r=.46){const steps=Math.ceil(Math.hypot(tx-x,tz-z)/.25);for(let i=1;i<=steps;i++)if(!enemyCanStand(x+(tx-x)*i/steps,z+(tz-z)*i/steps,r))return false;return true;}
@@ -48,7 +48,7 @@ export class EnemyWorld{
  }
  reset(mode='auto',time=0){
   this.mode=mode;this.time=time;this.enemies=[];this.defeated=[];this.bullets=[];this.effects=[];this.hp=100;this.hurt=0;this.kills=0;this.serial=0;this.seed=314159;this.spawnClock=0;this.navClock=0;this.initial=true;this.finished=false;
-  this.spawnCounts={thorn:0,moss:0,petal:0,crystal:0};this.eliteCycle=0;this.nextEliteKillTarget=18;this.bossSpawned=false;this.noticeText='';this.noticeTime=0;
+  this.spawnCounts={thorn:0,moss:0,petal:0,water:0};this.eliteCycle=0;this.nextEliteKillTarget=18;this.bossSpawned=false;this.noticeText='';this.noticeTime=0;
  }
  random(){this.seed=(Math.imul(this.seed,1664525)+1013904223)>>>0;return this.seed/4294967296;}
  unlocked(){
@@ -68,8 +68,8 @@ export class EnemyWorld{
   if(t<60)return 'thorn';
   if(t<120){const p=clamp((t-60)/60,0,1),w=lerp(.12,.38,p);return r()<w?'moss':'thorn';}
   if(t<180){const p=clamp((t-120)/60,0,1),petal=lerp(.10,.30,p),moss=lerp(.34,.30,p),x=r();return x<petal?'petal':x<petal+moss?'moss':'thorn';}
-  if(t<240){const p=clamp((t-180)/60,0,1),crystal=lerp(.08,.27,p),petal=lerp(.27,.29,p),moss=lerp(.29,.25,p),x=r();return x<crystal?'crystal':x<crystal+petal?'petal':x<crystal+petal+moss?'moss':'thorn';}
-  const p=clamp((t-240)/60,0,1),crystal=lerp(.28,.34,p),petal=lerp(.29,.30,p),moss=lerp(.24,.22,p),x=r();return x<crystal?'crystal':x<crystal+petal?'petal':x<crystal+petal+moss?'moss':'thorn';
+  if(t<240){const p=clamp((t-180)/60,0,1),water=lerp(.08,.27,p),petal=lerp(.27,.29,p),moss=lerp(.29,.25,p),x=r();return x<water?'water':x<water+petal?'petal':x<water+petal+moss?'moss':'thorn';}
+  const p=clamp((t-240)/60,0,1),water=lerp(.28,.34,p),petal=lerp(.29,.30,p),moss=lerp(.24,.22,p),x=r();return x<water?'water':x<water+petal?'petal':x<water+petal+moss?'moss':'thorn';
  }
  stats(type,elite=false,boss=false){
   const base=ENEMY_TYPES[type];
@@ -103,11 +103,11 @@ export class EnemyWorld{
   if(this.bossSpawned)return this.enemies.find(e=>e.isBoss)||null;const e=this.spawn(player,'boss',{boss:true});
   if(e){this.bossSpawned=true;this.noticeText='⚠ BOSS HAS AWAKENED ⚠\nANCIENT BLOOM COLOSSUS';this.noticeTime=3.0;}return e;
  }
- skillTargeted(kind){return ['moss_pillar_line','crystal_burst','vine_lunge'].includes(kind);}
+ skillTargeted(kind){return ['moss_pillar_line','water_shot','vine_lunge'].includes(kind);}
  startSkill(e,kind,windup,radius,player){
   const dx=player[0]-e.x,dz=player[2]-e.z,d=Math.hypot(dx,dz)||1;e.skillKind=kind;e.skillLabel=SKILL_LABELS[kind]||kind.toUpperCase();e.skillWindup=windup;e.skillRadius=radius;e.skillTargetX=player[0];e.skillTargetZ=player[2];e.skillDirX=dx/d;e.skillDirZ=dz/d;e.skillColor=skillColor(kind);e.animState=e.isBoss?(kind==='vine_lunge'?'charge':kind==='root_slam'?'push':'spell'):'walk';
   if(kind==='petal_swoop'){e.flying=true;e.anim=0;e.animState='flight';e.swoopTrailClock=0;e.swoopLastX=e.x;e.swoopLastZ=e.z;}
-  const cooldown={charge:4.6,moss_pillar_line:4.25,petal_swoop:2.20,crystal_burst:3.8,vine_lunge:4.10,root_slam:3.55,seed_volley:3.40,bloom_burst:4.00}[kind]||4.2;e.skillCooldown=cooldown;
+  const cooldown={charge:4.6,moss_pillar_line:4.25,petal_swoop:2.20,water_shot:3.8,vine_lunge:4.10,root_slam:3.55,seed_volley:3.40,bloom_burst:4.00}[kind]||4.2;e.skillCooldown=cooldown;
  }
  blast(x,z,radius,damage,kind,color=skillColor(kind)){
   if(Math.hypot(x-this.player[0],z-this.player[2])<=radius)this.damage(Math.max(1,Math.round(damage)));
@@ -128,7 +128,7 @@ export class EnemyWorld{
    this.blast(e.skillTargetX,e.skillTargetZ,e.skillRadius,e.damage*1.48,kind,e.skillColor);e.skillKind='';return;
   }
   if(kind==='petal_swoop'){e.skillDash=5.0;e.flying=true;e.grassRadius=petalSwoopGrassRadius(e);e.animState='flight';e.swoopTrailClock=0;e.swoopLastX=e.x;e.swoopLastZ=e.z;return;}
-  if(kind==='crystal_burst'){this.blast(e.skillTargetX,e.skillTargetZ,e.skillRadius,e.damage*1.34,kind,e.skillColor);e.skillKind='';return;}
+  if(kind==='water_shot'){const dx=e.skillTargetX-e.x,dz=e.skillTargetZ-e.z,d=Math.hypot(dx,dz)||1;this.bullets.push({x:e.x+dx/d*Math.max(.72,e.radius*.88),z:e.z+dz/d*Math.max(.72,e.radius*.88),vx:dx/d*4.8,vz:dz/d*4.8,life:3.0,damage:e.damage*1.34,radius:.16,kind:'water',color:[.30,.72,1.00]});e.skillKind='';return;}
   if(kind==='vine_lunge'){
    const dx=e.skillTargetX-e.x,dz=e.skillTargetZ-e.z,d=Math.hypot(dx,dz)||1;e.skillDirX=dx/d;e.skillDirZ=dz/d;e.skillDash=clamp(d/8.8,.42,.92);this.effects.push({x:e.x,z:e.z,r:2.4,kind,color:e.skillColor,age:0,life:.35});e.animState='run';return;
   }
@@ -176,7 +176,7 @@ export class EnemyWorld{
   if(e.type==='thorn'&&distance>2&&distance<7)this.startSkill(e,'charge',.62,0,player);
   else if(e.type==='moss'&&distance<3.6)this.startSkill(e,'moss_pillar_line',.92,1.18,player);
   else if(e.type==='petal'&&distance>1.5&&distance<7.2)this.startSkill(e,'petal_swoop',.48,0,player);
-  else if(e.type==='crystal'&&distance>2.2&&distance<7.4)this.startSkill(e,'crystal_burst',.90,1.62,player);
+  else if(e.type==='water'&&distance>1.8&&distance<7.8)this.startSkill(e,'water_shot',.72,0,player);
   return e.skillWindup>0;
  }
  update(dt,player,limit=40,storm=null){
@@ -203,9 +203,9 @@ export class EnemyWorld{
    const specialLocked=this.updateSpecial(e,dt,player,d);if(specialLocked)continue;
    if(d<e.radius+.32&&e.attack<=0){this.damage(e.damage);e.attack=e.isElite?1.05:1.1;}
    let walked=0,tx=player[0],tz=player[2],moving=d>e.radius+.29,sight=d<7&&lineOpen(e.x,e.z,tx,tz,e.radius);
-   if(e.type==='crystal'&&!e.isBoss&&d<6.5&&sight){
+   if(e.type==='water'&&!e.isBoss&&d<6.5&&sight){
     moving=d>4.5;if(e.attack<=0&&e.windup===0){e.windup=.6;e.attack=e.isElite?2.2:2.7;}
-    if(e.windup>0){e.windup-=dt;moving=false;if(e.windup<=0){e.windup=0;this.bullets.push({x:e.x,z:e.z,vx:dx/Math.max(d,.001)*3.8,vz:dz/Math.max(d,.001)*3.8,life:3,damage:e.damage,radius:.08,kind:'crystal',color:[.45,.78,.95]});}}
+    if(e.windup>0){e.windup-=dt;moving=false;if(e.windup<=0){e.windup=0;this.bullets.push({x:e.x,z:e.z,vx:dx/Math.max(d,.001)*4.2,vz:dz/Math.max(d,.001)*4.2,life:3,damage:e.damage,radius:.16,kind:'water',color:[.30,.72,1.00]});}}
    }else e.windup=0;
    if(moving){
     if(!sight){const cx=Math.round(e.x+ORIGIN),cz=Math.round(e.z+ORIGIN),id=cz*N+cx;let best=-1,score=Infinity;for(const next of [id,...(this.links[id]||[])])if(this.field[next]>=0){const x=next%N-ORIGIN,z=Math.floor(next/N)-ORIGIN,s=this.field[next]+Math.hypot(x-e.x,z-e.z)*.60;if(s<score&&lineOpen(e.x,e.z,x,z,e.radius)){score=s;best=next;}}if(best>=0){tx=best%N-ORIGIN;tz=Math.floor(best/N)-ORIGIN;}else moving=false;}
@@ -215,7 +215,7 @@ export class EnemyWorld{
     if(moving&&enemyCanStand(e.x+vx,e.z+vz,e.radius)){e.x+=vx;e.z+=vz;}else if(moving){if(enemyCanStand(e.x+vx,e.z,e.radius))e.x+=vx;if(enemyCanStand(e.x,e.z+vz,e.radius))e.z+=vz;}
     walked=Math.hypot(e.x-beforeX,e.z-beforeZ);if(walked>.0001){e.yaw=Math.atan2(e.x-beforeX,e.z-beforeZ);if(e.stride)e.walkPhase+=walked/e.stride;else e.anim+=walked/(e.type==='petal'?.75:1.0);}
    }
-   e.walkBlend+=(Math.min(1,walked/Math.max(e.speed*dt,.0001))-e.walkBlend)*(1-Math.exp(-dt*12));if(e.type==='crystal'&&sight)e.yaw=Math.atan2(dx,dz);
+   e.walkBlend+=(Math.min(1,walked/Math.max(e.speed*dt,.0001))-e.walkBlend)*(1-Math.exp(-dt*12));if(e.type==='water'&&sight)e.yaw=Math.atan2(dx,dz);
   }
   const dead=this.enemies.filter(e=>e.hp<=0);for(const e of dead)this.defeated.push(e);this.enemies=this.enemies.filter(e=>e.hp>0);this.kills+=dead.length;
   if(dead.some(e=>e.isBoss)){this.finished=true;this.noticeText='ANCIENT BLOOM DEFEATED';this.noticeTime=3.0;}
