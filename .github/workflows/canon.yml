@@ -1,18 +1,23 @@
-name: Locked Moss Frog canonical verification
+name: Frog baseline and Water Calf regression
 on:
   push:
-    branches: [main, fix/frog-canon-only]
+    branches: [main, feature/water-calf-from-frog-canon]
   pull_request:
     branches: [main]
   workflow_dispatch:
+    inputs:
+      audit_live:
+        type: boolean
+        default: false
+        description: Compare candidate to the original production URL only after deployment
 permissions:
   contents: read
 concurrency:
-  group: frog-canon-${{ github.ref }}
+  group: water-calf-regression-${{ github.ref }}
   cancel-in-progress: true
 jobs:
   runtime:
-    name: Canonical game / ${{ matrix.browser }}
+    name: Game regression / ${{ matrix.browser }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     strategy:
@@ -28,18 +33,15 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Verify tree hashing and copy ONLY the locked complete game
-        run: |
-          node --test tests/canon.test.mjs
-          npm run build
+      - run: npm test && npm run build
       - name: Install pinned browser verifier
         run: |
           npm install --no-save --package-lock=false playwright@1.62.0
           npx playwright install --with-deps ${{ matrix.browser }}
-      - name: Run complete frog gameplay on strict static HTTP
+      - name: Finished Frog regression and actual Water Calf gameplay
         run: |
           set -euo pipefail
-          node scripts/canon.mjs serve >/tmp/frog-static.log 2>&1 &
+          node scripts/canon.mjs serve >/tmp/game-static.log 2>&1 &
           SERVER_PID=$!
           trap 'kill $SERVER_PID || true' EXIT
           for i in {1..30}; do
@@ -47,39 +49,30 @@ jobs:
             sleep 1
           done
           xvfb-run -a node tests/frog-canon.mjs
-      - name: Open ORIGINAL live domain and test actual frog gameplay
-        env:
-          SMOKE_URL: https://slime-evolution-five.vercel.app/
-        run: xvfb-run -a node tests/frog-canon.mjs
-      - name: Keep actual browser evidence even when a test fails
+          xvfb-run -a node tests/water-browser.mjs
+      - uses: actions/upload-artifact@v4
         if: always()
-        uses: actions/upload-artifact@v4
         with:
-          name: frog-canon-runtime-${{ matrix.browser }}
+          name: water-calf-proof-${{ matrix.browser }}
           path: test-results/
           retention-days: 14
-      - name: Save full checked game package, not an HTML wrapper
+      - uses: actions/upload-artifact@v4
         if: success() && matrix.browser == 'chromium'
-        uses: actions/upload-artifact@v4
         with:
-          name: frog-canon-package
+          name: water-calf-tested-package
           path: dist/
           retention-days: 14
-  audit-original-site:
-    name: Read-only audit of ORIGINAL domain
+  audit-live:
+    if: github.event_name == 'workflow_dispatch' && inputs.audit_live
     runs-on: ubuntu-latest
-    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - run: npm run build
-      - name: Compare every served canonical file with the preserved game
-        run: npm run audit:live
+      - run: npm run build && npm run audit:live
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: frog-canon-original-site-audit
+          name: original-domain-candidate-audit
           path: test-results/
-          retention-days: 14
