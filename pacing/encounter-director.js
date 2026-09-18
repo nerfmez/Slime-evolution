@@ -51,7 +51,7 @@ export function encounterRoster(time) {
 }
 export function resetEncounter(world) {
   world.encounter = {phase:-1,spawned:0,nextSpawn:seconds(world.time),eventSpawned:false,
-    eliteIndex:0,blocked:false,history:[]};
+    eliteIndex:0,nextEliteAttempt:seconds(world.time),blocked:false,history:[]};
 }
 /** Return spawn-time stats, never mutate shared roster/AI data. */
 export function encounterStats(time,base,type,elite=false,boss=false) {
@@ -72,14 +72,14 @@ function record(world,state,phase,type) {
 function tickEliteEvents(world,state,phase,player,t,cap,living) {
   while(state.eliteIndex<ELITE_EVENTS.length && t>ELITE_EVENTS[state.eliteIndex].time+ELITE_EVENTS[state.eliteIndex].window)state.eliteIndex++;
   const event=ELITE_EVENTS[state.eliteIndex];
-  if(!event || cap===0 || t+1e-7<event.time)return;
+  if(!event || cap===0 || t+1e-7<event.time || t+1e-7<state.nextEliteAttempt)return;
   if(living.some(guardianAlive)){state.blocked=true;return;}
   const elites=living.filter(eliteAlive).length;
   if(elites>=2){state.blocked=true;return;}
   if(world.spawn(player,event.type,true)){
     record(world,state,phase,'elite-'+event.type);
-    state.eliteIndex++;
-  }
+    state.eliteIndex++;state.nextEliteAttempt=t+.8;
+  }else state.nextEliteAttempt=t+1;
 }
 /** One ordinary spawn attempt per update. Lulls stay populated but use lower cap/rate. */
 export function tickEncounter(world,dt,player,requestedCap=100) {
