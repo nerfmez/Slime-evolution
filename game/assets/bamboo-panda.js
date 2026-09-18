@@ -71,7 +71,9 @@ export function pandaAI(w,e,dt,target,distance,visible,damage){
  }
  const before=e.pandaAge;let after=Math.min(PANDA_ATTACK_LENGTH,before+dt);
  const moving=Math.max(0,Math.min(after,PANDA_ROLL_END)-Math.max(before,PANDA_CHARGE));
- if(moving>0){
+ // Ignore sub-nanosecond overlap at the exact charge boundary; world-coordinate
+ // rounding must not look like a blocking obstacle.
+ if(moving>1e-9){
   const travel=moving*PANDA_ROLL_SPEED,steps=Math.max(1,Math.ceil(travel/.055));
   for(let i=0;i<steps;i++){
    const oldX=e.x,oldZ=e.z,step=travel/steps;
