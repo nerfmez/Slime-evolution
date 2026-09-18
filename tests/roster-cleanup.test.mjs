@@ -4,6 +4,7 @@ import {readFile,readdir} from 'node:fs/promises';
 import {createHash} from 'node:crypto';
 import vm from 'node:vm';
 import {undoSparkBundle} from './spark-provenance.mjs';
+import {undoVisualSize} from './enemy-size-provenance.mjs';
 import {normalEnemies,eliteEnemies,spawnSchedule,unlockedEnemies,normalizeEnemyMode,modelAssetNames,spriteCamera} from '../game/assets/enemy-roster.js';
 const root=new URL('../',import.meta.url);
 const text=p=>readFile(new URL(p,root),'utf8');
@@ -40,7 +41,7 @@ test('all unrelated candidate bytes unchanged, deleted dependencies absent and o
  for(const entry of before){
   const path=new URL('game/'+entry.path,root);
   if(removed.has(entry.path)){await assert.rejects(readFile(path),{code:'ENOENT'});continue;}
-  const bytes=await readFile(path);if(!changed.has(entry.path)){assert.equal(sha(bytes),entry.sha256,entry.path);same++;}
+  const bytes=await readFile(path);if(!changed.has(entry.path)){const original=entry.path==='assets/water-calf.js'?undoVisualSize(entry.path,bytes.toString('utf8')):bytes;assert.equal(sha(original),entry.sha256,entry.path);same++;}
  }
  assert.equal(same,before.length-removed.size-changed.size);
  async function paths(dir,prefix=''){let out=[];for(const e of await readdir(new URL(dir,root),{withFileTypes:true})){let p=prefix+e.name;if(e.isDirectory())out.push(...await paths(dir+e.name+'/',p+'/'));else out.push(p);}return out;}
