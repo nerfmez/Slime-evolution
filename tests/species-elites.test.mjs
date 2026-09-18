@@ -5,7 +5,7 @@ import {fileURLToPath} from 'node:url';
 import {eliteEnemies} from '../species/enemy-roster.js';
 import {sparkMelee,SPARK_ATTACK_LENGTH} from '../species/spark-hedgehog.js';
 import {reflectEliteTurtleProjectile,TURTLE_GUARD_CHARGE,turtleShieldActive} from '../species/pond-turtle.js';
-import {SPECIES_EXP_FRAMES} from '../species/critters-v4/atlas.js';
+import {ATLAS_URL,WATER_ATLAS_URL,WATER_EXP_RECTS,SPECIES_EXP_FRAMES} from '../species/critters-v4/atlas.js';
 import {SPECIES_EXP_SIZE,syncExpAppearance} from '../species/critters-v4/catalog.js';
 import {assemble,sha256} from '../pacing/assemble.mjs';
 import {applySpeciesBundle,applySpeciesHtml,SPECIES_VERSION} from '../species/assemble.mjs';
@@ -20,10 +20,10 @@ test('all ordinary species have one larger elite; Panda remains mini-boss only',
 
 test('EXP critter identity follows defeated species and Water uses the new elephant pair',()=>{
  assert.deepEqual(Object.keys(SPECIES_EXP_FRAMES),['thorn','spark','turtle','panda','water']);
- assert.deepEqual(SPECIES_EXP_FRAMES.water,['water_elephant_f','water_elephant_b']);
+ assert.deepEqual(SPECIES_EXP_FRAMES.water,['water_elephant_f','water_elephant_b']);assert.ok(ATLAS_URL.includes('critters-v4/atlas.webp'));assert.ok(WATER_ATLAS_URL.includes('species/critters-v4/atlas.webp')||WATER_ATLAS_URL.endsWith('/atlas.webp'));assert.equal(WATER_EXP_RECTS.length,2);
  for(const id of ['thorn','spark','turtle','water','panda']){
   const c=syncExpAppearance({value:13,sourceType:id,sourceElite:false},{seed:.9});
-  assert.equal(c.sourceType,id);assert.equal(c.expSize,SPECIES_EXP_SIZE[id]);
+  assert.equal(c.sourceType,id);assert.equal(c.expSize,SPECIES_EXP_SIZE[id]);if(id==='water')assert.ok(c.expSize>=.26);
  }
  const elite=syncExpAppearance({value:42,sourceType:'thorn',sourceElite:true},{seed:.1});
  assert.ok(elite.expSize>SPECIES_EXP_SIZE.thorn);
@@ -49,12 +49,12 @@ test('active Elite Turtle shell reflects a projectile toward the player; normal 
 });
 
 test('runtime patch is isolated from the reviewed game tree and contains elite UI, attacks and species EXP source',async()=>{
- const c=JSON.parse(await read('CANON.json'));assert.equal(SPECIES_VERSION,'species-exp-elites-v1');
+ const c=JSON.parse(await read('CANON.json'));assert.equal(SPECIES_VERSION,'species-exp-elites-v2');
  assert.equal(await treeHash(fileURLToPath(new URL('../game',import.meta.url))),c.tree);
  assert.equal(await treeHash(fileURLToPath(new URL('../species',import.meta.url))),c.species.tree);
  assert.equal(sha256(await read('species/assemble.mjs')),c.species.assemblerSHA256);
  const pacing=assemble(await read('game/assets/main-critter-v4.js'),await read('game/index.html'));
  const bundle=applySpeciesBundle(pacing.bundle),html=applySpeciesHtml(pacing.html);
- for(const marker of ['sourceType:e.type','FElite','frog-cone','spark-ring','reflectEliteTurtleProjectile','pt(e).name','./species/critters-v4/renderer.js'])assert.ok(bundle.includes(marker),marker);
+ for(const marker of ['sourceType:e.type','FElite','frog-cone','spark-ring','reflectEliteTurtleProjectile','pt(e).name','./species/critters-v4/renderer.js','if(n.type===`thorn`&&!n.boss){'])assert.ok(bundle.includes(marker),marker);
  for(const mode of ['elite-thorn','elite-spark','elite-turtle','elite-water'])assert.ok(html.includes(`value="${mode}"`),mode);
 });
