@@ -1,10 +1,10 @@
 {
-  "name": "Moss Frog + Spark Hedgehog + Pond Turtle + Water Calf + Ancient Bloom",
+  "name": "Moss Frog + Spark Hedgehog + Pond Turtle + Water Calf + Bamboo Panda + Ancient Bloom",
   "commit": "cf841e09ad37da59a8edb1911200d6a41979c5cc",
   "originalPath": "published/2026-09-14",
-  "tree": "0ee1f341376fb02cddd04c899517ba6d8a097649",
+  "tree": "4b7e3ef6e7e747aa5cb6d5dcb0dc8190800a7fff",
   "directory": "game",
-  "kind": "scoped-turtle-larger-eight-original-poses",
+  "kind": "scoped-bamboo-panda-miniboss-approved-art",
   "archiveBranch": "archive/before-frog-canon-cleanup-20260917",
   "production": {
     "url": "https://slime-evolution-five.vercel.app",
@@ -14,5 +14,5 @@
   },
   "baselineCommit": "cf841e09ad37da59a8edb1911200d6a41979c5cc",
   "baselineTree": "8290f60b6708eae7689ded9568264b70d5363eda",
-  "previousCandidateTree": "0c1fa1d4f954d0de18e812f00ac768edf0ff6bbb"
+  "previousCandidateTree": "0ee1f341376fb02cddd04c899517ba6d8a097649"
 }

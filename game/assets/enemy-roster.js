@@ -6,6 +6,7 @@ export const normalEnemies = Object.freeze({
   turtle: Object.freeze({name:'Pond Turtle',stride:.92,speed:.64,radius:.42,hp:44,damage:5}),
   water: Object.freeze({name:'Water Calf',speed:.85,radius:.37,hp:28,damage:6})
 });
+export const miniBossEnemies = Object.freeze({panda:Object.freeze({name:'Bamboo Panda',stride:1.1,speed:.78,radius:.62,hp:480,damage:12,xp:45})});
 export const eliteEnemies = Object.freeze({
   water: Object.freeze({name:'Water Calf Alpha',hp:314,speed:1.01,radius:.518,damage:23,xp:30,scale:1.55})
 });
@@ -14,7 +15,7 @@ export const modelAssetNames = Object.freeze(['boss_walk','boss_run','boss_charg
 const own = (object,key) => Object.hasOwn(object,key);
 export function normalizeEnemyMode(mode) {
   if (typeof mode !== 'string') return 'auto';
-  if (['auto','all','boss','elites'].includes(mode) || own(normalEnemies,mode)) return mode;
+  if (['auto','all','boss','elites'].includes(mode) || own(normalEnemies,mode) || own(miniBossEnemies,mode)) return mode;
   if (mode.startsWith('elite-') && own(eliteEnemies,mode.slice(6))) return mode;
   return 'auto';
 }

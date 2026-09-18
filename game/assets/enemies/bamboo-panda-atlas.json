@@ -1,0 +1,212 @@
+{
+  "species": "panda",
+  "version": 1,
+  "size": [
+    1536,
+    1920
+  ],
+  "cellSize": [
+    384,
+    384
+  ],
+  "pivot": [
+    192,
+    330
+  ],
+  "walkCells": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7
+  ],
+  "rollCells": [
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15
+  ],
+  "source": "Existing registered video-frame atlas, alpha-edge cleanup only; source media preserved separately.",
+  "nativeFacing": "right",
+  "cells": [
+    {
+      "cell": 0,
+      "state": "walk",
+      "sourceRGBA": "73afe8b3c6058631382f19975456cd280dc430e9d044c5a244fb9fc9fc6bd8c7",
+      "rgbaSHA256": "519bbad448288f4b9c7af5b5d406167dd0945d14d67b8e5cb924787b781b767e",
+      "alphaSHA256": "fdcf3a947647ee409f1e9faf789c23738462fbd4f0706290b0b6e59df5bc2ddf",
+      "pixelsAlphaChanged": 3565
+    },
+    {
+      "cell": 1,
+      "state": "walk",
+      "sourceRGBA": "58eb3aa2367f8a2339a12b79f4a32ef4ccb7b16e800a0a422bf2965f5d5ac42a",
+      "rgbaSHA256": "525f309916c462df5ffa14f41e750885148b92e760f6ad9d36a0763ffff907cb",
+      "alphaSHA256": "59ce9e66b5b3916a8af292821ca57f09744dedd34608aa785f6e17c5548061bb",
+      "pixelsAlphaChanged": 2929
+    },
+    {
+      "cell": 2,
+      "state": "walk",
+      "sourceRGBA": "23087783dfccc33a140d8f7164bc762ca53ef7a59cc25c6f050cbe000af683e9",
+      "rgbaSHA256": "5bd66b7e79330f830456a0067cc1ddab4e0cc3c0ca85343f27028bb1be355685",
+      "alphaSHA256": "7e5e3c5492fbb79cd8174d2778cf74d2964a5c0985d7e01ae82a4ece16e9ea8f",
+      "pixelsAlphaChanged": 3337
+    },
+    {
+      "cell": 3,
+      "state": "walk",
+      "sourceRGBA": "915b32d53e628623ad19fd16fa91f431049efb25e3b78e65cc73c49d6c9c024c",
+      "rgbaSHA256": "807306d698ddfe520166acf0209b3d4ec9552825040f9e2877bdfc1b4d7497d2",
+      "alphaSHA256": "48a4694b8cb986b49b2929966ea85705b67e8fc16229e9973ddfb73d7549c84f",
+      "pixelsAlphaChanged": 3882
+    },
+    {
+      "cell": 4,
+      "state": "walk",
+      "sourceRGBA": "322d36f5967e8dad04462a2c2c7a9774596169603af2df2245a357cfefeacefc",
+      "rgbaSHA256": "19a78bdba5de0cb077e7bb5368bc1197df2c1a01b385ae00235c5be17a0de471",
+      "alphaSHA256": "e1455ad829e0f7a9d8cc13ab9a59c82904ea1643cc144fbafecd3ef085b71eff",
+      "pixelsAlphaChanged": 3989
+    },
+    {
+      "cell": 5,
+      "state": "walk",
+      "sourceRGBA": "c720f3514478d24ad11bf2ca9e793999d24bedeb6847812b07f2f64f6cbbfa78",
+      "rgbaSHA256": "02ba1b9e2ca82d3aa895cd887e26127b457f24eb6320d2b4df62e1ad994e7d8b",
+      "alphaSHA256": "f180f2483f22501296150bb357c0e75c5d9c4866f5a2222bb0c81b0710cf29d5",
+      "pixelsAlphaChanged": 4061
+    },
+    {
+      "cell": 6,
+      "state": "walk",
+      "sourceRGBA": "a5eb0ad6ed101a980b34f17fa5367475219d9d8e2ecc99cb8beba0eb379a09e4",
+      "rgbaSHA256": "1a8b4dbc3424fcf60004dfb087e77504b764daa5b38198459786d3ff031fcb3d",
+      "alphaSHA256": "0d1d646424a554a11ab9d21c3615f4c842fe5d332753b70b9365531f30329423",
+      "pixelsAlphaChanged": 3839
+    },
+    {
+      "cell": 7,
+      "state": "walk",
+      "sourceRGBA": "d412e0ffb55048a5db21411195c570db943ca192b1dbfc45946cd1c5d8317791",
+      "rgbaSHA256": "a3870e36bf535f87c345eaeb450605dc361240a90e3c24385344aa70448575c2",
+      "alphaSHA256": "3d3df7a86c3625223ab63dbf935023d68bffe9b428d44d5f1019cb207b7d5fa9",
+      "pixelsAlphaChanged": 3868
+    },
+    {
+      "cell": 8,
+      "state": "roll",
+      "sourceRGBA": "9fe369e59fa2bfa6ed3f85c7e0bc30f7fa0f55ea77532c32f4ea6e8ac5968a8d",
+      "rgbaSHA256": "5057345a91f376bbcc8d813fc9ec4327e98dc5258d3f8fc038a7bcd4b49ae208",
+      "alphaSHA256": "69d572a30c1968786b5c0de1801556ab0d830d73bfbe132b3a0e6051248176f2",
+      "pixelsAlphaChanged": 2522
+    },
+    {
+      "cell": 9,
+      "state": "roll",
+      "sourceRGBA": "307bcc0d43f49fc97cab0c8450465f2d756a6d82b636bba36ff0c080001dfad9",
+      "rgbaSHA256": "ba7528360397e3d0d941ce5a17aef4f511214666079a1fae8b1bb9c739d68b23",
+      "alphaSHA256": "16760ad144ab48ae25a2388cb6c88da9e5fce2cc4be13887037874e000191a54",
+      "pixelsAlphaChanged": 2037
+    },
+    {
+      "cell": 10,
+      "state": "roll",
+      "sourceRGBA": "33719a5e550754fbd023e58b0bab6f6faba14ebcf680c866175b399d5856e9d5",
+      "rgbaSHA256": "ec16f8d7aa96b688000c5f83377f0926ce99b967b6b771ed3e21d4844973d161",
+      "alphaSHA256": "85d8b0139ffb2b554284a6a587cafaa6b843a8a08a8a3422a991e91a41055659",
+      "pixelsAlphaChanged": 2412
+    },
+    {
+      "cell": 11,
+      "state": "roll",
+      "sourceRGBA": "4994028e71379c2dcbe613e4ef007623687eacb466e341d2c7cff20597e4750a",
+      "rgbaSHA256": "84d7c76f67b8e2b1d23ee2016644e998e9b6ad19aca1fce0242314fc88c5dfb9",
+      "alphaSHA256": "624ce4b15844510f183ff9691cf22447509bc88481d33c1624e7a399bc645233",
+      "pixelsAlphaChanged": 2429
+    },
+    {
+      "cell": 12,
+      "state": "roll",
+      "sourceRGBA": "3bb8dc3d1f61d2660aeae3a6f84733ed43a9b0ebd20e86fa4cf3cbe82611d88c",
+      "rgbaSHA256": "5e65d5f1a02101b4c41db042e556e346b031a4a6184781afaf50a1fd05d67709",
+      "alphaSHA256": "0e6071ead85074c83e07a16b51ad241b527cd6cd5b0fe812e87fdfea2dd90c43",
+      "pixelsAlphaChanged": 2433
+    },
+    {
+      "cell": 13,
+      "state": "roll",
+      "sourceRGBA": "050c53e4603f975c6fd1f2ce0723e220ed6a29dbce2d95e427125e8be6147d59",
+      "rgbaSHA256": "446a8a99d1a22e33b4f5c7fb47f77663f8428b3845f8cd15dab360b01d2f39f9",
+      "alphaSHA256": "92055f42be34519475128f70713f94ae5ed04993e5812fc12a872b40ce1e7008",
+      "pixelsAlphaChanged": 3242
+    },
+    {
+      "cell": 14,
+      "state": "roll",
+      "sourceRGBA": "5df4c59e7990086d6b5c14c1cb6ed8b8b80ac32bf083e94d02fd9c6c1372516e",
+      "rgbaSHA256": "75da4e5f678e2e3ef6027fddf0c26cd50ab7ca93c4f26f3460d62d3567dfcf9f",
+      "alphaSHA256": "dec55d95db9316007838e9740a051819524704bafb2c6cf1aba3626cdc648651",
+      "pixelsAlphaChanged": 2642
+    },
+    {
+      "cell": 15,
+      "state": "roll",
+      "sourceRGBA": "c2885869ca23c831a81b197eaea4f97f095da66756404e6de0dbec5ed9e923ff",
+      "rgbaSHA256": "a5bdd95b6b2ba62878eb27eb1e158377bf3997ff4f8fa8bc6e3b93ccf345ddb2",
+      "alphaSHA256": "8997d34d448968ffd53be955ffc0139108fe9de2b22322e9320fb82354552eef",
+      "pixelsAlphaChanged": 2306
+    },
+    {
+      "cell": 16,
+      "state": "charge",
+      "sourceRGBA": "646c1465ba0f96d9c8835718102f086ee6ab331807bc14a72fba7215bd1271e6",
+      "rgbaSHA256": "f5d67d22719e5c5f5e1cae9094a9e25f7451d07a43e158325372d9a3f04ac8a9",
+      "alphaSHA256": "8007615597919a18cf2b18d262117c1f00048fdb22e44634abaf06d38c9eff41",
+      "pixelsAlphaChanged": 2893
+    },
+    {
+      "cell": 17,
+      "state": "hurt",
+      "sourceRGBA": "720f9fcffe11532a1cf3141fa89533fcbdfe2649faf54b5fb85f64cae672841a",
+      "rgbaSHA256": "37ada5824a5235d73e1b0fc0d85d741d6d675cb3ba9710e3f23fd59bcfc8a983",
+      "alphaSHA256": "141819a68518660374289f5d7c59df40324179c71594348a2222c961aad629b5",
+      "pixelsAlphaChanged": 6096
+    },
+    {
+      "cell": 18,
+      "state": "death",
+      "sourceRGBA": "8af22d9de39e098af47f7056fb21d82a1c7b1c6f61ab80faa9f43b69f7d425ce",
+      "rgbaSHA256": "c2d603131843138f9a6f35a2481321f4e8968fc30f55744414d87f9803584d7e",
+      "alphaSHA256": "2d032ceade1b21ce404c2835923bb6b45c0c4f1a075c5c3033adbfc572292201",
+      "pixelsAlphaChanged": 3352
+    },
+    {
+      "cell": 19,
+      "state": "dust",
+      "sourceRGBA": "c8b7851b2844af6f49e473897eead996c57c3bf601dedf2bde48d2fa521a45a6",
+      "rgbaSHA256": "5c27d385326ca6f9eac25276f6583a343dc33ae2ced1b2a2f126e1df5b73c6e1",
+      "alphaSHA256": "83d826bcea9a41406046bebea723fba30eebf09b6ba14ddb74c6ee6fb03140cb",
+      "pixelsAlphaChanged": 5446
+    }
+  ],
+  "sourceSHA256": {
+    "approved-hurt-death.png": "548133bd2a1605b08b5e1de50cf5860684a021ccbfb8c312500eb701186cc8e2",
+    "approved-design.png": "7a1f500406457db5e1fcb0893139870e3b92a42286d9619c4e61773720c4dff1",
+    "approved-hurt-death-upload.jpg": "ac1fff533c8ee567565dffbbfe4629a7a64ac33322eae9661804c4b800480220",
+    "approved-roll.mp4": "68291909cbc275249a3e6bce37fdab3cdb37ef39a0f8e5dea42ff0b477b626ae",
+    "approved-walk.mp4": "a5483c83f56ee7a46be9cdf1b2e527cadfd1f7d331e808482977ec5002a5db3e",
+    "prepared-atlas-before-edge-cleanup.webp": "7a5702b0a6552ef5b26626af18d8e2798e46d772bb71ab2b56f8c7c369232724"
+  },
+  "atlasSHA256": "34c6fff1c17451b0ce7feaec38e64b2e2a94014d5f11033c5072d0948b69ce58",
+  "rgbaSHA256": "9e72fa082e31167e26eb8da37bbac98ed9ff21da876c0fa7b86449f1d03c0b12",
+  "alphaSHA256": "6f75374cf2f0cc1374e83da1c4298bbaf0d427da9e248325db67465fd5a9e71b",
+  "opaqueRGBSHA256": "5b839160f71f229c2e3b9740a7343e53da3dfb574ba40f3935c0bd0ae56e631a"
+}

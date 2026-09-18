@@ -1,3 +1,4 @@
+import {undoPandaFile} from './panda-provenance.mjs';
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile,readdir} from 'node:fs/promises';
@@ -69,9 +70,9 @@ test('only three existing runtime files change; exact reverse hooks preserve ALL
  const bundle=(await read('game/assets/main-critter-v4.js')).toString(),restored=undoTurtleBundle(bundle);
  assert.equal(sha(restored),before.find(x=>x.path==='assets/main-critter-v4.js').sha256);
  assert.throws(()=>undoTurtleBundle(bundle+'unapproved edit'));
- let registry=(await read('game/assets/enemy-roster.js')).toString().replace("  turtle: Object.freeze({name:'Pond Turtle',stride:.92,speed:.64,radius:.42,hp:44,damage:5}),\n",'').replace('thorn:0,spark:60,turtle:120,water:180','thorn:0,spark:60,water:180');
+ let registry=undoPandaFile('assets/enemy-roster.js',await read('game/assets/enemy-roster.js')).toString().replace("  turtle: Object.freeze({name:'Pond Turtle',stride:.92,speed:.64,radius:.42,hp:44,damage:5}),\n",'').replace('thorn:0,spark:60,turtle:120,water:180','thorn:0,spark:60,water:180');
  assert.equal(sha(registry),before.find(x=>x.path==='assets/enemy-roster.js').sha256);
- let html=(await read('game/index.html')).toString().replace('กบ + เม่นสายฟ้า + เต่า + ช้าง','กบ + เม่นสายฟ้า + ช้าง').replace('<option value="turtle">Pond Turtle · เต่าโล่พลัง</option>','');
+ let html=undoPandaFile('index.html',await read('game/index.html')).toString().replace('กบ + เม่นสายฟ้า + เต่า + ช้าง','กบ + เม่นสายฟ้า + ช้าง').replace('<option value="turtle">Pond Turtle · เต่าโล่พลัง</option>','');
  assert.equal(sha(html),before.find(x=>x.path==='index.html').sha256);
  assert.equal(bundle.split('t=turtleDamage(e,t)').length,2);assert.equal(bundle.split('n.hp-=turtleDamage(n,22*e)').length,2);
 });

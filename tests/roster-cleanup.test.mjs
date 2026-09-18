@@ -1,3 +1,4 @@
+import {pandaRuntimeAdditions} from './panda-provenance.mjs';
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile,readdir} from 'node:fs/promises';
@@ -47,7 +48,7 @@ test('all unrelated candidate bytes unchanged, deleted dependencies absent and o
  assert.equal(same,before.length-removed.size-changed.size);
  async function paths(dir,prefix=''){let out=[];for(const e of await readdir(new URL(dir,root),{withFileTypes:true})){let p=prefix+e.name;if(e.isDirectory())out.push(...await paths(dir+e.name+'/',p+'/'));else out.push(p);}return out;}
  const actual=await paths('game/');
- assert.deepEqual(actual.sort(),[...before.map(e=>e.path).filter(p=>!removed.has(p)),'assets/enemy-roster.js','assets/spark-hedgehog.js','assets/enemies/spark-hedgehog-atlas.webp','assets/enemies/spark-hedgehog-atlas.json','assets/pond-turtle.js','assets/enemies/pond-turtle-atlas.webp','assets/enemies/pond-turtle-atlas.json'].sort());
+ assert.deepEqual(actual.sort(),[...before.map(e=>e.path).filter(p=>!removed.has(p)),'assets/enemy-roster.js','assets/spark-hedgehog.js','assets/enemies/spark-hedgehog-atlas.webp','assets/enemies/spark-hedgehog-atlas.json','assets/pond-turtle.js','assets/enemies/pond-turtle-atlas.webp','assets/enemies/pond-turtle-atlas.json',...pandaRuntimeAdditions].sort());
  for(const bad of ['petal_swoop','petal-fly','moss_pillar_line','thorn_charge','Thorn Alpha','Mossback','Petal Skitter','flightTrails'])assert.ok(!bundle.includes(bad),bad);
  assert.ok(!bundle.includes('W.thornView=`model`'));
  const html=await text('game/index.html');
