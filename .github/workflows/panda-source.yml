@@ -1,0 +1,18 @@
+name: Export current canonical Panda parent
+on:
+  push:
+    branches: [feature/bamboo-panda-approved]
+    paths: [.github/workflows/panda-source.yml]
+permissions:
+  contents: read
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: git archive 196e49f03c73e44ea746bc0284187d92bbaac015 | gzip -1 > /tmp/panda-parent.tar.gz
+      - uses: actions/upload-artifact@v4
+        with:
+          name: panda-parent-source
+          path: /tmp/panda-parent.tar.gz
+          retention-days: 3
