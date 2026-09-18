@@ -100,7 +100,9 @@ try{
   for(const option of select.options){select.value=option.value;select.dispatchEvent(new Event('change',{bubbles:true}));q.draw();out.push({id:option.value,targets:q.world.enemies.map(e=>e.type)});}
   document.getElementById('lab-close').click();return out;
  });
- assert.ok(skills.length>=10);assert.ok(skills.every(s=>s.targets.every(t=>['thorn','spark','turtle','water'].includes(t))));
+ report.skills=skills;assert.ok(skills.length>=10);
+ // The skill lab lists combat targets, not the ordinary spawn pool: explicitly include the new Panda target.
+ for(const skill of skills)assert.deepEqual(skill.targets,['thorn','spark','turtle','water','panda'],skill.id+' exact training targets');
  assert.ok(!requests.some(u=>/\/enemies\/(?:thorn|moss|petal|crystal)(?:[.-])/.test(u)),'no removed model/atlas requested');
  assert.deepEqual(errors,[]);
  report={...report,passed:true,result,attacks,death,cameras,skills,errors,requests,cancellations};
