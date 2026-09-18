@@ -117,6 +117,11 @@ for i,im in enumerate(cells):atlas.alpha_composite(im,((i%4)*CELL,(i//4)*CELL))
 atlas.save(O/'pond-turtle-atlas.webp',lossless=True,method=6)
 meta={'version':1,'species':'turtle','image':'pond-turtle-atlas.webp','size':[1536,1536],'cellSize':[384,384],'pivot':list(PIVOT),'nativeFacing':'right','walkFrames':walk_ids,'walkPeriodSourceFrames':72,'walkSaturationFactor':1.045,'sourceSHA256':{p.name:hashlib.sha256(p.read_bytes()).hexdigest() for p in [video,source,A/'approved-poses-upload.jpg']},'cells':records}
 (O/'pond-turtle-atlas.json').write_text(json.dumps(meta,indent=2)+'\n')
+# Apply the reviewed palette after registration; no geometry/alpha changes.
+from turtle_walk_color import apply as apply_walk_color
+apply_walk_color(R)
+atlas=Image.open(O/'pond-turtle-atlas.webp').convert('RGBA')
+cells=[atlas.crop((i%4*CELL,i//4*CELL,(i%4+1)*CELL,(i//4+1)*CELL)) for i in range(16)]
 # Dark/green backgrounds and a matching-size full-state board for inspection.
 preview=Image.new('RGB',(4*320,4*285),(49,64,57));d=ImageDraw.Draw(preview)
 for i in range(15):

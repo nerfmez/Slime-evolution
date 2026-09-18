@@ -1,3 +1,9 @@
+# Current fix — Turtle walk palette (2026-09-18)
+
+Read docs/TURTLE-WALK-COLOR.md. Corrected RGB of the 12 actual registered walk cells; all alpha and still/effect cells are unchanged. No thumbnails or regenerated frames. Only atlas/metadata change at runtime; all 1258 other game files stay identical. Browser tests now compare decoded opaque pixels and alpha on local CI and the original production site. Run all existing regressions and confirm actual deployment before reporting live.
+
+## Previous handoff
+
 # Current addition — Pond Turtle (2026-09-18)
 
 Read docs/POND-TURTLE.md first. Independent `turtle` at 120s; twelve real video frames, original hurt and shell-only death, three-quarter guarded body + separate alpha aura. Self-only Shell Guard: .30s charge, 2.40s 70% reduction, .25s release, 6.5s cooldown. Only roster/menu and twelve reversible main hooks change; Water/Spark sizes and Spark charge/range remain exactly as deployed. Run all existing regressions plus tests/turtle-browser.mjs in Chromium and WebKit. Production audit must include both Spark and Turtle on the original site before reporting live.
