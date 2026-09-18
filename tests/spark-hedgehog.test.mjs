@@ -54,9 +54,9 @@ test('hit interrupts charge, obstacles stop dash, moving target can dodge, no da
  ({world,e}=simulation());assert.equal(sparkMelee(world,e,.05,[1,0,0],1,false,6),true);assert.equal(e.sparkAge,undefined);
 });
 test('new species never changes Water unlock, old enemies, boss constants or shared gameplay bytes',async()=>{
- assert.equal(normalEnemies.spark.hp,22);assert.deepEqual(spawnSchedule,{thorn:0,spark:60,water:180});
+ assert.equal(normalEnemies.spark.hp,22);assert.deepEqual(spawnSchedule,{thorn:0,spark:60,turtle:120,water:180});
  assert.deepEqual(unlockedEnemies('auto',59.9),['thorn']);assert.deepEqual(unlockedEnemies('auto',60),['thorn','spark']);
- assert.deepEqual(unlockedEnemies('auto',180),['thorn','spark','water']);
+ assert.deepEqual(unlockedEnemies('auto',180),['thorn','spark','turtle','water']);
  assert.ok(undoSparkBundle(await readFile(new URL('game/assets/main-critter-v4.js',root),'utf8')).includes('createWaterCalfRenderer'));
  const w={sparkDead:[{sparkDeath:0},{sparkDeath:.70}]};tickSparkWorld(w,.10);assert.equal(w.sparkDead.length,1);assert.equal(w.sparkDead[0].sparkDeath,.10);
 });

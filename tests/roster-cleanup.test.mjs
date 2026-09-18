@@ -17,12 +17,13 @@ function undoCleanup(source){
  assert.equal(sha(source),proof.beforeBundleSHA256);
  return source;
 }
-test('Frog + Spark + Water, only Water Alpha; explicit unlock times unchanged',()=>{
- assert.deepEqual(Object.keys(normalEnemies),['thorn','spark','water']);assert.deepEqual(Object.keys(eliteEnemies),['water']);
+test('Frog + Spark + Turtle + Water, only Water Alpha; explicit unlock times unchanged',()=>{
+ assert.deepEqual(Object.keys(normalEnemies),['thorn','spark','turtle','water']);assert.deepEqual(Object.keys(eliteEnemies),['water']);
  for(const t of [0,59.9])assert.deepEqual(unlockedEnemies('auto',t),['thorn']);
- for(const t of [60,119.9,120,179.9])assert.deepEqual(unlockedEnemies('auto',t),['thorn','spark']);
- for(const t of [180,240,299,300,600])assert.deepEqual(unlockedEnemies('auto',t),['thorn','spark','water']);
- assert.deepEqual(unlockedEnemies('all'),['thorn','spark','water']);assert.deepEqual(unlockedEnemies('elites'),['water']);
+ for(const t of [60,119.9])assert.deepEqual(unlockedEnemies('auto',t),['thorn','spark']);
+ for(const t of [120,179.9])assert.deepEqual(unlockedEnemies('auto',t),['thorn','spark','turtle']);
+ for(const t of [180,240,299,300,600])assert.deepEqual(unlockedEnemies('auto',t),['thorn','spark','turtle','water']);
+ assert.deepEqual(unlockedEnemies('all'),['thorn','spark','turtle','water']);assert.deepEqual(unlockedEnemies('elites'),['water']);
  assert.deepEqual(unlockedEnemies('boss'),['boss']);assert.equal(normalEnemies.thorn.hp,18);assert.equal(eliteEnemies.water.hp,314);
  assert.deepEqual(modelAssetNames,['boss_walk','boss_run','boss_charge','boss_push','boss_spell']);
  assert.deepEqual(spriteCamera('game'),[0,12,15]);assert.deepEqual(spriteCamera('side'),[0,4,18]);assert.deepEqual(spriteCamera('top'),[0,21,.1]);
@@ -46,13 +47,13 @@ test('all unrelated candidate bytes unchanged, deleted dependencies absent and o
  assert.equal(same,before.length-removed.size-changed.size);
  async function paths(dir,prefix=''){let out=[];for(const e of await readdir(new URL(dir,root),{withFileTypes:true})){let p=prefix+e.name;if(e.isDirectory())out.push(...await paths(dir+e.name+'/',p+'/'));else out.push(p);}return out;}
  const actual=await paths('game/');
- assert.deepEqual(actual.sort(),[...before.map(e=>e.path).filter(p=>!removed.has(p)),'assets/enemy-roster.js','assets/spark-hedgehog.js','assets/enemies/spark-hedgehog-atlas.webp','assets/enemies/spark-hedgehog-atlas.json'].sort());
+ assert.deepEqual(actual.sort(),[...before.map(e=>e.path).filter(p=>!removed.has(p)),'assets/enemy-roster.js','assets/spark-hedgehog.js','assets/enemies/spark-hedgehog-atlas.webp','assets/enemies/spark-hedgehog-atlas.json','assets/pond-turtle.js','assets/enemies/pond-turtle-atlas.webp','assets/enemies/pond-turtle-atlas.json'].sort());
  for(const bad of ['petal_swoop','petal-fly','moss_pillar_line','thorn_charge','Thorn Alpha','Mossback','Petal Skitter','flightTrails'])assert.ok(!bundle.includes(bad),bad);
  assert.ok(!bundle.includes('W.thornView=`model`'));
  const html=await text('game/index.html');
  for(const old of ['moss','petal','elite-thorn','elite-moss','elite-petal','crystal','elite-crystal','model'])assert.ok(!html.includes(`value="${old}"`),old);
  assert.ok(html.includes('value="100" selected'));assert.ok(html.includes('value="300"'));
- console.log(`ROSTER PRESERVED ${same} parent files; removed ${removed.size}; registry and the three explicit Spark runtime files are the only additions.`);
+ console.log(`ROSTER PRESERVED ${same} parent files; removed ${removed.size}; registry plus the explicit Spark and Turtle modules/atlases are the only additions.`);
 });
 test('two-level reverse audit reconstructs the exact finished-Frog bundle, including shared systems',async()=>{
  assert.equal(sha(bundle),proof.afterBundleSHA256);

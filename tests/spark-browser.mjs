@@ -91,7 +91,7 @@ try{
   const result=await page.evaluate(data=>{const q=__slimeGameQA,w=q.world,p=q.state.player;w.reset('spark',60);w.update(.05,p,12);const e=w.enemies[0];Object.assign(e,{x:p[0]+1.6,z:p[2]-.1,yaw:-Math.PI/2,sparkFacing:-1,walkBlend:0,hit:0},data);w.enemies=[e];q.draw();return {...q.sparkRenderer.stats.last};},data);
   assert.equal(result.cell,cell);assert.equal(result.facing,-1);leftCells.push(result);await capture(`left-${name}`);
  }
- const mixed=await page.evaluate(()=>{const q=__slimeGameQA,w=q.world,p=q.state.player;w.reset('all',180);w.update(.05,p,12);w.enemies=w.enemies.slice(0,3);w.enemies.forEach((e,i)=>{e.x=p[0]-3+i*3;e.z=p[2]-.5;e.walkBlend=1;e.walkPhase=.2});q.draw();return w.enemies.map(e=>e.type)});assert.deepEqual(mixed,['thorn','spark','water']);await capture('mixed-roster');
+ const mixed=await page.evaluate(()=>{const q=__slimeGameQA,w=q.world,p=q.state.player;w.reset('all',180);w.update(.05,p,12);w.enemies=w.enemies.filter(e=>e.type!=='turtle').slice(0,3);w.enemies.forEach((e,i)=>{e.x=p[0]-3+i*3;e.z=p[2]-.5;e.walkBlend=1;e.walkPhase=.2});q.draw();return w.enemies.map(e=>e.type)});assert.deepEqual(mixed,['thorn','spark','water']);await capture('mixed-roster');
  for(const camera of ['side','top']){await page.evaluate(camera=>{__slimeGameQA.state.camera=camera;__slimeGameQA.draw()},camera);await capture(camera);}
  assert.deepEqual(errors,[]);report={engine,url:base,passed:true,atlas,simulation,longRange,cells,runCells,leftCells,mixed,errors};console.log('SPARK GAMEPLAY VERIFIED',JSON.stringify(report));
 }catch(e){report={...report,error:e.stack,errors};await page.screenshot({path:`test-results/spark-${engine}-failure.png`}).catch(()=>{});console.error(report);process.exitCode=1;}

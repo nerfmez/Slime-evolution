@@ -1,0 +1,80 @@
+{
+  "parentCommit": "f535f1dd0eb2d78f7e4153fb63230716a8dc7e44",
+  "parentGameTree": "28af42874d11c618a130db9fb9c1800d1a77b53a",
+  "beforeBundleSHA256": "d6ecc839ec747a287215739ad498f8d44d93b34578d388196f02f6ce13749a25",
+  "afterBundleSHA256": "433a9b780642a0448aa4bc9a82e55fed49fd60284fe26936d009058de46b5e32",
+  "reverse": [
+    {
+      "label": "Expose renderer in existing QA-only hook",
+      "start": 296941,
+      "old": "get sparkRenderer(){return sparkRenderer},canStand:P",
+      "new": "get sparkRenderer(){return sparkRenderer},get turtleRenderer(){return turtleRenderer},canStand:P"
+    },
+    {
+      "label": "Load single Turtle atlas from canonical game",
+      "start": 294839,
+      "old": "sparkRenderer=await createSparkHedgehogRenderer(H,{program:T,geometry:E,uniform:D,render:je});Br=",
+      "new": "sparkRenderer=await createSparkHedgehogRenderer(H,{program:T,geometry:E,uniform:D,render:je});turtleRenderer=await createPondTurtleRenderer(H,{program:T,geometry:E,uniform:D,render:je});Br="
+    },
+    {
+      "label": "Draw Turtle states and shield in all existing cameras",
+      "start": 288246,
+      "old": "H.useProgram(U)}for(let e of J.bullets)if(e.kind!==`water-shot`)",
+      "new": "H.useProgram(U)}if(turtleRenderer){for(const enemy of [...t,...J.turtleDead||[]])if(enemy.type===`turtle`&&dr(enemy.x,enemy.z,2)){const drawn=turtleRenderer.draw(enemy,X,W.player,spriteCamera(W.camera));Yn+=drawn.calls;Xn+=drawn.triangles}H.useProgram(U)}for(let e of J.bullets)if(e.kind!==`water-shot`)"
+    },
+    {
+      "label": "Independent renderer handle",
+      "start": 280662,
+      "old": "Br,waterRenderer,sparkRenderer,Vr",
+      "new": "Br,waterRenderer,sparkRenderer,turtleRenderer,Vr"
+    },
+    {
+      "label": "Apply guard once in shared damage path, before HP/numbers",
+      "start": 141862,
+      "old": "t*=e.boss?.72:1,e.hp-=t",
+      "new": "t*=e.boss?.72:1,t=turtleDamage(e,t),e.hp-=t"
+    },
+    {
+      "label": "Keep the approved empty-shell death before reward removal",
+      "start": 137613,
+      "old": "e.type===`spark`&&this.sparkDead.push({...e,sparkDeath:0}),this.defeated.push(e)",
+      "new": "e.type===`spark`&&this.sparkDead.push({...e,sparkDeath:0}),e.type===`turtle`&&this.turtleDead.push({...e,turtleDeath:0}),this.defeated.push(e)"
+    },
+    {
+      "label": "Delegate ordinary movement to existing navigation",
+      "start": 136291,
+      "old": "n.type===`spark`?d=sparkMelee(this,n,e,t,s,f,i.damage):n.windup=0,d",
+      "new": "n.type===`spark`?d=sparkMelee(this,n,e,t,s,f,i.damage):n.type===`turtle`?d=turtleGuard(this,n,e,t,s,f):n.windup=0,d"
+    },
+    {
+      "label": "Guarded Turtle cannot deal incidental touch attacks",
+      "start": 135364,
+      "old": "n.type!==`spark`&&s<i.radius",
+      "new": "n.type!==`spark`&&!(n.type===`turtle`&&n.turtleGuardAge!=null)&&s<i.radius"
+    },
+    {
+      "label": "Apply self-only guard to separate storm damage",
+      "start": 134846,
+      "old": "n.hp-=22*e,n.hit=.08",
+      "new": "n.hp-=turtleDamage(n,22*e),n.hit=.08"
+    },
+    {
+      "label": "Tick guard cooldown, protection and shell lifetime",
+      "start": 133131,
+      "old": "tickSparkWorld(this,e),this.frogDead",
+      "new": "tickSparkWorld(this,e),tickTurtleWorld(this,e),this.frogDead"
+    },
+    {
+      "label": "Reset Turtle shell-remnant list",
+      "start": 130289,
+      "old": "this.waterSplashes=[],this.sparkDead=[]",
+      "new": "this.waterSplashes=[],this.sparkDead=[],this.turtleDead=[]"
+    },
+    {
+      "label": "Import independent Turtle module",
+      "start": 260,
+      "old": "import {createSparkHedgehogRenderer,sparkMelee,tickSparkWorld} from './spark-hedgehog.js';",
+      "new": "import {createSparkHedgehogRenderer,sparkMelee,tickSparkWorld} from './spark-hedgehog.js';\nimport {createPondTurtleRenderer,turtleGuard,turtleDamage,tickTurtleWorld} from './pond-turtle.js';"
+    }
+  ]
+}
