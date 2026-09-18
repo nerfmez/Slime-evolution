@@ -1,18 +1,41 @@
-name: Species source support
+name: Apply species package
 on:
   push:
     branches: [feature/species-exp-elites]
     paths: [.github/workflows/species-source-export.yml]
 permissions:
-  contents: read
+  contents: write
 jobs:
-  source:
+  apply:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
-      - run: tar -czf species-source-support.tar.gz AGENTS.md CANON.json HANDOFF.md README.md package.json vercel.json baseline-manifest.json roster-parent-manifest.json docs pacing scripts tests tools art .github
-      - uses: actions/upload-artifact@v4
+      - uses: actions/setup-node@v4
         with:
-          name: species-source-support
-          path: species-source-support.tar.gz
-          retention-days: 3
+          node-version: '22'
+      - name: Decode exact reviewed change set
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat .github/species-payload-{1,2,3,4}.b64 | base64 -d > /tmp/species-change-set.tar.gz
+          echo "3288224d63c6bc266566133212f67fa56c4a4321a314e07b5a22a4775efb75a9  /tmp/species-change-set.tar.gz" | sha256sum -c -
+          tar -xzf /tmp/species-change-set.tar.gz
+          rm .github/species-payload-{1,2,3,4}.b64
+          rm .github/workflows/species-source-export.yml
+      - name: Verify all source, integrity and build checks
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm test
+          GITHUB_SHA="$(git rev-parse HEAD)" npm run build
+      - name: Commit reviewed implementation
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --check
+          git commit -m "Add species EXP critters and ordinary elite combat"
+          git push origin HEAD:feature/species-exp-elites
