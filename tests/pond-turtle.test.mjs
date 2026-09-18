@@ -4,7 +4,7 @@ import {readFile,readdir} from 'node:fs/promises';
 import {createHash} from 'node:crypto';
 import {turtlePose,turtleFacing,turtleDamage,turtleShieldActive,turtleGuard,tickTurtleWorld,
   TURTLE_GUARD_CHARGE,TURTLE_GUARD_HOLD,TURTLE_GUARD_LENGTH,TURTLE_GUARD_COOLDOWN,
-  TURTLE_DAMAGE_MULTIPLIER,TURTLE_DEATH_LIFE,createPondTurtleRenderer,TURTLE_FOOT,TURTLE_CELL_WORLD} from '../game/assets/pond-turtle.js';
+  TURTLE_DAMAGE_MULTIPLIER,TURTLE_DEATH_LIFE,createPondTurtleRenderer,TURTLE_FOOT,TURTLE_CELL_WORLD,TURTLE_WALK_SEQUENCE} from '../game/assets/pond-turtle.js';
 import {normalEnemies,eliteEnemies,spawnSchedule,unlockedEnemies} from '../game/assets/enemy-roster.js';
 import {undoTurtleBundle} from './turtle-provenance.mjs';
 const root=new URL('../',import.meta.url),sha=x=>createHash('sha256').update(x).digest('hex');
@@ -22,8 +22,10 @@ test('Pond Turtle uses the exact approved video and still sheet, with 12 ordered
  assert.deepEqual(metadata.cells.slice(12).map(c=>c.state),['hurt','death','guard','shield-effect']);
  const bytes=await read('game/assets/enemies/pond-turtle-atlas.webp');assert.equal(bytes.toString('ascii',0,4),'RIFF');assert.ok(bytes.length<1300000);
 });
-test('all 12 walk cells remain in order, original hurt and empty-shell death; no new facing pose',()=>{
- assert.deepEqual(Array.from({length:12},(_,i)=>turtlePose({walkBlend:1,walkPhase:(i+.1)/12}).cell),Array.from({length:12},(_,i)=>i));
+test('eight original walk poses in order, original hurt and empty-shell death; no new facing pose',()=>{
+ assert.deepEqual(TURTLE_WALK_SEQUENCE,[0,1,3,4,6,7,9,10]);
+ assert.deepEqual(Array.from({length:8},(_,i)=>turtlePose({walkBlend:1,walkPhase:(i+.1)/8}).cell),TURTLE_WALK_SEQUENCE);
+ close(TURTLE_CELL_WORLD,2.42);
  assert.equal(turtlePose({}).cell,0);assert.equal(turtlePose({hit:.1}).cell,12);
  assert.equal(turtlePose({turtleDeath:0,hit:1,turtleGuardAge:1}).cell,13);assert.equal(turtlePose({turtleDeath:1}).alpha,0);
  for(const [age,name,alpha] of [[0,'charge',0],[.15,'charge',.5],[.31,'guard',1],[1,'guard',1],[2.825,'recover',.5]]){
@@ -79,7 +81,7 @@ test('actual Turtle renderer uses unchanged pivot and one body scale for every p
  t.mock.method(globalThis,'fetch',async()=>new Response(new Blob(['atlas is decoded by browser integration tests'])));
  const gl=new Proxy({getParameter:()=>false,createTexture:()=>({}),getUniformLocation:(_,x)=>x},{get:(o,k)=>k in o?o[k]:String(k).toUpperCase()===k?0:()=>{}});
  let values={},draws=[];const renderer=await createPondTurtleRenderer(gl,{program:()=>({}),geometry:()=>({}),uniform:(_,__,k,v)=>values[k]=v,render:()=>draws.push({...values})});
- const poses=[...Array.from({length:12},(_,i)=>({walkBlend:1,walkPhase:(i+.1)/12})),{hit:.12},{turtleDeath:.4},{turtleGuardAge:.15},{turtleGuardAge:1.1}];
+ const poses=[...Array.from({length:8},(_,i)=>({walkBlend:1,walkPhase:(i+.1)/8})),{hit:.12},{turtleDeath:.4},{turtleGuardAge:.15},{turtleGuardAge:1.1}];
  for(const camera of [[0,12,15],[0,4,18],[0,21,.1]])for(const facing of [-1,1])for(const pose of poses){
   draws=[];const e={...enemy(),turtleFacing:facing,yaw:facing*Math.PI/2,...pose};renderer.draw(e,[],[0,0,0],camera);
   assert.equal(draws[0].size,TURTLE_CELL_WORLD);assert.equal(draws[0].anchor,TURTLE_FOOT);assert.deepEqual(draws[0].origin,[0,.025,0]);assert.equal(draws[0].flipX,facing<0?1:0);

@@ -1,3 +1,9 @@
+# Current tuning — Larger Turtle with eight original walk poses (2026-09-18)
+
+Read docs/TURTLE-SIZE-8FRAME.md. On palette main 92cb0b2, Turtle body size is 2.42 (was 2.16), and playback selects existing cells [0,1,3,4,6,7,9,10] over the same distance-driven cycle. Atlas/metadata/colors/alpha and all still poses stay byte-identical. Only the independent Turtle module changes at runtime; all 1,259 other runtime files and all gameplay values are unchanged. Do not import the earlier pre-palette local zip. Run the complete regressions and original live audit.
+
+## Previous palette handoff
+
 # Current fix — Turtle walk palette (2026-09-18)
 
 Read docs/TURTLE-WALK-COLOR.md. Corrected RGB of the 12 actual registered walk cells; all alpha and still/effect cells are unchanged. No thumbnails or regenerated frames. Only atlas/metadata change at runtime; all 1258 other game files stay identical. Browser tests now compare decoded opaque pixels and alpha on local CI and the original production site. Run all existing regressions and confirm actual deployment before reporting live.
