@@ -1,0 +1,245 @@
+{
+  "version": 1,
+  "species": "turtle",
+  "image": "pond-turtle-atlas.webp",
+  "size": [
+    1536,
+    1536
+  ],
+  "cellSize": [
+    384,
+    384
+  ],
+  "pivot": [
+    192,
+    328
+  ],
+  "nativeFacing": "right",
+  "walkFrames": [
+    72,
+    78,
+    84,
+    90,
+    96,
+    102,
+    108,
+    114,
+    120,
+    126,
+    132,
+    138
+  ],
+  "walkPeriodSourceFrames": 72,
+  "walkSaturationFactor": 1.045,
+  "sourceSHA256": {
+    "approved-walk.mp4": "cc981532ae2b57a591ea871f094647063e3d8955cd89374444357d135971c4fe",
+    "approved-poses.png": "78cd0d86c7e768a576b750a55d4aa4bae6727d34066715ebc4c4a4b035793282",
+    "approved-poses-upload.jpg": "6c7fc639ac5c9c39afe4c7efd0f51f7b191dc69939bcc8e66ec46c8cbe884e6f"
+  },
+  "cells": [
+    {
+      "cell": 0,
+      "state": "walk",
+      "videoFrame": 72,
+      "timestamp": 2.4,
+      "sourceFrameSHA256": "b9b68413e41c53f0c93b61208efde7986a96dbc06229b5a5a3a003a68e59cfdc",
+      "scale": 0.445,
+      "anchor": [
+        432.5,
+        488
+      ]
+    },
+    {
+      "cell": 1,
+      "state": "walk",
+      "videoFrame": 78,
+      "timestamp": 2.6,
+      "sourceFrameSHA256": "daa98a4710e3266f1b56e085b54e0b5e2f713301967763256c19c6e82924ae3d",
+      "scale": 0.445,
+      "anchor": [
+        442.0,
+        488
+      ]
+    },
+    {
+      "cell": 2,
+      "state": "walk",
+      "videoFrame": 84,
+      "timestamp": 2.8,
+      "sourceFrameSHA256": "b81f31a7953a30d01b3dbd38bf25b66e875790eaa4e2c60b8081789336e8b01e",
+      "scale": 0.445,
+      "anchor": [
+        442.5,
+        488
+      ]
+    },
+    {
+      "cell": 3,
+      "state": "walk",
+      "videoFrame": 90,
+      "timestamp": 3.0,
+      "sourceFrameSHA256": "3e19c2bca5ed08a5cdb1497b704ebdb4c536a0a1bdacfd46fe2b136073990d12",
+      "scale": 0.445,
+      "anchor": [
+        439.5,
+        488
+      ]
+    },
+    {
+      "cell": 4,
+      "state": "walk",
+      "videoFrame": 96,
+      "timestamp": 3.2,
+      "sourceFrameSHA256": "e4ef23d3649316fa0246c945ed3500f923d21187dc9ca89292d436dbab483d52",
+      "scale": 0.445,
+      "anchor": [
+        437.0,
+        488
+      ]
+    },
+    {
+      "cell": 5,
+      "state": "walk",
+      "videoFrame": 102,
+      "timestamp": 3.4,
+      "sourceFrameSHA256": "fb5ec8110ebaa79e3bb827e0ac38f70c3faa834f4b44ecd6dad264eb7dbdfc96",
+      "scale": 0.445,
+      "anchor": [
+        434.5,
+        488
+      ]
+    },
+    {
+      "cell": 6,
+      "state": "walk",
+      "videoFrame": 108,
+      "timestamp": 3.6,
+      "sourceFrameSHA256": "dca54edcdf780391186c3adb42cc9aaf75ddc728e048aca08b9a0d3ac70cbcef",
+      "scale": 0.445,
+      "anchor": [
+        433.5,
+        488
+      ]
+    },
+    {
+      "cell": 7,
+      "state": "walk",
+      "videoFrame": 114,
+      "timestamp": 3.8,
+      "sourceFrameSHA256": "bf9dd9a56c2469cebb375d120aa1e8bad7907c792079ae92812c7b6934ca3633",
+      "scale": 0.445,
+      "anchor": [
+        431.0,
+        488
+      ]
+    },
+    {
+      "cell": 8,
+      "state": "walk",
+      "videoFrame": 120,
+      "timestamp": 4.0,
+      "sourceFrameSHA256": "4ddc686e4f75b357ca8bf0bad30d64cbe67d2ca01c32a87225cd2273a063d5dd",
+      "scale": 0.445,
+      "anchor": [
+        424.0,
+        488
+      ]
+    },
+    {
+      "cell": 9,
+      "state": "walk",
+      "videoFrame": 126,
+      "timestamp": 4.2,
+      "sourceFrameSHA256": "3b822d4de187d0960bb8399be5eb30423d5f5764ceb201f69681dd3cc6e09274",
+      "scale": 0.445,
+      "anchor": [
+        420.0,
+        488
+      ]
+    },
+    {
+      "cell": 10,
+      "state": "walk",
+      "videoFrame": 132,
+      "timestamp": 4.4,
+      "sourceFrameSHA256": "67d659999ee05522e2074ae2d51e6b5f8e4999ad1090934865d657b380d4812f",
+      "scale": 0.445,
+      "anchor": [
+        421.0,
+        488
+      ]
+    },
+    {
+      "cell": 11,
+      "state": "walk",
+      "videoFrame": 138,
+      "timestamp": 4.6,
+      "sourceFrameSHA256": "47a9222f4b01a26b7d91f1f2afc83cdc326e282e258bba11e01c46cc15289dd6",
+      "scale": 0.445,
+      "anchor": [
+        428.5,
+        488
+      ]
+    },
+    {
+      "cell": 12,
+      "state": "hurt",
+      "crop": [
+        32,
+        24,
+        697,
+        548
+      ],
+      "scale": 0.47,
+      "anchor": [
+        329,
+        503
+      ]
+    },
+    {
+      "cell": 13,
+      "state": "death",
+      "crop": [
+        710,
+        148,
+        1420,
+        540
+      ],
+      "scale": 0.47,
+      "anchor": [
+        372,
+        363
+      ]
+    },
+    {
+      "cell": 14,
+      "state": "guard",
+      "crop": [
+        280,
+        547,
+        1128,
+        1038
+      ],
+      "scale": 0.422,
+      "anchor": [
+        463,
+        451
+      ]
+    },
+    {
+      "cell": 15,
+      "state": "shield-effect",
+      "crop": [
+        280,
+        547,
+        1128,
+        1038
+      ],
+      "scale": 0.422,
+      "anchor": [
+        463,
+        451
+      ]
+    }
+  ]
+}

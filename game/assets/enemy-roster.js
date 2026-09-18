@@ -3,12 +3,13 @@
 export const normalEnemies = Object.freeze({
   thorn: Object.freeze({name:'Moss Frog',stride:.42,speed:1.18,radius:.3,hp:18,damage:5}),
   spark: Object.freeze({name:'Spark Hedgehog',stride:.74,speed:1.42,radius:.30,hp:22,damage:6}),
+  turtle: Object.freeze({name:'Pond Turtle',stride:.92,speed:.64,radius:.42,hp:44,damage:5}),
   water: Object.freeze({name:'Water Calf',speed:.85,radius:.37,hp:28,damage:6})
 });
 export const eliteEnemies = Object.freeze({
   water: Object.freeze({name:'Water Calf Alpha',hp:314,speed:1.01,radius:.518,damage:23,xp:30,scale:1.55})
 });
-export const spawnSchedule = Object.freeze({thorn:0,spark:60,water:180});
+export const spawnSchedule = Object.freeze({thorn:0,spark:60,turtle:120,water:180});
 export const modelAssetNames = Object.freeze(['boss_walk','boss_run','boss_charge','boss_push','boss_spell']);
 const own = (object,key) => Object.hasOwn(object,key);
 export function normalizeEnemyMode(mode) {

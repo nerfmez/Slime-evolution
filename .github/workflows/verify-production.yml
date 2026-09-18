@@ -1,7 +1,7 @@
 name: Verify original production after tested main
 on:
   workflow_run:
-    workflows: [Frog Spark Water Boss regression]
+    workflows: [Frog Spark Turtle Water Boss regression]
     types: [completed]
     branches: [main]
 permissions:
@@ -55,14 +55,16 @@ jobs:
         run: |
           npm install --no-save --package-lock=false playwright@1.62.0
           npx playwright install --with-deps chromium
-      - name: Verify Spark gameplay and capture every pose on the live original site
+      - name: Verify Spark and Turtle gameplay and poses on the live original site
         env:
           SMOKE_URL: https://slime-evolution-five.vercel.app/
           BROWSER: chromium
-        run: xvfb-run -a node tests/spark-browser.mjs
+        run: |
+          xvfb-run -a node tests/spark-browser.mjs
+          xvfb-run -a node tests/turtle-browser.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: original-production-spark-proof
+          name: original-production-turtle-proof
           path: test-results/
           retention-days: 14

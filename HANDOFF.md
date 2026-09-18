@@ -1,3 +1,9 @@
+# Current addition — Pond Turtle (2026-09-18)
+
+Read docs/POND-TURTLE.md first. Independent `turtle` at 120s; twelve real video frames, original hurt and shell-only death, three-quarter guarded body + separate alpha aura. Self-only Shell Guard: .30s charge, 2.40s 70% reduction, .25s release, 6.5s cooldown. Only roster/menu and twelve reversible main hooks change; Water/Spark sizes and Spark charge/range remain exactly as deployed. Run all existing regressions plus tests/turtle-browser.mjs in Chromium and WebKit. Production audit must include both Spark and Turtle on the original site before reporting live.
+
+## Previous size handoff
+
 # Current tuning — Water larger, Spark smaller (2026-09-18)
 
 On deployed main 51ee5b9, Water Calf body size is multiplied by 1.25 and Spark Hedgehog by .80. All poses use their existing common renderers and foot pivots; Water Alpha keeps its existing 1.55 multiplier. Muzzle/impact offsets follow the resized artwork. Body collision radii, HP, speed, damage, cooldown, spawn times and approved images remain unchanged. Spark still charges .60s, dashes at 8 units/s and activates within 3.0 units. Only two runtime modules change; 1,255 other game files are untouched. Read docs/ENEMY-SIZE.md.
