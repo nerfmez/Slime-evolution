@@ -39,12 +39,12 @@ jobs:
               const r=await fetch(u,{signal:AbortSignal.timeout(15000)});
               if(!r.ok)throw Error('HTTP '+r.status());
               last=await r.json();
-              if(last.repositoryCommit===expected&&last.canonicalTree===c.tree){found=true;break;}
+              if(last.repositoryCommit===expected&&last.canonicalTree===c.tree&&last.runtimeTree===c.runtimeTree){found=true;break;}
               console.log('Waiting for original deployment',attempt,last.repositoryCommit);
             }catch(e){last={error:e.message};console.log(last);}
             await new Promise(resolve=>setTimeout(resolve,10000));
           }
-          const report={url:c.production.url,expectedCommit:expected,expectedTree:c.tree,passed:found,actual:last};
+          const report={url:c.production.url,expectedCommit:expected,expectedTree:c.tree,expectedRuntimeTree:c.runtimeTree,passed:found,actual:last};
           await writeFile('test-results/production-release.json',JSON.stringify(report,null,2));
           if(!found)throw Error('Original production has not served the tested commit. Do not claim deployed.');
           console.log('Original production release matches',expected);
@@ -60,8 +60,7 @@ jobs:
           SMOKE_URL: https://slime-evolution-five.vercel.app/
           BROWSER: chromium
         run: |
-          xvfb-run -a node tests/spark-browser.mjs
-          xvfb-run -a node tests/turtle-browser.mjs
+          xvfb-run -a node tests/cozy-regressions.mjs production
       - uses: actions/upload-artifact@v4
         if: always()
         with:

@@ -1,24 +1,22 @@
-# Slime — Frog + Spark Hedgehog + Pond Turtle + Water Calf + Boss (2026-09-17)
+# Slime — Cozy Action Roguelite, ten-minute normal rounds (2026-09-18)
 
-Read docs/BAMBOO-PANDA.md, docs/POND-TURTLE.md, CANON.json, HANDOFF.md, docs/SPARK-HEDGEHOG.md and docs/ROSTER-CLEANUP.md first. The owner removed OLD enemies, then approved adding Spark Hedgehog using the final Run/Attack/Hurt/Death art. Keep finished Moss Frog, Spark Hedgehog, Pond Turtle, new Water Calf and Ancient Bloom boss. This supersedes the historical four-enemy/four-elite instructions.
+Read docs/COZY-PACING.md, CANON.json and HANDOFF.md first. The current request supersedes historical five-minute, 100-monster, kill-triggered Elite and Panda 150/240-second rules **for normal play only**. Do not add absorption skills, Mod sockets or new art in this phase.
 
-## Only active game
-- `game/` only. Origin: completed Frog baseline `6e098d66`, then reviewed Water Calf candidate `06ebad851824a054a963b9eeb3b1e58ff5fe00d8` (PR #14). Never build/import the obsolete Vite root or abandoned elephant versions.
-- Normal species: `thorn` = Moss Frog, `spark` = Spark Hedgehog, `turtle` = Pond Turtle, `water` = Water Calf. The only elite is the NEW Water Calf Alpha; it is the same Water species, not a retired monster. Boss is Ancient Bloom Colossus.
-- Old Thorn model/Alpha, Mossback, Petal, Crystal models/AI/load routes, dedicated preview frames and unused old game bundles are removed. Keep them in Git history, not the active deployment.
-- `game/assets/enemy-roster.js` defines independent IDs, stats, eligible elites, explicit unlock times and active model dependencies. Frog starts at 0; Spark starts at 60; Turtle starts at 120; Water starts at 180 seconds. Boss transition remains 300 seconds. Do NOT move unlock times by shrinking/reordering an array.
-- Shared pathfinding, collision, HP/EXP, player skills, grass, scene, sound, card art, pickups and save keys are preserved. Do not change cap/spawn-frequency formulas to compensate for fewer species.
-- Frog uses its approved sprite in every camera. Never restore old Thorn model fallback. Old saved model preference normalizes to sprite without clearing other saves.
+## Authoring and build
+- Latest engine/art input is game/ from reviewed Panda main a800e54c2110d11554b0269e3b195d9f79af0247. Never import an older release, obsolete Vite root, published directory or abandoned elephant build.
+- pacing/encounter-director.js is the normal-play authoring source. pacing/assemble.mjs applies nine exact reversible static hooks and menu wording during build. This is not browser-time patching, eval, a remote wrapper or source recovery.
+- CANON.json locks the complete input tree, both pacing modules, generated bundle/HTML and full output runtime tree. Always run npm run build and deploy dist, NOT game directly. Review the static hooks when changing the engine input; never silently accept a new hash.
+- Every engine/art input file is preserved in this patch. All skills, Mod behavior, saves, environment, sound, input, approved sprites and creature AI stay unchanged. Manual training modes retain their old behavior.
 
-## Integrity and tests
-`npm test` checks source PNG hashes, state selection, registry/timings, all unchanged file bytes, four-level reverse patch (Turtle -> Spark -> current parent -> Water parent -> finished Frog) and numerical equivalence of all four boss attacks. Browser CI checks actual Turtle guard/damage/hurt/shell death, Frog, Spark impact/hurt/death/transparency, Water damage and actual boss/spawn/menu/skill behavior in Chromium and WebKit.
-`npm run build` verifies CANON.json's current tree and copies game to dist, without mixing another release. Preserve baselineCommit/baselineTree when updating the reviewed candidate tree.
-This is still a preserved playable bundle with scoped readable modules, NOT fully recovered unbundled authoring source. Historical patch scripts are provenance, not a command to rebuild current gameplay from an older release.
+## Current creatures
+- Normal IDs: thorn = finished Moss Frog, spark = Spark Hedgehog, turtle = Pond Turtle, water = Water Calf. Normal-mode unlocks are 0/120/240/360 seconds.
+- Only elite is Water Calf Alpha; normal event starts at 420 seconds. Panda is separate miniBossEnemies.panda, never part of the ordinary random pool; slots 300/480 seconds. Final Ancient Bloom boss is eligible at 600 seconds, not automatic victory.
+- Preserve Panda sustained-hit resilience and defensive side roll: read docs/PANDA-COMBAT.md and docs/BAMBOO-PANDA.md. Preserve .8s charge, 9.6-unit offense, 2.4-unit defensive dodge, full damage/death/freeze, approved eight-frame art and cleaned alpha.
+- Preserve Turtle size 2.42, approved eight poses, walk palette, guard and shell death. Read docs/POND-TURTLE.md and docs/TURTLE-SIZE-8FRAME.md.
+- Preserve Spark size/charge/dash and Water size/Alpha art. Read docs/SPARK-HEDGEHOG.md and docs/ENEMY-SIZE.md.
+- Retired Thorn models/Alpha, Mossback, Petal and Crystal remain in Git history only. Do not resurrect them. Frog always uses its approved sprite.
 
-## Hosting and history
-Only production destination: https://slime-evolution-five.vercel.app (project/team in CANON.json). No new hosts, test projects, CDN wrappers or remote base href. GitHub commit/merge is not deployment. Report actual live status separately and never send an old link as a newly tested candidate. Preserve history; no force push. The completed Frog remains recoverable at `6e098d66` and `fix/frog-canon-only`; old root/early elephant work is on `archive/before-frog-canon-cleanup-20260917`.
+## Verification and hosting
+npm test keeps all 51 previous baseline/creature checks and adds pacing tests. node tests/cozy-regressions.mjs local runs preserved browser suites with only obsolete timing assertions/opening waits adapted, then actual pacing tests. Production uses the same runner with production, plus full actual-runtime file-hash audit. Test Chromium and WebKit. CI is not physical iPad/Android FPS or a subjective balance test.
 
-## Bamboo Panda mini-boss
-- Separate `miniBossEnemies.panda`, never include it in the ordinary random spawn list. Normal-play slots 150s/240s, at most one alive.
-- Keep approved video/still art and the edge-cleanup input/script. Panda uses one transparent atlas and separate dust, not regenerated movement frames.
-- Preserve the strict Panda -> current Turtle -> earlier baseline reversal. Full Panda/Spark/Turtle live audit on original production is required.
+Only production destination: https://slime-evolution-five.vercel.app (project/team in CANON.json). No new hosts or test projects. GitHub commit/merge is not deployment. Verify actual live release, full manifest and gameplay before calling it live. No force pushes. Older handoffs are recoverable in Git history; detailed creature docs remain current.
