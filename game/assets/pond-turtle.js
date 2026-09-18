@@ -1,6 +1,6 @@
 // Pond Turtle: only approved source-video walk frames and approved still poses.
 // An independent species; no old Mossback/model fallback or prototype interception.
-export const TURTLE_CELL_WORLD=2.16;
+export const TURTLE_CELL_WORLD=2.42;
 export const TURTLE_FOOT=1-328/384;
 export const TURTLE_DEATH_LIFE=1.0;
 export const TURTLE_GUARD_CHARGE=.30;
@@ -10,6 +10,8 @@ export const TURTLE_GUARD_LENGTH=TURTLE_GUARD_CHARGE+TURTLE_GUARD_HOLD+TURTLE_GU
 export const TURTLE_GUARD_COOLDOWN=6.5;
 export const TURTLE_GUARD_RANGE=3.2;
 export const TURTLE_DAMAGE_MULTIPLIER=.30;
+// Eight chronological poses from the existing color-matched video atlas.
+export const TURTLE_WALK_SEQUENCE=Object.freeze([0,1,3,4,6,7,9,10]);
 
 export function turtleFacing(e){
   if(e.turtleGuardAge!=null||e.turtleDeath!=null||e.hit>0)return e.turtleFacing===-1?-1:1;
@@ -32,7 +34,8 @@ export function turtlePose(e){
   if(e.hit>0)return {name:'hurt',cell:12,alpha:1,shield:0};
   if((e.walkBlend||0)<.06)return {name:'idle',cell:0,alpha:1,shield:0};
   const phase=(((e.walkPhase||0)%1)+1)%1;
-  return {name:'walk',cell:Math.min(11,Math.floor(phase*12)),alpha:1,shield:0};
+  const step=Math.min(TURTLE_WALK_SEQUENCE.length-1,Math.floor(phase*TURTLE_WALK_SEQUENCE.length));
+  return {name:'walk',cell:TURTLE_WALK_SEQUENCE[step],alpha:1,shield:0};
 }
 /** Called by the existing central hit path AND its separate storm damage path.
  * Returns actual damage, so HP, displayed numbers, damage totals and rewards agree. */

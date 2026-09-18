@@ -1,5 +1,7 @@
 # Pond Turtle — approved video + original still poses (2026-09-18)
 
+Current size/playback: see docs/TURTLE-SIZE-8FRAME.md. All twelve extracted source cells remain stored unchanged; gameplay now plays eight of them, with body size 2.42. The extraction and integration provenance below remains historical.
+
 Parent: deployed main `f535f1dd0eb2d78f7e4153fb63230716a8dc7e44`, game tree `28af42874d11c618a130db9fb9c1800d1a77b53a`. Continue `game/` only, retaining the larger Water Calf, smaller Spark and the latest Spark charge/range tuning. No retired creature is restored or replaced.
 
 ## Original artwork, not a new animation generation

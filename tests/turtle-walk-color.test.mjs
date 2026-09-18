@@ -4,6 +4,7 @@ import {readFile} from 'node:fs/promises';
 import {createHash} from 'node:crypto';
 import {fileURLToPath} from 'node:url';
 import {files} from '../scripts/canon.mjs';
+import {undoTurtleSizeWalk} from './turtle-size-walk-provenance.mjs';
 const root=new URL('../',import.meta.url),read=p=>readFile(new URL(p,root));
 const sha=b=>createHash('sha256').update(b).digest('hex');
 const metadata=JSON.parse(await read('game/assets/enemies/pond-turtle-atlas.json'));
@@ -20,10 +21,10 @@ test('Turtle color match is the reviewed 12-frame bake with exact preserved alph
  assert.equal(sha(await read('game/assets/enemies/pond-turtle-atlas.webp')),p.atlasSHA256);
  const prep=(await read('tools/prepare-turtle-assets.py')).toString();assert.ok(prep.includes('apply_walk_color(R)'));
 });
-test('color-only patch preserves all 1258 other current game files, including every renderer and combat system',async()=>{
+test('color baseline remains exact after reversing only the requested Turtle size/eight-pose change',async()=>{
  const parent=JSON.parse(await read('docs/turtle-color-parent-manifest.json'));
  const allowed=new Set(['assets/enemies/pond-turtle-atlas.webp','assets/enemies/pond-turtle-atlas.json']);
- let same=0;for(const e of parent){if(!allowed.has(e.path)){assert.equal(sha(await read('game/'+e.path)),e.sha256,e.path);same++;}}
+ let same=0;for(const e of parent){if(!allowed.has(e.path)){const raw=await read('game/'+e.path);const preserved=e.path==='assets/pond-turtle.js'?undoTurtleSizeWalk(raw.toString()):raw;assert.equal(sha(preserved),e.sha256,e.path);same++;}}
  assert.equal(parent.length,1260);assert.equal(same,1258);
  assert.deepEqual((await files(fileURLToPath(new URL('game',root)))).sort(),parent.map(e=>e.path).sort());
 });

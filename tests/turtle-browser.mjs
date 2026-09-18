@@ -81,12 +81,16 @@ try{
  close(damage.guarded,6);close(damage.number,6);assert.ok(Object.keys(damage.byFamily).length>=5);for(const d of Object.values(damage.byFamily))close(d,6);
  close(damage.storm,.33);close(damage.unguarded,20);close(damage.otherDamage,20);assert.equal(damage.hurtCell,12);
  assert.deepEqual(damage.died,{corpse:1,cell:13,shield:0,defeated:1,kills:1});assert.equal(damage.expired,0);
+ const walkSequence=[0,1,3,4,6,7,9,10];
+ const cycle=await page.evaluate(async()=>{const {turtlePose,TURTLE_WALK_SEQUENCE,TURTLE_CELL_WORLD}=await import('./assets/pond-turtle.js');return {sequence:[...TURTLE_WALK_SEQUENCE],size:TURTLE_CELL_WORLD,cells:Array.from({length:160},(_,i)=>turtlePose({walkBlend:1,walkPhase:(i+.1)/80}).cell),returnCell:turtlePose({walkBlend:1,walkPhase:1}).cell};});
+ assert.deepEqual(cycle.sequence,walkSequence);assert.equal(cycle.size,2.42);assert.equal(cycle.returnCell,0);
+ assert.deepEqual(cycle.cells.filter((v,i,a)=>i===0||a[i-1]!==v),[...walkSequence,...walkSequence]);report.walkCycle=cycle;
  const cells=[];
- for(const [name,data,expected]of [...Array.from({length:12},(_,i)=>[`walk-${i}`,{walkBlend:1,walkPhase:(i+.1)/12},i]),['hurt',{hit:.2},12],['death',{turtleDeath:.25},13],['shield',{turtleGuardAge:1},14]]){
+ for(const [name,data,expected]of [...walkSequence.map((cell,i)=>[`walk-${i}`,{walkBlend:1,walkPhase:(i+.1)/8},cell]),['hurt',{hit:.2},12],['death',{turtleDeath:.25},13],['shield',{turtleGuardAge:1},14]]){
   const result=await page.evaluate(data=>{const q=__slimeGameQA,w=q.world,p=q.state.player;w.reset('turtle',120);w.update(.05,p,12);const e=w.enemies[0];
    Object.assign(e,{x:p[0]-1.7,z:p[2]-.15,yaw:Math.PI/2,turtleFacing:1,walkBlend:0,hit:0,turtleGuardCooldown:9},data);delete e.turtleGuardRequested;w.enemies=[e];q.state.camera='game';q.draw();
    return {...q.turtleRenderer.stats.last,gl:document.querySelector('#world').getContext('webgl2').getError()};},data);
-  assert.equal(result.cell,expected);assert.equal(result.facing,1);assert.equal(result.size,2.16);assert.equal(result.gl,0);cells.push(result);await capture(name);
+  assert.equal(result.cell,expected);assert.equal(result.facing,1);assert.equal(result.size,2.42);assert.equal(result.gl,0);cells.push(result);await capture(name);
  }
  const mirrored=[];
  for(const [name,data]of [['walk',{walkBlend:1,walkPhase:.1}],['hurt',{hit:.2}],['death',{turtleDeath:.25}],['shield',{turtleGuardAge:1}]]){
