@@ -11,9 +11,10 @@ export function waterFacing(e){
 }
 export function waterPose(e){
   if(e.waterDeath!=null)return {name:'death',cell:8+Math.min(3,Math.floor(e.waterDeath/.12)),alpha:Math.min(1,Math.max(0,(WATER_DEATH_LIFE-e.waterDeath)/.16))};
-  if(e.hit>0)return {name:'hit',cell:14,alpha:1};
+  if(e.hit>0&&!e.elite)return {name:'hit',cell:14,alpha:1};
   if(e.windup>0)return {name:'charge',cell:12,alpha:1};
   if(e.waterShotPose>0)return {name:'shoot',cell:13,alpha:1};
+  if(e.hit>0)return {name:'hit',cell:14,alpha:1};
   if((e.walkBlend||0)<.08)return {name:'idle',cell:18,alpha:1};
   // The canonical movement clock advances by actual distance, not wall-clock time.
   const cycle=((e.anim||0)%1+1)%1;
