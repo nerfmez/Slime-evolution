@@ -28,8 +28,8 @@ test('Charge .8s then roll 9.6 units across the target: far beyond Spark and one
   close(e.x,9.6);close(e.z,0);assert.deepEqual(w.hits,[18]);assert.equal(e.pandaAge,undefined);assert.equal(e.pandaCooldown,PANDA_COOLDOWN);
  }
 });
-test('Roll respects obstacles, cannot home to sidestep, hurt interrupts anticipation but never grants invulnerability',()=>{
- let {w,e}=setup();pandaAI(w,e,.4,[5,0,0],5,true,12);e.hit=.2;pandaAI(w,e,.05,[5,0,0],5,true,12);assert.equal(e.pandaAge,undefined);assert.equal(e.x,0);assert.equal(pandaPose(e).name,'hurt');
+test('Roll respects obstacles, cannot home to sidestep, hits preserve anticipation without granting invulnerability',()=>{
+ let {w,e}=setup();pandaAI(w,e,.4,[5,0,0],5,true,12);e.hit=.2;pandaAI(w,e,.05,[5,0,0],5,true,12);close(e.pandaAge,.45);assert.equal(e.x,0);assert.equal(pandaPose(e).name,'charge');
  ({w,e}=setup());w.moveEnemy=(e,x,z)=>{if(e.x+x<=2){e.x+=x;e.z+=z;}};for(let i=0;i<55;i++)pandaAI(w,e,.05,[5,0,0],5,true,12);assert.ok(e.x<2.01);assert.equal(w.hits.length,0);
  ({w,e}=setup());pandaAI(w,e,.4,[5,0,0],5,true,12);for(let i=0;i<45;i++)pandaAI(w,e,.05,[5,0,3],6,true,12);close(e.z,0);assert.equal(w.hits.length,0);
  ({w,e}=setup());pandaAI(w,e,.4,[5,0,0],5,false,12);assert.equal(e.pandaAge,undefined);
