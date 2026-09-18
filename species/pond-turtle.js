@@ -75,7 +75,7 @@ export function turtleGuard(world,e,dt,target,distance,canSee){
   if(e.type!=='turtle')throw Error('Pond Turtle AI received another species');
   if(!(dt>0)||e.hp<=0)return false;
   if(e.turtleGuardAge!=null){e.walkBlend=0;return false;}
-  if(e.hit>0){e.walkBlend=0;return false;}
+  if(e.hit>0&&!e.elite){e.walkBlend=0;return false;}
   turtleFacing(e);
   if((e.turtleGuardCooldown||0)<=0&&(e.turtleGuardRequested||(canSee&&distance<=TURTLE_GUARD_RANGE))){
     e.yaw=Math.atan2(target[0]-e.x,target[2]-e.z);turtleFacing(e);
