@@ -8,7 +8,7 @@ await mkdir('test-results',{recursive:true});const errors=[];let report={engine,
 const browser=await ({chromium,webkit}[engine]).launch(options),page=await browser.newPage({viewport:{width:1000,height:700},deviceScaleFactor:1});
 page.on('pageerror',e=>errors.push(e.message));page.on('response',r=>{if(r.status()>=400&&!r.url().endsWith('favicon.ico'))errors.push(`HTTP ${r.status()} ${r.url()}`);});
 await page.addInitScript(()=>{const raf=requestAnimationFrame.bind(window);window.__pacingRAF=raf;window.__pacingFreeze=false;window.requestAnimationFrame=f=>raf(t=>{if(!__pacingFreeze)f(t)});localStorage.setItem('slime.graphics.v1',JSON.stringify({preset:'low',showStats:false}));});
-async function capture(name){await page.waitForTimeout(150);await page.evaluate(()=>{__slimeGameQA.draw();document.querySelector('#world').getContext('webgl2').finish();});await page.waitForTimeout(200);await page.screenshot({path:`test-results/pacing-${engine}-${name}.png`});}
+async function capture(name,clock){await page.evaluate(()=>document.querySelector('#step').click());assert.equal(await page.locator('#skill-choice').evaluate(e=>e.hidden),true,'real opening choice must close before field evidence');const status=await page.locator('#status').textContent();assert.ok(status.includes(clock+' / 10:00'),status);(report.screens||=[]).push({name,status,openingHidden:true});await page.waitForTimeout(150);await page.evaluate(()=>{__slimeGameQA.draw();document.querySelector('#world').getContext('webgl2').finish();});await page.waitForTimeout(200);await page.screenshot({path:`test-results/pacing-${engine}-${name}.png`});}
 try{
  const u=new URL(base);u.searchParams.set('qa','1');assert.ok((await page.goto(u.href,{waitUntil:'load',timeout:60000})).ok());
  await page.waitForFunction(()=>document.querySelector('#error')?.hidden===false||(window.__slimeGameQA?.pandaRenderer&&document.querySelector('.skill-card')),null,{timeout:60000});
@@ -48,9 +48,10 @@ try{
  const menu=await page.evaluate(()=>({minutes:[...document.querySelector('#start-minute').options].map(e=>Number(e.value)),normal:document.querySelector('#normal-run').textContent}));report.menu=menu;assert.deepEqual(menu.minutes,[0,60,120,180,240,300,360,420,480,540,600]);assert.ok(menu.normal.includes('10'));
  // Actual normal-run button resets progression and immediately refreshes the 10:00 HUD.
  await page.evaluate(()=>document.querySelector('#normal-run').click());const hud=await page.locator('#status').textContent();assert.ok(hud.includes('/ 10:00'),hud);report.hud=hud;
- await page.evaluate(()=>{const q=__slimeGameQA;q.combat.cards=[];q.combat.opening=false;q.world.reset('auto',45);q.world.update(.05,q.state.player,100);q.draw();});await capture('quiet');
- await page.evaluate(()=>{const q=__slimeGameQA,p=q.state.player,w=q.world;w.reset('auto',540);for(let i=0;i<4;i++)w.spawn(p,['thorn','spark','turtle','water'][i]);w.enemies.forEach((e,i)=>{e.x=p[0]-4.5+i*3;e.z=p[2]-1;e.attack=10;e.pandaCooldown=10;e.turtleGuardCooldown=10;});q.draw();});await capture('forest-creatures');
- await page.evaluate(()=>{const q=__slimeGameQA,p=q.state.player,w=q.world;w.reset('auto',300);w.update(.05,p,100);Object.assign(w.enemies[0],{x:p[0]-2.5,z:p[2]-.5,pandaAge:.4});q.draw();});await capture('panda-event');
+ await page.locator('.skill-card').first().click({force:true});assert.equal(await page.locator('#skill-choice').evaluate(e=>e.hidden),true);
+ await page.evaluate(()=>{const q=__slimeGameQA;q.combat.cards=[];q.combat.opening=false;q.world.reset('auto',45);q.world.update(.05,q.state.player,100);q.draw();});await capture('quiet','00:45');
+ await page.evaluate(()=>{const q=__slimeGameQA,p=q.state.player,w=q.world;w.reset('auto',540);for(let i=0;i<4;i++)w.spawn(p,['thorn','spark','turtle','water'][i]);w.enemies.forEach((e,i)=>{e.x=p[0]-4.5+i*3;e.z=p[2]-1;e.attack=10;e.pandaCooldown=10;e.turtleGuardCooldown=10;});q.draw();});await capture('forest-creatures','09:00');
+ await page.evaluate(()=>{const q=__slimeGameQA,p=q.state.player,w=q.world;w.reset('auto',300);w.update(.05,p,100);Object.assign(w.enemies[0],{x:p[0]-2.5,z:p[2]-.5,pandaAge:.4});q.draw();});await capture('panda-event','05:00');
  const gl=await page.evaluate(()=>document.querySelector('#world').getContext('webgl2').getError());assert.equal(gl,0);assert.deepEqual(errors,[]);
  report={...report,passed:true,errors};console.log('PACING VERIFIED',JSON.stringify({engine,cases,menu,hud,errors}));
 }catch(e){report={...report,error:e.stack,errors};console.error(JSON.stringify(report,null,2));process.exitCode=1;}

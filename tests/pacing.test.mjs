@@ -62,7 +62,7 @@ test('training modes and stopped/dead games are not driven by normal-play pacing
 test('integration reverses exactly to the latest Panda source; no skill, art, input or AI rewrite',async()=>{
  const bundle=await read('game/assets/main-critter-v4.js'),html=await read('game/index.html');const result=assemble(bundle,html);
  assert.equal(replacements(result.bundle,result.edits,true),bundle);assert.equal(replacements(result.html,htmlEdits(),true),html);
- assert.equal(result.edits.length,8);assert.ok(result.bundle.includes('/ 10:00'));assert.ok(result.html.includes('value="600"'));
+ assert.equal(result.edits.length,9);assert.ok(result.bundle.includes('/ 10:00'));assert.ok(result.html.includes('value="600"'));
  const c=JSON.parse(await read('CANON.json'));
  assert.equal(sha256(await read('pacing/encounter-director.js')),c.pacing.moduleSHA256);
  assert.equal(sha256(await read('pacing/assemble.mjs')),c.pacing.assemblerSHA256);

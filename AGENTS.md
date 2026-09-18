@@ -4,7 +4,7 @@ Read docs/COZY-PACING.md, CANON.json and HANDOFF.md first. The current request s
 
 ## Authoring and build
 - Latest engine/art input is game/ from reviewed Panda main a800e54c2110d11554b0269e3b195d9f79af0247. Never import an older release, obsolete Vite root, published directory or abandoned elephant build.
-- pacing/encounter-director.js is the normal-play authoring source. pacing/assemble.mjs applies eight exact reversible static hooks and menu wording during build. This is not browser-time patching, eval, a remote wrapper or source recovery.
+- pacing/encounter-director.js is the normal-play authoring source. pacing/assemble.mjs applies nine exact reversible static hooks and menu wording during build. This is not browser-time patching, eval, a remote wrapper or source recovery.
 - CANON.json locks the complete input tree, both pacing modules, generated bundle/HTML and full output runtime tree. Always run npm run build and deploy dist, NOT game directly. Review the static hooks when changing the engine input; never silently accept a new hash.
 - Every engine/art input file is preserved in this patch. All skills, Mod behavior, saves, environment, sound, input, approved sprites and creature AI stay unchanged. Manual training modes retain their old behavior.
 

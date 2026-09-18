@@ -27,6 +27,7 @@ export function bundleEdits(source) {
     ['spawn stats','spawn(e,t,n=!1){let r=t===`boss`,i=r?we:n?Te[t]:ft[t];if(!i)return!1;','spawn(e,t,n=!1){let r=t===`boss`,i=r?we:n?Te[t]:ft[t];if(!i)return!1;if(this.mode===`auto`)i=encounterStats(this.time,i,t,n,r);'],
     ['instance stats','miniBoss:t===`panda`,scale:i.scale||1,maxHP:i.hp,','miniBoss:t===`panda`,cozyStats:this.mode===`auto`?i:null,scale:i.scale||1,maxHP:i.hp,'],
     ['director',spawn,'if(this.mode===`auto`){tickEncounter(this,e,t,n)}else{'+spawn+'}'],
+    ['HUD clock','Math.min(300,Math.floor(J.time))','Math.min(J.mode===`auto`?600:300,Math.floor(J.time))'],
     ['HUD','`ด่าน 1 · ${t} / 05:00`','(J.mode===`auto`?`ด่าน 1 · ${t} / 10:00 · ${encounterStatus(J)}`:`ทดสอบ · ${t} / 05:00`)'],
   ];
 }
