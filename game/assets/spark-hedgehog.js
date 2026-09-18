@@ -1,7 +1,7 @@
 // Approved Spark Hedgehog art: 6 run + 6 attack + original hurt/death poses.
 // This module owns ONLY the Spark species. Existing pathfinding and world.damage
 // remain the source of truth; no prototype interception or legacy model fallback.
-export const SPARK_CELL_WORLD=2.10;
+export const SPARK_CELL_WORLD=1.68;
 export const SPARK_FOOT=1-330/384;
 export const SPARK_DEATH_LIFE=.76;
 export const SPARK_TRIGGER_RANGE=3.0;
@@ -34,7 +34,8 @@ export function sparkPose(e){
   return {name:'run',cell:Math.min(5,Math.floor(cycle*6)),alpha:1};
 }
 export function sparkImpactPoint(e){
-  return {x:e.x+(e.sparkAimX||0)*.35,z:e.z+(e.sparkAimZ||0)*.35};
+  const offset=.35*(SPARK_CELL_WORLD/2.10);
+  return {x:e.x+(e.sparkAimX||0)*offset,z:e.z+(e.sparkAimZ||0)*offset};
 }
 export function tickSparkWorld(world,dt){
   world.sparkDead??=[];

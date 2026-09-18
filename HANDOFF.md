@@ -1,3 +1,9 @@
+# Current tuning — Water larger, Spark smaller (2026-09-18)
+
+On deployed main 51ee5b9, Water Calf body size is multiplied by 1.25 and Spark Hedgehog by .80. All poses use their existing common renderers and foot pivots; Water Alpha keeps its existing 1.55 multiplier. Muzzle/impact offsets follow the resized artwork. Body collision radii, HP, speed, damage, cooldown, spawn times and approved images remain unchanged. Spark still charges .60s, dashes at 8 units/s and activates within 3.0 units. Only two runtime modules change; 1,255 other game files are untouched. Read docs/ENEMY-SIZE.md.
+
+## Previous charge tuning
+
 # Current tuning — Spark charge and longer/faster dash (2026-09-18)
 
 On top of deployed main 563ce996. Only the independent Spark module changes at runtime: trigger 3.0 units, stationary anticipation/charge .60s, dash 8.0 units/s, impact at .92s, total attack 1.29s. Normal movement, damage, cooldown, approved art and other systems stay unchanged. Aim/travel lock before charge and stop short of nearby players. Read docs/SPARK-HEDGEHOG.md; the existing Chromium/WebKit and live-production audit now include long-range motion traces.

@@ -1,7 +1,7 @@
 // Water Calf replaces the Crystal enemy slot, on the finished Moss Frog game.
 // No prototype interception; gameplay calls these functions at the existing enemy interface.
 const TAU=Math.PI*2;
-export const WATER_CELL_WORLD=1.90;
+export const WATER_CELL_WORLD=2.375;
 export const WATER_FOOT=.09375;
 export const WATER_DEATH_LIFE=.64;
 export function waterFacing(e){
@@ -20,7 +20,7 @@ export function waterPose(e){
   return {name:'walk',cell:Math.floor(cycle*8),alpha:1};
 }
 export function waterMuzzle(e){
-  const scale=e.scale||1;
+  const scale=(e.scale||1)*(WATER_CELL_WORLD/1.90);
   // Authored shoot pose's trunk tip, projected onto the projectile's y=.30 plane.
   // The same world coordinates drive the sprite AND collision; no visual-only offset.
   return {x:e.x+waterFacing(e)*.69*scale,z:e.z-.47*scale,y:.30};
