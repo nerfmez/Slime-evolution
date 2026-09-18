@@ -1,0 +1,49 @@
+{
+  "parentCommit": "8ddf49237455a742c14ec8deb73815588dcb8e2c",
+  "parentGameTree": "3c3ad9127200bf76baca1eda4dd2bea674ee150b",
+  "path": "assets/bamboo-panda.js",
+  "beforeSHA256": "ff2274f90062fff89e15a76f72fc2d13364420a99b6e0300fb3579db7f5a49b6",
+  "afterSHA256": "3f0d874238ee896a1fb2d004e5db4eaf27584177ea0d5810dfbd5f1b247fcaaa",
+  "reverse": [
+    {
+      "start": 7515,
+      "old": "  e.yaw=Math.atan2(dx,dz);pandaFacing(e);e.pandaAimX=dx/d;e.pandaAimZ=dz/d;\n",
+      "new": "  commitPandaFacing(e,dx,dz);e.pandaAimX=dx/d;e.pandaAimZ=dz/d;\n"
+    },
+    {
+      "start": 6994,
+      "old": "",
+      "new": "   // A ready long attack always takes priority. Dodge cannot reset or delay it\n   // beyond an already committed short dodge, even under continuous damage.\n   if(newDamage&&visible&&distance<=PANDA_DODGE_RANGE&&(e.pandaDodgeCooldown||0)<=0&&startPandaDodge(w,e,target))return tickPandaDodge(w,e,dt);\n"
+    },
+    {
+      "start": 6559,
+      "old": " if(e.hit>0&&(e.pandaAge==null||e.pandaAge<PANDA_CHARGE)){\n  delete e.pandaAge;e.pandaCooldown=Math.max(e.pandaCooldown||0,1.2);e.walkBlend=0;return false;\n }\n",
+      "new": " // Ordinary hits never cancel a committed charge or keep extending its cooldown.\n // Observe actual HP loss for a defensive reaction; do not alter the damage path.\n const newDamage=Number.isFinite(e.pandaLastHP)?e.hp<e.pandaLastHP-1e-7:e.hit>0;\n e.pandaLastHP=e.hp;\n if(e.pandaDodgeAge!=null)return tickPandaDodge(w,e,dt);\n"
+    },
+    {
+      "start": 3565,
+      "old": "",
+      "new": "// Set facing only when committing a new action; an active hit animation must not\n// prevent the new direction from being selected. Existing action aim then locks.\nfunction commitPandaFacing(e,dx,dz){\n e.yaw=Math.atan2(dx,dz);\n const side=Math.sin(e.yaw);\n if(side>.15)e.pandaFacing=1;else if(side<-.15)e.pandaFacing=-1;\n e.pandaFacing=e.pandaFacing===-1?-1:1;\n}\nfunction startPandaDodge(w,e,target){\n const dx=target[0]-e.x,dz=target[2]-e.z,d=Math.hypot(dx,dz);\n const nx=d>1e-6?dx/d:Math.sin(e.yaw||0),nz=d>1e-6?dz/d:Math.cos(e.yaw||0);\n const preferred=e.pandaDodgeSide||(e.id%2===0?1:-1);\n let best=null;\n for(const side of [preferred,-preferred]){\n  const x=-nz*side,z=nx*side,probe={...e};let clear=0;\n  // For non-boss Panda, moveEnemy only mutates this disposable probe's x/z.\n  // Reuse the exact scene collision rather than dodging through walls or ponds.\n  const steps=Math.ceil(PANDA_DODGE_DISTANCE/.055),step=PANDA_DODGE_DISTANCE/steps;\n  for(let i=0;i<steps;i++){\n   const px=probe.x,pz=probe.z;w.moveEnemy(probe,x*step,z*step);\n   if((probe.x-px)*x+(probe.z-pz)*z<step*.70)break;\n   clear+=step;\n  }\n  if(clear>=.65&&(!best||clear>best.clear+1e-6))best={x,z,side,clear};\n }\n if(!best){e.pandaDodgeCooldown=.75;return false;}\n commitPandaFacing(e,best.x,best.z);\n e.pandaDodgeX=best.x;e.pandaDodgeZ=best.z;e.pandaDodgeLimit=best.clear;\n e.pandaDodgeAge=0;e.pandaDodgeDistance=0;e.pandaDodgeCooldown=PANDA_DODGE_COOLDOWN;\n e.pandaDodgeSide=-best.side;e.pandaDodgeDustClock=0;e.walkBlend=0;\n return true;\n}\nfunction tickPandaDodge(w,e,dt){\n const before=e.pandaDodgeAge;let after=Math.min(PANDA_DODGE_LENGTH,before+dt);\n const moving=Math.max(0,Math.min(after,PANDA_DODGE_END)-Math.max(before,PANDA_DODGE_CHARGE));\n if(moving>1e-9){\n  const travel=Math.min(moving*PANDA_DODGE_SPEED,Math.max(0,e.pandaDodgeLimit-e.pandaDodgeDistance));\n  const steps=Math.max(1,Math.ceil(travel/.055)),step=travel/steps;\n  for(let i=0;i<steps&&step>1e-9;i++){\n   const x=e.x,z=e.z;w.moveEnemy(e,e.pandaDodgeX*step,e.pandaDodgeZ*step);\n   const dx=e.x-x,dz=e.z-z;e.pandaDodgeDistance+=Math.hypot(dx,dz);\n   if(dx*e.pandaDodgeX+dz*e.pandaDodgeZ<step*.70){after=PANDA_DODGE_END;break;}\n  }\n  if(e.pandaDodgeDistance>=e.pandaDodgeLimit-1e-6)after=Math.max(after,PANDA_DODGE_END);\n  e.pandaDodgeDustClock-=moving;\n  if(e.pandaDodgeDustClock<=0&&e.pandaDodgeDistance>.05){\n   (w.pandaDust??=[]).push({x:e.x-e.pandaDodgeX*.5,z:e.z-e.pandaDodgeZ*.5,age:0,facing:e.pandaFacing});\n   w.pandaDust=w.pandaDust.slice(-8);e.pandaDodgeDustClock=.12;\n  }\n }\n // No damage call and no immunity flag: this is displacement, not a second attack.\n e.pandaDodgeAge=after;e.walkBlend=0;\n if(after>=PANDA_DODGE_LENGTH){delete e.pandaDodgeAge;e.walkPhase=0;}\n return false;\n}\n"
+    },
+    {
+      "start": 2865,
+      "old": " for(const e of w.enemies)if(e.type==='panda')e.pandaCooldown=Math.max(0,(e.pandaCooldown||0)-dt);\n",
+      "new": " for(const e of w.enemies)if(e.type==='panda'){\n  e.pandaCooldown=Math.max(0,(e.pandaCooldown||0)-dt);\n  e.pandaDodgeCooldown=Math.max(0,(e.pandaDodgeCooldown||0)-dt);\n }\n"
+    },
+    {
+      "start": 1937,
+      "old": "",
+      "new": " }\n if(e.pandaDodgeAge!=null){\n  const age=e.pandaDodgeAge;\n  if(age<PANDA_DODGE_CHARGE)return {name:'dodge-charge',cell:16,alpha:1};\n  if(age<PANDA_DODGE_END)return {name:'dodge',cell:8+Math.min(7,Math.floor(Math.max(0,e.pandaDodgeDistance||0)/PANDA_DODGE_DISTANCE*8)),alpha:1};\n  return {name:'dodge-recover',cell:16,alpha:1};\n"
+    },
+    {
+      "start": 1253,
+      "old": " if(e.pandaAge!=null||e.pandaDeath!=null||e.hit>0)return e.pandaFacing===-1?-1:1;\n",
+      "new": " if(e.pandaAge!=null||e.pandaDodgeAge!=null||e.pandaDeath!=null||e.hit>0)return e.pandaFacing===-1?-1:1;\n"
+    },
+    {
+      "start": 723,
+      "old": "",
+      "new": "// A defensive sideways roll is separate from the long damaging attack.\nexport const PANDA_DODGE_CHARGE=.10;\nexport const PANDA_DODGE_SPEED=7.5;\nexport const PANDA_DODGE_TIME=.32;\nexport const PANDA_DODGE_DISTANCE=PANDA_DODGE_SPEED*PANDA_DODGE_TIME;\nexport const PANDA_DODGE_END=PANDA_DODGE_CHARGE+PANDA_DODGE_TIME;\nexport const PANDA_DODGE_RECOVERY=.18;\nexport const PANDA_DODGE_LENGTH=PANDA_DODGE_END+PANDA_DODGE_RECOVERY;\nexport const PANDA_DODGE_COOLDOWN=4.5;\nexport const PANDA_DODGE_RANGE=8;\n"
+    }
+  ]
+}

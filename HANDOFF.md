@@ -1,3 +1,9 @@
+# Current fix — Panda skill under sustained hits + defensive side roll (2026-09-18)
+
+Read docs/PANDA-COMBAT.md. Ordinary hits no longer cancel charge or extend cooldown; Panda still receives full damage and real freeze/death still apply. Short 2.4-unit sideways dodge after fresh damage while waiting, 4.5s cooldown; a ready long attack wins. Existing art, eight frames, size, .8s charge/9.6-unit attack, spawns and other creatures are unchanged. Only the independent Panda runtime module changes. Run all 51 unit/integrity tests and the original+new Panda browser suites; verify original live production.
+
+## Previous Panda handoff
+
 # Current addition — Bamboo Panda mini-boss (2026-09-18)
 
 Read docs/BAMBOO-PANDA.md. The approved eight-frame walk/roll, curled anticipation, hurt/death/ghost and cleaned alpha atlas are integrated on latest Turtle-eight-frame main. Rare slots 150/240s, one living Panda, .8s charge, 9.6-unit collision-stepped roll, .55s recovery. Full damage and one reward. The existing four ordinary species, Water elite, final boss, sizes and Turtle palette are retained. Run all old checks plus Panda browser test; verify original production before calling it live.
