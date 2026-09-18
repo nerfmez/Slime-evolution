@@ -1,3 +1,4 @@
+import {undoPandaFile,pandaRuntimeAdditions} from './panda-provenance.mjs';
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
@@ -24,7 +25,7 @@ test('Turtle color match is the reviewed 12-frame bake with exact preserved alph
 test('color baseline remains exact after reversing only the requested Turtle size/eight-pose change',async()=>{
  const parent=JSON.parse(await read('docs/turtle-color-parent-manifest.json'));
  const allowed=new Set(['assets/enemies/pond-turtle-atlas.webp','assets/enemies/pond-turtle-atlas.json']);
- let same=0;for(const e of parent){if(!allowed.has(e.path)){const raw=await read('game/'+e.path);const preserved=e.path==='assets/pond-turtle.js'?undoTurtleSizeWalk(raw.toString()):raw;assert.equal(sha(preserved),e.sha256,e.path);same++;}}
+ let same=0;for(const e of parent){if(!allowed.has(e.path)){const raw=undoPandaFile(e.path,await read('game/'+e.path));const preserved=e.path==='assets/pond-turtle.js'?undoTurtleSizeWalk(raw.toString()):raw;assert.equal(sha(preserved),e.sha256,e.path);same++;}}
  assert.equal(parent.length,1260);assert.equal(same,1258);
- assert.deepEqual((await files(fileURLToPath(new URL('game',root)))).sort(),parent.map(e=>e.path).sort());
+ assert.deepEqual((await files(fileURLToPath(new URL('game',root)))).sort(),[...parent.map(e=>e.path),...pandaRuntimeAdditions].sort());
 });

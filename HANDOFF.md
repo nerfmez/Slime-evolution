@@ -1,3 +1,9 @@
+# Current addition — Bamboo Panda mini-boss (2026-09-18)
+
+Read docs/BAMBOO-PANDA.md. The approved eight-frame walk/roll, curled anticipation, hurt/death/ghost and cleaned alpha atlas are integrated on latest Turtle-eight-frame main. Rare slots 150/240s, one living Panda, .8s charge, 9.6-unit collision-stepped roll, .55s recovery. Full damage and one reward. The existing four ordinary species, Water elite, final boss, sizes and Turtle palette are retained. Run all old checks plus Panda browser test; verify original production before calling it live.
+
+## Previous handoff
+
 # Current tuning — Larger Turtle with eight original walk poses (2026-09-18)
 
 Read docs/TURTLE-SIZE-8FRAME.md. On palette main 92cb0b2, Turtle body size is 2.42 (was 2.16), and playback selects existing cells [0,1,3,4,6,7,9,10] over the same distance-driven cycle. Atlas/metadata/colors/alpha and all still poses stay byte-identical. Only the independent Turtle module changes at runtime; all 1,259 other runtime files and all gameplay values are unchanged. Do not import the earlier pre-palette local zip. Run the complete regressions and original live audit.

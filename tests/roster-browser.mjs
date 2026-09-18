@@ -41,7 +41,7 @@ try{
   const q=__slimeGameQA,w=q.world,p=q.state.player;const snapshots=[];
   for(const time of [0,59,60,119,120,179,180,240,299]){
    w.reset('auto',time);w.update(.05,p,100);
-   snapshots.push({time,unlocked:w.unlocked(),types:[...new Set(w.enemies.map(e=>e.type))],count:w.enemies.length});
+   snapshots.push({time,unlocked:w.unlocked(),types:[...new Set(w.enemies.filter(e=>!e.miniBoss).map(e=>e.type))],miniBosses:w.enemies.filter(e=>e.miniBoss).map(e=>e.type),count:w.enemies.length});
   }
   const modes=[];for(const mode of ['all','thorn','spark','turtle','water','elites','elite-water','moss','petal','elite-thorn','elite-moss','elite-petal']){
    w.reset(mode,180);w.update(.05,p,100);modes.push({requested:mode,mode:w.mode,types:[...new Set(w.enemies.map(e=>e.type))],elite:w.enemies.map(e=>e.elite),count:w.enemies.length});
@@ -55,13 +55,13 @@ try{
   const transition={normalCount,afterNormalCount:w.enemies.filter(e=>!e.boss).length,bossCount,afterBossCount:w.enemies.filter(e=>e.boss).length,serialUnchanged:w.serial===nextId};
   return {snapshots,modes,denied,earlyElite,waterElites,transition,models:q.modelAssets,graphics:{view:q.state.thornView,quality:q.state.quality,grass:q.state.grass,sentinel:localStorage.getItem('roster-save-sentinel')},options:[...document.querySelector('#enemy-mode').options].map(e=>e.value)};
  });
- for(const row of result.snapshots){assert.ok(row.count>0);assert.deepEqual(row.unlocked,row.time<60?['thorn']:row.time<120?['thorn','spark']:row.time<180?['thorn','spark','turtle']:['thorn','spark','turtle','water']);assert.ok(row.types.every(t=>row.unlocked.includes(t)));}
+ for(const row of result.snapshots){assert.ok(row.count>0);assert.deepEqual(row.unlocked,row.time<60?['thorn']:row.time<120?['thorn','spark']:row.time<180?['thorn','spark','turtle']:['thorn','spark','turtle','water']);assert.ok(row.types.every(t=>row.unlocked.includes(t)));assert.deepEqual(row.miniBosses,row.time===240?['panda']:[]);}
  for(const row of result.modes){assert.ok(row.count>0,row.requested);assert.ok(row.types.every(t=>['thorn','spark','turtle','water'].includes(t)),row.requested);}
  assert.ok(result.denied.every(v=>v===false));assert.equal(result.earlyElite,false);assert.deepEqual(result.waterElites,['water']);
  assert.equal(result.transition.bossCount,1);assert.equal(result.transition.afterBossCount,1);assert.equal(result.transition.serialUnchanged,true);
  assert.deepEqual(result.models,['boss_walk','boss_run','boss_charge','boss_push','boss_spell']);
  assert.deepEqual(result.graphics,{view:'sprite',quality:1,grass:1200,sentinel:'keep'});
- assert.deepEqual(result.options,['auto','all','thorn','spark','turtle','water','elites','elite-water','boss']);
+ assert.deepEqual(result.options,['auto','all','thorn','spark','turtle','water','elites','elite-water','panda','boss']);
  const attacks=[];
  for(const[name,combo,distance]of[['vine_lunge',0,9],['root_slam',0,4],['seed_volley',1,4],['bloom_burst',2,4]]){
   const attack=await page.evaluate(({combo,distance})=>{
@@ -100,7 +100,9 @@ try{
   for(const option of select.options){select.value=option.value;select.dispatchEvent(new Event('change',{bubbles:true}));q.draw();out.push({id:option.value,targets:q.world.enemies.map(e=>e.type)});}
   document.getElementById('lab-close').click();return out;
  });
- assert.ok(skills.length>=10);assert.ok(skills.every(s=>s.targets.every(t=>['thorn','spark','turtle','water'].includes(t))));
+ report.skills=skills;assert.ok(skills.length>=10);
+ // The skill lab lists combat targets, not the ordinary spawn pool: explicitly include the new Panda target.
+ for(const skill of skills)assert.deepEqual(skill.targets,['thorn','spark','turtle','water','panda'],skill.id+' exact training targets');
  assert.ok(!requests.some(u=>/\/enemies\/(?:thorn|moss|petal|crystal)(?:[.-])/.test(u)),'no removed model/atlas requested');
  assert.deepEqual(errors,[]);
  report={...report,passed:true,result,attacks,death,cameras,skills,errors,requests,cancellations};

@@ -1,6 +1,6 @@
 # Slime — Frog + Spark Hedgehog + Pond Turtle + Water Calf + Boss (2026-09-17)
 
-Read docs/POND-TURTLE.md, CANON.json, HANDOFF.md, docs/SPARK-HEDGEHOG.md and docs/ROSTER-CLEANUP.md first. The owner removed OLD enemies, then approved adding Spark Hedgehog using the final Run/Attack/Hurt/Death art. Keep finished Moss Frog, Spark Hedgehog, Pond Turtle, new Water Calf and Ancient Bloom boss. This supersedes the historical four-enemy/four-elite instructions.
+Read docs/BAMBOO-PANDA.md, docs/POND-TURTLE.md, CANON.json, HANDOFF.md, docs/SPARK-HEDGEHOG.md and docs/ROSTER-CLEANUP.md first. The owner removed OLD enemies, then approved adding Spark Hedgehog using the final Run/Attack/Hurt/Death art. Keep finished Moss Frog, Spark Hedgehog, Pond Turtle, new Water Calf and Ancient Bloom boss. This supersedes the historical four-enemy/four-elite instructions.
 
 ## Only active game
 - `game/` only. Origin: completed Frog baseline `6e098d66`, then reviewed Water Calf candidate `06ebad851824a054a963b9eeb3b1e58ff5fe00d8` (PR #14). Never build/import the obsolete Vite root or abandoned elephant versions.
@@ -17,3 +17,8 @@ This is still a preserved playable bundle with scoped readable modules, NOT full
 
 ## Hosting and history
 Only production destination: https://slime-evolution-five.vercel.app (project/team in CANON.json). No new hosts, test projects, CDN wrappers or remote base href. GitHub commit/merge is not deployment. Report actual live status separately and never send an old link as a newly tested candidate. Preserve history; no force push. The completed Frog remains recoverable at `6e098d66` and `fix/frog-canon-only`; old root/early elephant work is on `archive/before-frog-canon-cleanup-20260917`.
+
+## Bamboo Panda mini-boss
+- Separate `miniBossEnemies.panda`, never include it in the ordinary random spawn list. Normal-play slots 150s/240s, at most one alive.
+- Keep approved video/still art and the edge-cleanup input/script. Panda uses one transparent atlas and separate dust, not regenerated movement frames.
+- Preserve the strict Panda -> current Turtle -> earlier baseline reversal. Full Panda/Spark/Turtle live audit on original production is required.

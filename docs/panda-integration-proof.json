@@ -1,0 +1,152 @@
+{
+  "assets/enemy-roster.js": {
+    "beforeSHA256": "2c31193a9379ddbc6013d2ac9eb8cfe03517ec1b5ce97302b616d44b3aabfa9b",
+    "afterSHA256": "e207151f9567518d7e806351eefa6de67f71f3f98f896878921a76bc21761c44",
+    "reverse": [
+      {
+        "label": "test mode only, not ordinary roster",
+        "start": 1266,
+        "old": "|| own(normalEnemies,mode))",
+        "new": "|| own(normalEnemies,mode) || own(miniBossEnemies,mode))"
+      },
+      {
+        "label": "independent miniboss definition",
+        "start": 571,
+        "old": "export const eliteEnemies",
+        "new": "export const miniBossEnemies = Object.freeze({panda:Object.freeze({name:'Bamboo Panda',stride:1.1,speed:.78,radius:.62,hp:480,damage:12,xp:45})});\nexport const eliteEnemies"
+      }
+    ]
+  },
+  "index.html": {
+    "beforeSHA256": "c8035c876fff450b5d75b6223ead81dd47cec9f76fe34f88d12dc47b6bf79bdb",
+    "afterSHA256": "d372df1c42b6afb55af807073ab039c8c3ec439b9ab5dab10ee8c912d33028ae",
+    "reverse": [
+      {
+        "label": "Panda test selector",
+        "start": 5640,
+        "old": "<option value=\"boss\">",
+        "new": "<option value=\"panda\">\u0e21\u0e34\u0e19\u0e34\u0e1a\u0e2d\u0e2a \u00b7 Bamboo Panda</option><option value=\"boss\">"
+      }
+    ]
+  },
+  "assets/main-critter-v4.js": {
+    "beforeSHA256": "433a9b780642a0448aa4bc9a82e55fed49fd60284fe26936d009058de46b5e32",
+    "afterSHA256": "50bc6ff997211a04a85fbc13a6f738c11242aab2eb0f7e5b50c2d690c303b6ff",
+    "reverse": [
+      {
+        "label": "QA getter",
+        "start": 298095,
+        "old": "get turtleRenderer(){return turtleRenderer},",
+        "new": "get turtleRenderer(){return turtleRenderer},get pandaRenderer(){return pandaRenderer},"
+      },
+      {
+        "label": "health display priority",
+        "start": 293276,
+        "old": "let n=J.enemies.find(e=>e.boss);",
+        "new": "let n=J.enemies.find(e=>e.boss)||J.enemies.find(e=>e.miniBoss);B(`boss-health`).querySelector(`strong`).textContent=n?.miniBoss?`BAMBOO PANDA \u00b7 MINI-BOSS`:`ANCIENT BLOOM COLOSSUS`;"
+      },
+      {
+        "label": "load scoped atlas",
+        "start": 295805,
+        "old": "turtleRenderer=await createPondTurtleRenderer(H,{program:T,geometry:E,uniform:D,render:je});",
+        "new": "turtleRenderer=await createPondTurtleRenderer(H,{program:T,geometry:E,uniform:D,render:je});pandaRenderer=await createBambooPandaRenderer(H,{program:T,geometry:E,uniform:D,render:je});"
+      },
+      {
+        "label": "draw Panda states and dust",
+        "start": 288969,
+        "old": "for(let e of J.bullets)if(e.kind!==`water-shot`)Q(or",
+        "new": "if(pandaRenderer){for(const dust of J.pandaDust||[])if(dr(dust.x,dust.z,3)){const drawn=pandaRenderer.drawDust(dust,X,W.player,spriteCamera(W.camera));Yn+=drawn.calls;Xn+=drawn.triangles}for(const enemy of [...t,...J.pandaDead||[]])if(enemy.type===`panda`&&dr(enemy.x,enemy.z,3)){const drawn=pandaRenderer.draw(enemy,X,W.player,spriteCamera(W.camera));Yn+=drawn.calls;Xn+=drawn.triangles}H.useProgram(U)}for(let e of J.bullets)if(e.kind!==`water-shot`)Q(or"
+      },
+      {
+        "label": "renderer handle",
+        "start": 281116,
+        "old": "Br,waterRenderer,sparkRenderer,turtleRenderer,Vr",
+        "new": "Br,waterRenderer,sparkRenderer,turtleRenderer,pandaRenderer,Vr"
+      },
+      {
+        "label": "nova treats miniboss like elite",
+        "start": 173722,
+        "old": "e.hp>0&&!e.elite&&!e.boss&&(this.elementalHit(`tide`,e,e.hp",
+        "new": "e.hp>0&&!e.elite&&!e.boss&&!e.miniBoss&&(this.elementalHit(`tide`,e,e.hp"
+      },
+      {
+        "label": "one mini-boss reroll reward",
+        "start": 144919,
+        "old": "(e.elite||e.boss)&&(this.rerolls++",
+        "new": "(e.elite||e.boss||e.miniBoss)&&(this.rerolls++"
+      },
+      {
+        "label": "original death artwork",
+        "start": 138042,
+        "old": "e.type===`turtle`&&this.turtleDead.push({...e,turtleDeath:0}),",
+        "new": "e.type===`turtle`&&this.turtleDead.push({...e,turtleDeath:0}),e.type===`panda`&&this.pandaDead.push({...e,pandaDeath:0}),"
+      },
+      {
+        "label": "Panda attack at existing interface",
+        "start": 136664,
+        "old": "n.type===`turtle`?d=turtleGuard(this,n,e,t,s,f):n.windup=0",
+        "new": "n.type===`turtle`?d=turtleGuard(this,n,e,t,s,f):n.type===`panda`?d=pandaAI(this,n,e,t,s,f,i.damage):n.windup=0"
+      },
+      {
+        "label": "Panda contact owns timing",
+        "start": 135664,
+        "old": "n.type!==`spark`&&!(n.type===`turtle`",
+        "new": "n.type!==`spark`&&n.type!==`panda`&&!(n.type===`turtle`"
+      },
+      {
+        "label": "rare normal-run encounters",
+        "start": 134679,
+        "old": "let o=0;this.enemies=this.enemies.filter(e=>e.elite||e.boss||++o<=n);",
+        "new": "spawnScheduledPanda(this,t);let o=0;this.enemies=this.enemies.filter(e=>e.elite||e.boss||e.miniBoss||++o<=n);"
+      },
+      {
+        "label": "test not an elite",
+        "start": 133873,
+        "old": "this.spawn(t,e,e!==`boss`);",
+        "new": "this.spawn(t,e,e!==`boss`&&e!==`panda`);"
+      },
+      {
+        "label": "single test spawn",
+        "start": 133739,
+        "old": "a=this.mode===`boss`||this.mode===`elites`",
+        "new": "a=this.mode===`panda`||this.mode===`boss`||this.mode===`elites`"
+      },
+      {
+        "label": "tick remnants cooldown dust",
+        "start": 133357,
+        "old": "tickTurtleWorld(this,e),",
+        "new": "tickTurtleWorld(this,e),tickPandaWorld(this,e),"
+      },
+      {
+        "label": "spawn flag",
+        "start": 132450,
+        "old": "type:t,elite:n,boss:r,",
+        "new": "type:t,elite:n,boss:r,miniBoss:t===`panda`,"
+      },
+      {
+        "label": "reset scoped state",
+        "start": 130471,
+        "old": "this.sparkDead=[],this.turtleDead=[]}",
+        "new": "this.sparkDead=[],this.turtleDead=[];resetPandaWorld(this)}"
+      },
+      {
+        "label": "stats without ordinary spawns",
+        "start": 128926,
+        "old": "var ft=normalRoster;",
+        "new": "var ft={...normalRoster,...miniBossEnemies};"
+      },
+      {
+        "label": "import Panda module",
+        "start": 367,
+        "old": "import {createPondTurtleRenderer,turtleGuard,turtleDamage,tickTurtleWorld} from './pond-turtle.js';",
+        "new": "import {createPondTurtleRenderer,turtleGuard,turtleDamage,tickTurtleWorld} from './pond-turtle.js';\nimport {createBambooPandaRenderer,pandaAI,resetPandaWorld,tickPandaWorld,spawnScheduledPanda} from './bamboo-panda.js';"
+      },
+      {
+        "label": "import mini-boss roster",
+        "start": 0,
+        "old": "import {normalEnemies as normalRoster,",
+        "new": "import {miniBossEnemies,normalEnemies as normalRoster,"
+      }
+    ]
+  }
+}
