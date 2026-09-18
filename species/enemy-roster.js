@@ -5,12 +5,12 @@ export const normalEnemies = Object.freeze({
   turtle: Object.freeze({name:'Pond Turtle',stride:.92,speed:.64,radius:.42,hp:44,damage:5}),
   water: Object.freeze({name:'Water Calf',speed:.85,radius:.37,hp:28,damage:6})
 });
-export const miniBossEnemies = Object.freeze({panda:Object.freeze({name:'Bamboo Panda',stride:1.1,speed:.78,radius:.62,hp:480,damage:12,xp:45})});
+export const miniBossEnemies = Object.freeze({panda:Object.freeze({name:'Bamboo Panda',stride:1.1,speed:.78,radius:.62,hp:480,damage:12,xp:35})});
 export const eliteEnemies = Object.freeze({
-  thorn: Object.freeze({name:'Moss Frog Elite',stride:.42,hp:190,speed:1.08,radius:.40,damage:9,xp:42,scale:1.34}),
-  spark: Object.freeze({name:'Spark Hedgehog Elite',stride:.74,hp:230,speed:1.34,radius:.40,damage:10,xp:50,scale:1.34}),
-  turtle: Object.freeze({name:'Pond Turtle Elite',stride:.92,hp:360,speed:.60,radius:.55,damage:8,xp:62,scale:1.32}),
-  water: Object.freeze({name:'Water Calf Alpha',hp:314,speed:1.01,radius:.518,damage:23,xp:60,scale:1.55})
+  thorn: Object.freeze({name:'Moss Frog Elite',stride:.42,hp:190,speed:1.08,radius:.40,damage:9,xp:18,scale:1.34}),
+  spark: Object.freeze({name:'Spark Hedgehog Elite',stride:.74,hp:230,speed:1.34,radius:.40,damage:10,xp:22,scale:1.34}),
+  turtle: Object.freeze({name:'Pond Turtle Elite',stride:.92,hp:360,speed:.60,radius:.55,damage:8,xp:28,scale:1.32}),
+  water: Object.freeze({name:'Water Calf Alpha',hp:314,speed:1.01,radius:.518,damage:23,xp:30,scale:1.55})
 });
 export const spawnSchedule = Object.freeze({thorn:0,spark:60,turtle:120,water:180});
 export const modelAssetNames = Object.freeze(['boss_walk','boss_run','boss_charge','boss_push','boss_spell']);
