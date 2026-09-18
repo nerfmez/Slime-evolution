@@ -1,5 +1,5 @@
 import {ensureCritter} from './logic.js';
-import {ATLAS_URL,SPRITES,EXP_FRAMES,SPECIES_EXP_FRAMES,PANDA_ROLL,ITEM_FRAMES} from './atlas.js';
+import {ATLAS_URL,WATER_ATLAS_URL,WATER_EXP_RECTS,SPRITES,EXP_FRAMES,SPECIES_EXP_FRAMES,PANDA_ROLL,ITEM_FRAMES} from './atlas.js';
 
 export const critterVertex=`
 layout(location=0) in vec2 corner;
@@ -100,38 +100,38 @@ export function createCritterRenderer(gl){
   const stride=48;
   for(let a=1;a<=3;a++){gl.enableVertexAttribArray(a);gl.vertexAttribPointer(a,4,gl.FLOAT,false,stride,(a-1)*16);gl.vertexAttribDivisor(a,1);}
   gl.bindVertexArray(null);
-  const texture=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D,texture);
-  gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,1,1,0,gl.RGBA,gl.UNSIGNED_BYTE,new Uint8Array([0,0,0,0]));
-  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
-  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
-  let ready=false,disposed=false;
-  const image=new Image();
-  image.onload=()=>{if(disposed)return;gl.bindTexture(gl.TEXTURE_2D,texture);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,image);ready=true;};
-  image.src=ATLAS_URL;
+  const urls=[ATLAS_URL,WATER_ATLAS_URL],textures=urls.map(()=>gl.createTexture()),ready=[false,false],images=[];
+  let disposed=false;
+  for(let index=0;index<textures.length;index++){
+    const texture=textures[index];gl.bindTexture(gl.TEXTURE_2D,texture);
+    gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,1,1,0,gl.RGBA,gl.UNSIGNED_BYTE,new Uint8Array([0,0,0,0]));
+    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
+    const image=new Image();images.push(image);
+    image.onload=()=>{if(disposed)return;gl.bindTexture(gl.TEXTURE_2D,texture);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,image);ready[index]=true;};
+    image.src=urls[index];
+  }
   let capacity=0,data=new Float32Array(0);
   return {draw(souls,vp,time,player,visible=()=>true,pickups=[]){
-    if(disposed||!ready)return {calls:0,triangles:0,count:0};
+    if(disposed)return {calls:0,triangles:0,count:0};
     const total=souls.length+pickups.length;
     if(total>capacity){capacity=Math.max(64,2**Math.ceil(Math.log2(total)));data=new Float32Array(capacity*12);gl.bindBuffer(gl.ARRAY_BUFFER,buffer);gl.bufferData(gl.ARRAY_BUFFER,data.byteLength,gl.DYNAMIC_DRAW);}
-    let count=0;
+    const groups=[[],[]];
     for(const list of [souls,pickups])for(const o of list){
       if(o.done||o.value===0||!visible(o.x,o.z,1))continue;
-      const c=ensureCritter(o),i=count++*12,kind=o.kind||'',small=kind?.30:c.expSize;
+      const c=ensureCritter(o),kind=o.kind||'',small=kind?.30:c.expSize;
       const shrink=1-c.eat*.94,hop=c.eating?.10*Math.sin(c.eat*Math.PI):Math.max(0,Math.sin(c.phase))*c.moving*.035;
-      const frame=frameFor(o,c),r=SPRITES[frame]||SPRITES.low_frog_f;
+      const water=!kind&&c.sourceType==='water',group=water?1:0;
+      const frame=frameFor(o,c),r=water?WATER_EXP_RECTS[c.back?1:0]:(SPRITES[frame]||SPRITES.low_frog_f);
       const rolling=!kind&&c.expTier===2&&c.expForm===2&&c.moving>.2&&!c.eating;
-      const rotation=rolling?c.phase*.20*(c.facing<0?-1:1):0;
-      const auraScale=kind?1.85:1;
-      data[i]=o.x;data[i+1]=small*.72+hop+(player[1]||0)*c.eat;data[i+2]=o.z;data[i+3]=small*shrink*auraScale;
-      data[i+4]=r[0];data[i+5]=r[1];data[i+6]=r[2];data[i+7]=r[3];
-      data[i+8]=rotation;data[i+9]=c.facing<0?1:0;data[i+10]=specialCode(kind);data[i+11]=0;
+      const rotation=rolling?c.phase*.20*(c.facing<0?-1:1):0,auraScale=kind?1.85:1;
+      groups[group].push(o.x,small*.72+hop+(player[1]||0)*c.eat,o.z,small*shrink*auraScale,r[0],r[1],r[2],r[3],rotation,c.facing<0?1:0,specialCode(kind),0);
     }
-    if(!count)return {calls:0,triangles:0,count:0};
     gl.useProgram(p);gl.uniformMatrix4fv(vpLoc,false,vp);gl.uniform1f(clockLoc,time);gl.uniform1i(atlasLoc,7);
-    gl.activeTexture(gl.TEXTURE7);gl.bindTexture(gl.TEXTURE_2D,texture);
-    gl.bindVertexArray(vao);gl.bindBuffer(gl.ARRAY_BUFFER,buffer);gl.bufferSubData(gl.ARRAY_BUFFER,0,data.subarray(0,count*12));
-    gl.disable(gl.CULL_FACE);gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);gl.depthMask(false);
-    gl.drawArraysInstanced(gl.TRIANGLES,0,6,count);gl.depthMask(true);gl.disable(gl.BLEND);gl.bindVertexArray(null);gl.activeTexture(gl.TEXTURE0);
-    return {calls:1,triangles:count*2,count};
-  },dispose(){if(disposed)return;disposed=true;image.src='';gl.deleteTexture(texture);gl.deleteBuffer(quad);gl.deleteBuffer(buffer);gl.deleteVertexArray(vao);gl.deleteProgram(p);}};
+    gl.bindVertexArray(vao);gl.bindBuffer(gl.ARRAY_BUFFER,buffer);gl.disable(gl.CULL_FACE);gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);gl.depthMask(false);
+    let calls=0,count=0;
+    for(let group=0;group<groups.length;group++){const values=groups[group],n=values.length/12;if(!n||!ready[group])continue;data.set(values,0);gl.bufferSubData(gl.ARRAY_BUFFER,0,data.subarray(0,values.length));gl.activeTexture(gl.TEXTURE7);gl.bindTexture(gl.TEXTURE_2D,textures[group]);gl.drawArraysInstanced(gl.TRIANGLES,0,6,n);calls++;count+=n;}
+    gl.depthMask(true);gl.disable(gl.BLEND);gl.bindVertexArray(null);gl.activeTexture(gl.TEXTURE0);
+    return {calls,triangles:count*2,count};
+  },dispose(){if(disposed)return;disposed=true;for(const image of images)image.src='';for(const texture of textures)gl.deleteTexture(texture);gl.deleteBuffer(quad);gl.deleteBuffer(buffer);gl.deleteVertexArray(vao);gl.deleteProgram(p);}};
 }

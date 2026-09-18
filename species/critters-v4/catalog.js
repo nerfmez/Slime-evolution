@@ -4,7 +4,7 @@ export const EXP_SETS = Object.freeze([
   Object.freeze({min:10,max:19,size:.22,name:'MID EXP',animals:Object.freeze(['นกกลม','กระรอก','เม่นน้อย'])}),
   Object.freeze({min:20,max:Infinity,size:.26,name:'HIGH EXP',animals:Object.freeze(['กวางน้อย','เต่าน้อย','แพนด้าจิ๋ว'])})
 ]);
-export const SPECIES_EXP_SIZE=Object.freeze({thorn:.20,spark:.22,turtle:.245,water:.235,panda:.26});
+export const SPECIES_EXP_SIZE=Object.freeze({thorn:.20,spark:.22,turtle:.245,water:.27,panda:.26});
 export function expTier(value){const xp=Number.isFinite(value)?Math.max(0,value):0;return xp>=20?2:xp>=10?1:0;}
 export function syncExpAppearance(o,c){
   if(o.kind)return c;

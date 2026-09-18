@@ -23,3 +23,8 @@ The 10-minute director keeps the two Panda events at 5:00 and 8:00. Explicit eli
 `game/` remains the exact reviewed Panda baseline tree `a9f9f5963f4037d8a6ffeaccd3bfd09b840d7689`. New runtime files live under `species/`; `species/assemble.mjs` rewrites only the generated `dist` imports/hooks. The complete species tree and assembled runtime tree are hash-locked in CANON.json.
 
 The Turtle reflection helper is explicitly imported into the assembled runtime; the canonical build checks the generated bundle contains `reflectEliteTurtleProjectile` before browser regressions.
+
+## Visual correction v2 (2026-09-18)
+- Existing Frog/Hedgehog/Turtle/Panda EXP animals now render from the original 320×160 approved atlas directly. The lower-resolution species copy is used only as the source for the two Water Calf cells, so the older EXP animals no longer lose saturation/detail.
+- Water Calf EXP uses tighter UV crops plus a larger world scale, so front/back views read at the same visual weight as the other EXP animals.
+- Moss Frog Elite now shares the normal Frog hop-cycle animation/movement logic. Its poison tongue telegraph pauses the hop only during the attack, then returns to the hop cycle.

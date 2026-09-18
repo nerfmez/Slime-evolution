@@ -1,3 +1,7 @@
+# Current correction — EXP color/Water size + Elite Frog animation (2026-09-18)
+
+Species v2 restores the original approved EXP atlas for Frog/Hedgehog/Turtle/Panda, enlarges/crops Water Calf EXP, and enables the same hop-cycle animation for Moss Frog Elite as the normal Frog. No new enemy animation frames are drawn. Read docs/SPECIES-EXP-ELITES.md.
+
 # Current handoff — Species EXP + Elite combat (2026-09-18)
 
 Read docs/SPECIES-EXP-ELITES.md. Current branch keeps all approved normal animation art and adds runtime-only Elite scale/color/UI/skills plus species-matched EXP drops. Frog/Spark/Turtle/Water have elites; Panda does not. Tiny Water Calf EXP elephant is the only new critter art. Elite schedule: Frog 105s, Spark 215s, Turtle 420s, Water 520s.
