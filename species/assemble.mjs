@@ -15,7 +15,7 @@ export function applySpeciesBundle(source){
   source=one(source,'roster path',"from './enemy-roster.js';","from './species/enemy-roster.js';");
   source=one(source,'water path',"from './water-calf.js';","from './species/water-calf.js';");
   source=one(source,'spark path',"from './spark-hedgehog.js';","from './species/spark-hedgehog.js';");
-  source=one(source,'turtle path',"from './pond-turtle.js';","from './species/pond-turtle.js';");
+  source=one(source,'turtle path',"import {createPondTurtleRenderer,turtleGuard,turtleDamage,tickTurtleWorld} from './pond-turtle.js';","import {createPondTurtleRenderer,turtleGuard,turtleDamage,tickTurtleWorld,reflectEliteTurtleProjectile} from './species/pond-turtle.js';");
   source=one(source,'critter logic path','from "./critters-v4/logic.js";','from "./species/critters-v4/logic.js";');
   source=one(source,'critter renderer path','from "./critters-v4/renderer.js";','from "./species/critters-v4/renderer.js";');
 
