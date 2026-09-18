@@ -2,9 +2,9 @@
   "name": "Moss Frog + Spark Hedgehog + Water Calf + Ancient Bloom",
   "commit": "cf841e09ad37da59a8edb1911200d6a41979c5cc",
   "originalPath": "published/2026-09-14",
-  "tree": "d3c87890090c1b1427eccab5bc25ce517696b672",
+  "tree": "b0fc7da7ecf1ba3db69f0f4f647aefeede30b0e9",
   "directory": "game",
-  "kind": "scoped-spark-approved-sprites",
+  "kind": "scoped-spark-charge-tuning",
   "archiveBranch": "archive/before-frog-canon-cleanup-20260917",
   "production": {
     "url": "https://slime-evolution-five.vercel.app",
@@ -14,5 +14,5 @@
   },
   "baselineCommit": "cf841e09ad37da59a8edb1911200d6a41979c5cc",
   "baselineTree": "8290f60b6708eae7689ded9568264b70d5363eda",
-  "previousCandidateTree": "8e9c7d28889efa8ba635caeba0be40960a8eb573"
+  "previousCandidateTree": "d3c87890090c1b1427eccab5bc25ce517696b672"
 }

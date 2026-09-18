@@ -4,9 +4,12 @@
 export const SPARK_CELL_WORLD=2.10;
 export const SPARK_FOOT=1-330/384;
 export const SPARK_DEATH_LIFE=.76;
-export const SPARK_ATTACK_DURATIONS=Object.freeze([.14,.11,.14,.10,.11,.16]);
+export const SPARK_TRIGGER_RANGE=3.0;
+export const SPARK_DASH_SPEED=8.0;
+export const SPARK_ATTACK_DURATIONS=Object.freeze([.18,.42,.32,.10,.11,.16]);
+export const SPARK_DASH_START=SPARK_ATTACK_DURATIONS[0]+SPARK_ATTACK_DURATIONS[1];
 export const SPARK_ATTACK_LENGTH=SPARK_ATTACK_DURATIONS.reduce((a,b)=>a+b,0);
-export const SPARK_IMPACT_TIME=.39;
+export const SPARK_IMPACT_TIME=SPARK_DASH_START+SPARK_ATTACK_DURATIONS[2];
 const RUN_RETURN_PHASE=1.02/6;
 
 export function sparkFacing(e){
@@ -43,31 +46,36 @@ export function sparkMelee(world,e,dt,target,distance,canSee,damage){
   if(e.type!=='spark')throw Error('Spark AI received another species');
   if(!(dt>0)||e.hp<=0)return false;
   if(e.hit>0){
-    delete e.sparkAge;e.sparkWasHit=true;e.attack=Math.max(e.attack,.32);
+    delete e.sparkAge;delete e.sparkDashRemaining;e.sparkWasHit=true;e.attack=Math.max(e.attack,.32);
     e.walkBlend=0;return false;
   }
   if(e.sparkWasHit){e.sparkWasHit=false;e.walkPhase=RUN_RETURN_PHASE;}
   if(e.sparkAge==null){
     sparkFacing(e);
-    if(e.attack>0||!canSee||distance>1.22)return distance>e.radius+.29;
+    if(e.attack>0||!canSee||distance>SPARK_TRIGGER_RANGE)return distance>e.radius+.29;
     const dx=target[0]-e.x,dz=target[2]-e.z,d=Math.max(.001,Math.hypot(dx,dz));
     e.yaw=Math.atan2(dx,dz);sparkFacing(e);
     e.sparkAimX=dx/d;e.sparkAimZ=dz/d;e.sparkAge=0;e.sparkHitApplied=false;
+    // Stop short of the locked target; faster long-range dashes must not overshoot nearby players.
+    const standOff=e.radius+(world.playerRadius||.25)+.05;
+    e.sparkDashRemaining=Math.min(SPARK_DASH_SPEED*SPARK_ATTACK_DURATIONS[2],Math.max(0,d-standOff));
     e.attack=1.90;e.walkBlend=0;
   }
   const before=e.sparkAge,after=Math.min(SPARK_ATTACK_LENGTH,before+dt);
-  // Only frame 3 is airborne/dashing. The aim locks before wind-up, so this is dodgeable.
-  const dashTime=Math.max(0,Math.min(after,.39)-Math.max(before,.25));
+  // Hold the two existing anticipation/charge poses for .60s before moving.
+  // Only frame 3 dashes: aim and travel lock before charging, so sidesteps still dodge.
+  const dashTime=Math.max(0,Math.min(after,SPARK_IMPACT_TIME)-Math.max(before,SPARK_DASH_START));
   if(dashTime>0){
-    const distance=dashTime*4.0,steps=Math.max(1,Math.ceil(distance/.055));
+    const distance=Math.min(e.sparkDashRemaining,dashTime*SPARK_DASH_SPEED),steps=Math.max(1,Math.ceil(distance/.055));
     for(let i=0;i<steps;i++)world.moveEnemy(e,e.sparkAimX*distance/steps,e.sparkAimZ*distance/steps);
+    e.sparkDashRemaining=Math.max(0,e.sparkDashRemaining-distance);
   }
   e.sparkAge=after;e.walkBlend=0;
   if(before<SPARK_IMPACT_TIME&&after>=SPARK_IMPACT_TIME&&!e.sparkHitApplied){
     e.sparkHitApplied=true;const p=sparkImpactPoint(e);
     if(canSee&&Math.hypot(target[0]-p.x,target[2]-p.z)<.39+(world.playerRadius||.25))world.damage(damage);
   }
-  if(after>=SPARK_ATTACK_LENGTH){delete e.sparkAge;e.walkPhase=RUN_RETURN_PHASE;}
+  if(after>=SPARK_ATTACK_LENGTH){delete e.sparkAge;delete e.sparkDashRemaining;e.walkPhase=RUN_RETURN_PHASE;}
   return false;
 }
 
