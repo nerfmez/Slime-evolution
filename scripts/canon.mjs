@@ -74,7 +74,7 @@ export async function build() {
   }
   let commit = process.env.GITHUB_SHA;
   if (!commit) commit = execFileSync('git',['rev-parse','HEAD'],{cwd:root,encoding:'utf8'}).trim();
-  await writeFile(join(dist,'release.json'),JSON.stringify({canonicalCommit:c.commit,canonicalTree:c.tree,repositoryCommit:commit,runtimeTree:runtimeHash,pacingVersion:'cozy-10min-v1',speciesVersion:SPECIES_VERSION,runSeconds:600,files:manifest.length},null,2)+'\n');
+  await writeFile(join(dist,'release.json'),JSON.stringify({canonicalCommit:c.commit,canonicalTree:c.tree,repositoryCommit:commit,runtimeTree:runtimeHash,pacingVersion:'cozy-10min-v2',speciesVersion:SPECIES_VERSION,runSeconds:600,files:manifest.length},null,2)+'\n');
   await writeFile(join(dist,'asset-manifest.json'),JSON.stringify(manifest,null,2)+'\n');
   await mkdir(join(root,'test-results'),{recursive:true});
   await writeFile(join(root,'test-results/integrity.json'),JSON.stringify({canonicalTree:hash,repositoryCommit:commit,files:manifest.length,bytes:manifest.reduce((s,f)=>s+f.bytes,0),runtimeTree:runtimeHash,baselineSourceUnchanged:true,changedRuntimeFiles:['index.html','assets/main-critter-v4.js','assets/encounter-director.js','assets/species/**']},null,2));
