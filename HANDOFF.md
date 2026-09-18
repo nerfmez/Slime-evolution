@@ -1,61 +1,18 @@
-# Current fix — Panda skill under sustained hits + defensive side roll (2026-09-18)
+# Current handoff — Ten-minute Cozy pacing (2026-09-18)
 
-Read docs/PANDA-COMBAT.md. Ordinary hits no longer cancel charge or extend cooldown; Panda still receives full damage and real freeze/death still apply. Short 2.4-unit sideways dodge after fresh damage while waiting, 4.5s cooldown; a ready long attack wins. Existing art, eight frames, size, .8s charge/9.6-unit attack, spawns and other creatures are unchanged. Only the independent Panda runtime module changes. Run all 51 unit/integrity tests and the original+new Panda browser suites; verify original live production.
+Read docs/COZY-PACING.md and AGENTS.md. Requested scope is normal-play timing and balance; no future essence skills or two-socket Mod system yet.
 
-## Previous Panda handoff
+Normal mode uses combat/rest windows, explicit 0/120/240/360-second species unlocks, Panda events 300/480, Water Alpha 420 and boss eligibility 600. Stop new pressure while any guardian remains alive; allow eight clear simulation seconds afterward. Ordinary caps are 6–28, with per-wave budgets, no queued catch-up bursts and no deletion of surviving enemies. First 15 seconds are quiet; final no-spawn window is 9:35–10:00. Boss victory requires killing it, so session length can exceed ten minutes.
 
-# Current addition — Bamboo Panda mini-boss (2026-09-18)
+Higher real collectible EXP per kill compensates for fewer monsters. Spawn-time HP/damage are tuned without changing speed, collision, attack timing, animation, skills or saves. Manual creature test modes preserve original stats. See the balance table and exact schedule in docs/COZY-PACING.md.
 
-Read docs/BAMBOO-PANDA.md. The approved eight-frame walk/roll, curled anticipation, hurt/death/ghost and cleaned alpha atlas are integrated on latest Turtle-eight-frame main. Rare slots 150/240s, one living Panda, .8s charge, 9.6-unit collision-stepped roll, .55s recovery. Full damage and one reward. The existing four ordinary species, Water elite, final boss, sizes and Turtle palette are retained. Run all old checks plus Panda browser test; verify original production before calling it live.
+## Source
+The game/ snapshot is exactly latest Panda main a800e54c2110d11554b0269e3b195d9f79af0247, input tree a9f9f5963f4037d8a6ffeaccd3bfd09b840d7689. A fail-closed, hash-locked static build inserts the separate readable pacing module into dist. Always run npm run build; do NOT publish game/ directly. No old release, remote wrapper, new hosting project or browser-time patch is used. Both source and full generated runtime are locked by CANON.json. Original baseline identity is retained separately.
 
-## Previous handoff
+## Regression requirements
+npm test; npm run build; node scripts/canon.mjs serve; BROWSER=chromium or webkit node tests/cozy-regressions.mjs local. The runner only adapts old normal-play timing assertions and waits, while retaining attack/art/skill checks. New tests/pacing-browser.mjs checks actual rest periods, introductions, cap, special isolation, real XP collection, menu, boss and victory. Production uses SMOKE_URL=https://slime-evolution-five.vercel.app/ with the production runner and npm run audit:live. Check actual results before claiming live; no inference of real-device FPS.
 
-# Current tuning — Larger Turtle with eight original walk poses (2026-09-18)
+## Preserve the latest creature work
+Panda ordinary hits cannot cancel charge or extend cooldown; short reactive side dodge cannot starve offense. Real damage, freeze and death still apply. See docs/PANDA-COMBAT.md. Turtle size 2.42, eight original poses and corrected palette remain. Spark .60s charge / 8 units/s / 3-unit trigger and resized body remain. Water enlarged body and Alpha multiplier remain. All original approved art, grass, ambience, UI art, skills, input and saves are untouched. Historical full handoffs remain in Git; detailed docs are retained.
 
-Read docs/TURTLE-SIZE-8FRAME.md. On palette main 92cb0b2, Turtle body size is 2.42 (was 2.16), and playback selects existing cells [0,1,3,4,6,7,9,10] over the same distance-driven cycle. Atlas/metadata/colors/alpha and all still poses stay byte-identical. Only the independent Turtle module changes at runtime; all 1,259 other runtime files and all gameplay values are unchanged. Do not import the earlier pre-palette local zip. Run the complete regressions and original live audit.
-
-## Previous palette handoff
-
-# Current fix — Turtle walk palette (2026-09-18)
-
-Read docs/TURTLE-WALK-COLOR.md. Corrected RGB of the 12 actual registered walk cells; all alpha and still/effect cells are unchanged. No thumbnails or regenerated frames. Only atlas/metadata change at runtime; all 1258 other game files stay identical. Browser tests now compare decoded opaque pixels and alpha on local CI and the original production site. Run all existing regressions and confirm actual deployment before reporting live.
-
-## Previous handoff
-
-# Current addition — Pond Turtle (2026-09-18)
-
-Read docs/POND-TURTLE.md first. Independent `turtle` at 120s; twelve real video frames, original hurt and shell-only death, three-quarter guarded body + separate alpha aura. Self-only Shell Guard: .30s charge, 2.40s 70% reduction, .25s release, 6.5s cooldown. Only roster/menu and twelve reversible main hooks change; Water/Spark sizes and Spark charge/range remain exactly as deployed. Run all existing regressions plus tests/turtle-browser.mjs in Chromium and WebKit. Production audit must include both Spark and Turtle on the original site before reporting live.
-
-## Previous size handoff
-
-# Current tuning — Water larger, Spark smaller (2026-09-18)
-
-On deployed main 51ee5b9, Water Calf body size is multiplied by 1.25 and Spark Hedgehog by .80. All poses use their existing common renderers and foot pivots; Water Alpha keeps its existing 1.55 multiplier. Muzzle/impact offsets follow the resized artwork. Body collision radii, HP, speed, damage, cooldown, spawn times and approved images remain unchanged. Spark still charges .60s, dashes at 8 units/s and activates within 3.0 units. Only two runtime modules change; 1,255 other game files are untouched. Read docs/ENEMY-SIZE.md.
-
-## Previous charge tuning
-
-# Current tuning — Spark charge and longer/faster dash (2026-09-18)
-
-On top of deployed main 563ce996. Only the independent Spark module changes at runtime: trigger 3.0 units, stationary anticipation/charge .60s, dash 8.0 units/s, impact at .92s, total attack 1.29s. Normal movement, damage, cooldown, approved art and other systems stay unchanged. Aim/travel lock before charge and stop short of nearby players. Read docs/SPARK-HEDGEHOG.md; the existing Chromium/WebKit and live-production audit now include long-range motion traces.
-
-## Previous integration handoff
-
-# Current handoff — Spark Hedgehog approved-art integration
-
-Read docs/SPARK-HEDGEHOG.md first. Added `spark` independently at 60 seconds using the final supplied Run/Attack/Hurt/Death poses. One alpha atlas, common body scale/foot pivot/facing, separate telegraphed melee attack state. No old enemies restored and no other creature replaced. Ten exact main-bundle hooks reverse back to main 7ed257a5 before the existing provenance checks. Run tests/spark-browser.mjs in both browsers in addition to the commands below. All hosting remains the same original Vercel project.
-
-## Previous cleanup provenance (historical)
-
-# Current handoff — three-species cleanup
-
-User asked to remove OLD monsters and keep finished Frog, new Water Calf and Ancient Bloom boss, then add new independent species gradually. Implemented on the tested Water candidate from PR #14, not on old Vite/source files.
-
-Read docs/ROSTER-CLEANUP.md. Only active game input is game/. New active registry: game/assets/enemy-roster.js. Keep Water Calf Alpha as the new Water variant; remove Thorn Alpha/Mossback/Petal old elites. Normal Frog retains internal ID thorn, which is NOT a request to restore old Thorn assets.
-
-Current cleanup changes five pre-existing game files (main bundle, game index and three review files), adds one registry and removes 57 proven-retired files. Other 1,248 parent game files remain byte-identical, including all approved Frog/Water/boss art, cards, audio, player modules and skill assets. The two-level reverse audit recovers the exact finished-Frog main bundle. Boss attack constants and the normal 100-monster cap/frequency/boss transition are unchanged. Water still starts at 180 seconds, not at 60 seconds after deleting two list entries.
-
-Commands: npm test; npm run build; node scripts/canon.mjs serve. Browser tests: tests/frog-canon.mjs, tests/water-browser.mjs, tests/roster-browser.mjs with BROWSER=chromium or webkit. Capture evidence in test-results. CI browser rendering is not iPad FPS evidence. CI success and GitHub merge do not imply deployment.
-
-Historical identity: Frog cf841e0, recovered main 6e098d66, Water parent 06ebad85. Current reviewed tree is CANON.json.tree; baseline identity is preserved separately. Legacy Vite source is archived, never rebuilt into this game. Do not resurrect legacy files or patch scripts because their names look familiar.
-
-Hosting remains the existing slime-evolution-five.vercel.app project only. Check actual hosting data before asserting a version is live. Do not ask the user to test the unrelated broken Water Calf Test site.
+Only original production destination: https://slime-evolution-five.vercel.app .

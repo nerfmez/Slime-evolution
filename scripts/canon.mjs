@@ -4,6 +4,7 @@ import { createServer } from 'node:http';
 import { resolve, join, extname, sep } from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import { assemble } from '../pacing/assemble.mjs';
 
 const root = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const digest = (b, algo = 'sha256') => createHash(algo).update(b).digest('hex');
@@ -41,25 +42,35 @@ export async function build() {
   if (/<base\b/i.test(html) || /cdn\.jsdelivr|raw\.githubusercontent/i.test(html)) throw new Error('External game wrapper forbidden');
   const bundle = await readFile(join(game,'assets/main-critter-v4.js'),'utf8');
   for (const marker of ['Moss Frog','__slimeFrogFrame','__slimeFrogFacing','__slimeFrogHopLift','frogHopActive']) if (!bundle.includes(marker)) throw new Error(`Missing finished frog feature: ${marker}`);
+  const director=await readFile(join(root,'pacing/encounter-director.js'));
+  const assembler=await readFile(join(root,'pacing/assemble.mjs'));
+  if(digest(director)!==c.pacing.moduleSHA256 || digest(assembler)!==c.pacing.assemblerSHA256) throw new Error('Pacing source differs from reviewed lock');
+  const output=assemble(bundle,html);
+  if(digest(output.bundle)!==c.pacing.bundleSHA256 || digest(output.html)!==c.pacing.htmlSHA256) throw new Error('Generated pacing hooks differ from reviewed lock');
+  await rm(dist,{recursive:true,force:true});
+  await cp(game,dist,{recursive:true});
+  if(await treeHash(dist)!==hash) throw new Error('Baseline copy changed source bytes');
+  await writeFile(join(dist,'assets/main-critter-v4.js'),output.bundle);
+  await writeFile(join(dist,'index.html'),output.html);
+  await writeFile(join(dist,'assets/encounter-director.js'),director);
+  const runtimeHash=await treeHash(dist);
+  if(runtimeHash!==c.runtimeTree) throw new Error(`Wrong assembled runtime: ${runtimeHash}; expected ${c.runtimeTree}`);
   const manifest = [];
-  for (const path of await files(game)) {
-    const bytes = await readFile(join(game,path));
+  for (const path of await files(dist)) {
+    const bytes = await readFile(join(dist,path));
     if (/\.(png|webp|jpg|jpeg)$/i.test(path)) {
       const image = bytes.subarray(0,8).equals(Buffer.from([137,80,78,71,13,10,26,10])) || (bytes.toString('ascii',0,4)==='RIFF' && bytes.toString('ascii',8,12)==='WEBP') || (bytes[0]===255 && bytes[1]===216);
       if (!image) throw new Error(`Invalid image bytes: ${path}`);
     }
     manifest.push({path, bytes:bytes.length, sha256:digest(bytes)});
   }
-  await rm(dist,{recursive:true,force:true});
-  await cp(game,dist,{recursive:true});
-  if (await treeHash(dist) !== hash) throw new Error('Copy changed canonical game bytes');
   let commit = process.env.GITHUB_SHA;
   if (!commit) commit = execFileSync('git',['rev-parse','HEAD'],{cwd:root,encoding:'utf8'}).trim();
-  await writeFile(join(dist,'release.json'),JSON.stringify({canonicalCommit:c.commit,canonicalTree:c.tree,repositoryCommit:commit,files:manifest.length},null,2)+'\n');
+  await writeFile(join(dist,'release.json'),JSON.stringify({canonicalCommit:c.commit,canonicalTree:c.tree,repositoryCommit:commit,runtimeTree:runtimeHash,pacingVersion:'cozy-10min-v1',runSeconds:600,files:manifest.length},null,2)+'\n');
   await writeFile(join(dist,'asset-manifest.json'),JSON.stringify(manifest,null,2)+'\n');
   await mkdir(join(root,'test-results'),{recursive:true});
-  await writeFile(join(root,'test-results/integrity.json'),JSON.stringify({canonicalTree:hash,repositoryCommit:commit,files:manifest.length,bytes:manifest.reduce((s,f)=>s+f.bytes,0),gameBytesUnchanged:true},null,2));
-  console.log(`CANON VERIFIED: tree=${hash}, ${manifest.length} files, game -> dist byte-identical`);
+  await writeFile(join(root,'test-results/integrity.json'),JSON.stringify({canonicalTree:hash,repositoryCommit:commit,files:manifest.length,bytes:manifest.reduce((s,f)=>s+f.bytes,0),runtimeTree:runtimeHash,baselineSourceUnchanged:true,changedRuntimeFiles:['index.html','assets/main-critter-v4.js','assets/encounter-director.js']},null,2));
+  console.log(`CANON VERIFIED: tree=${hash}, ${manifest.length} files, source preserved; runtime=${runtimeHash} hash-locked`);
 }
 export function serve(dir = join(root,'dist'), port = 4173) {
   const types = {'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css','.json':'application/json','.png':'image/png','.webp':'image/webp','.jpg':'image/jpeg','.jpeg':'image/jpeg','.wav':'audio/wav','.mp3':'audio/mpeg','.ogg':'audio/ogg','.bin':'application/octet-stream'};
@@ -84,7 +95,7 @@ export async function audit(url) {
       const item = manifest[next++];
       try {
         const r = await fetch(new URL(item.path,base),{signal:AbortSignal.timeout(45000)});
-        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        if (!r.ok) throw new Error(`HTTP ${r.status()}`);
         const data = Buffer.from(await r.arrayBuffer()), actual = digest(data);
         if (actual !== item.sha256) throw new Error(`different bytes: expected ${item.sha256}, got ${actual}`);
         results.push(item.path);

@@ -4,7 +4,7 @@
   "originalPath": "published/2026-09-14",
   "tree": "a9f9f5963f4037d8a6ffeaccd3bfd09b840d7689",
   "directory": "game",
-  "kind": "scoped-panda-hit-resilience-side-dodge",
+  "kind": "cozy-10min-static-assembly",
   "archiveBranch": "archive/before-frog-canon-cleanup-20260917",
   "production": {
     "url": "https://slime-evolution-five.vercel.app",
@@ -14,5 +14,12 @@
   },
   "baselineCommit": "cf841e09ad37da59a8edb1911200d6a41979c5cc",
   "baselineTree": "8290f60b6708eae7689ded9568264b70d5363eda",
-  "previousCandidateTree": "3c3ad9127200bf76baca1eda4dd2bea674ee150b"
+  "previousCandidateTree": "3c3ad9127200bf76baca1eda4dd2bea674ee150b",
+  "pacing": {
+    "moduleSHA256": "660b1251e660b53b8d6f4eb941fe032606ee545c71db7ea1780a4ce1707a7ed2",
+    "assemblerSHA256": "294f35746b1e0725f5a7fa60bab2dc6df61036c2ed991541603eaef66bb337e1",
+    "bundleSHA256": "f508ab5d9f2221ea483d7e1061d8ee3eca691dcac2b9252f3c8cc09922dc1dcc",
+    "htmlSHA256": "70dcfc240d46d731e60fbc2b8b261684572c7d7a8596005d9460a9dcb6e3911e"
+  },
+  "runtimeTree": "9a4cdf7be05ae1392f3d44b6bab153b9e00184ab"
 }

@@ -49,11 +49,7 @@ jobs:
             if curl -fsS http://127.0.0.1:4173/release.json >/dev/null; then break; fi
             sleep 1
           done
-          xvfb-run -a node tests/frog-canon.mjs
-          xvfb-run -a node tests/water-browser.mjs
-          xvfb-run -a node tests/roster-browser.mjs
-          xvfb-run -a node tests/spark-browser.mjs
-          xvfb-run -a node tests/turtle-browser.mjs
+          xvfb-run -a node tests/cozy-regressions.mjs local
       - uses: actions/upload-artifact@v4
         if: always()
         with:
