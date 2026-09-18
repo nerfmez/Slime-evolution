@@ -37,7 +37,7 @@ test('higher caps are bounded and requested cap still wins',()=>{
 
 test('ordinary budgets remain bounded even with instant kills or blocked terrain',()=>{
  for(const p of PHASES){const w=world(p.start);for(let t=p.start;t<p.end;t+=.05){w.enemies=w.enemies.filter(e=>e.elite||e.miniBoss||e.boss);step(w,t);}const normals=w.spawns.filter(e=>!e.elite&&!e.miniBoss&&!e.boss).length;assert.ok(normals<=p.budget,p.label);}
- const w=world(180);let attempts=0;w.spawn=()=>{attempts++;return false;};for(let t=180;t<230;t+=.05)step(w,t);assert.ok(attempts<70);assert.equal(w.encounter.spawned,0);
+ const w=world(180);let attempts=0;w.spawn=()=>{attempts++;return false;};for(let t=180;t<230;t+=.05)step(w,t);assert.ok(attempts<100,`bounded ordinary + Elite retries: ${attempts}`);assert.ok(attempts>40);assert.equal(w.encounter.spawned,0);
 });
 
 test('Elite events are more frequent, allow ordinary background mobs and cap living Elites at two',()=>{
