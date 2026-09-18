@@ -27,7 +27,7 @@ export function sparkAttackFrame(age){
 }
 export function sparkPose(e){
   if(e.sparkDeath!=null)return {name:'death',cell:13,alpha:Math.min(1,Math.max(0,(SPARK_DEATH_LIFE-e.sparkDeath)/.20))};
-  if(e.hit>0)return {name:'hurt',cell:12,alpha:1};
+  if(e.hit>0&&!(e.elite&&e.sparkAge!=null))return {name:'hurt',cell:12,alpha:1};
   if(e.sparkAge!=null)return {name:'attack',cell:6+sparkAttackFrame(e.sparkAge),alpha:1};
   if((e.walkBlend||0)<.06)return {name:'idle',cell:6,alpha:1};
   const cycle=(((e.walkPhase||0)%1)+1)%1;
@@ -47,7 +47,7 @@ export function tickSparkWorld(world,dt){
 export function sparkMelee(world,e,dt,target,distance,canSee,damage){
   if(e.type!=='spark')throw Error('Spark AI received another species');
   if(!(dt>0)||e.hp<=0)return false;
-  if(e.hit>0){
+  if(e.hit>0&&!e.elite){
     delete e.sparkAge;delete e.sparkDashRemaining;e.sparkWasHit=true;e.attack=Math.max(e.attack,.32);
     e.walkBlend=0;return false;
   }
