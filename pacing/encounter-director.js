@@ -113,7 +113,7 @@ export function tickEncounter(world,dt,player,requestedCap=100) {
 
   const ordinary=world.enemies.filter(e=>alive(e)&&!e.elite&&!e.miniBoss&&!e.boss).length;
   const limit=Math.min(cap,phase.cap);
-  if(ordinary>=limit || state.spawned>=phase.budget || t>=phase.end-.75){state.nextSpawn=Math.max(state.nextSpawn,t+phase.interval);return;}
+  if(ordinary>=limit || state.spawned>=phase.budget){state.nextSpawn=Math.max(state.nextSpawn,t+phase.interval);return;}
   if(t+1e-7<state.nextSpawn)return;
   const pool=encounterRoster(t);
   if(!pool.length)return;
