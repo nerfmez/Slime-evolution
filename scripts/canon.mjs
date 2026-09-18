@@ -5,6 +5,7 @@ import { resolve, join, extname, sep } from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { assemble } from '../pacing/assemble.mjs';
+import { applySpeciesBundle, applySpeciesHtml, SPECIES_VERSION } from '../species/assemble.mjs';
 
 const root = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const digest = (b, algo = 'sha256') => createHash(algo).update(b).digest('hex');
@@ -45,14 +46,21 @@ export async function build() {
   const director=await readFile(join(root,'pacing/encounter-director.js'));
   const assembler=await readFile(join(root,'pacing/assemble.mjs'));
   if(digest(director)!==c.pacing.moduleSHA256 || digest(assembler)!==c.pacing.assemblerSHA256) throw new Error('Pacing source differs from reviewed lock');
-  const output=assemble(bundle,html);
-  if(digest(output.bundle)!==c.pacing.bundleSHA256 || digest(output.html)!==c.pacing.htmlSHA256) throw new Error('Generated pacing hooks differ from reviewed lock');
+  const pacingOutput=assemble(bundle,html);
+  if(digest(pacingOutput.bundle)!==c.pacing.bundleSHA256 || digest(pacingOutput.html)!==c.pacing.htmlSHA256) throw new Error('Generated pacing hooks differ from reviewed lock');
+  const speciesAssembler=await readFile(join(root,'species/assemble.mjs'));
+  if(digest(speciesAssembler)!==c.species.assemblerSHA256 || await treeHash(join(root,'species'))!==c.species.tree) throw new Error('Species/elite source differs from reviewed lock');
+  const output={bundle:applySpeciesBundle(pacingOutput.bundle),html:applySpeciesHtml(pacingOutput.html)};
   await rm(dist,{recursive:true,force:true});
   await cp(game,dist,{recursive:true});
   if(await treeHash(dist)!==hash) throw new Error('Baseline copy changed source bytes');
   await writeFile(join(dist,'assets/main-critter-v4.js'),output.bundle);
   await writeFile(join(dist,'index.html'),output.html);
   await writeFile(join(dist,'assets/encounter-director.js'),director);
+  await cp(join(root,'species'),join(dist,'assets/species'),{recursive:true});
+  const expAtlasSource=join(dist,'assets/species/critters-v4/atlas.webp.b64');
+  await writeFile(join(dist,'assets/species/critters-v4/atlas.webp'),Buffer.from((await readFile(expAtlasSource,'utf8')).trim(),'base64'));
+  await rm(expAtlasSource);
   const runtimeHash=await treeHash(dist);
   if(runtimeHash!==c.runtimeTree) throw new Error(`Wrong assembled runtime: ${runtimeHash}; expected ${c.runtimeTree}`);
   const manifest = [];
@@ -66,10 +74,10 @@ export async function build() {
   }
   let commit = process.env.GITHUB_SHA;
   if (!commit) commit = execFileSync('git',['rev-parse','HEAD'],{cwd:root,encoding:'utf8'}).trim();
-  await writeFile(join(dist,'release.json'),JSON.stringify({canonicalCommit:c.commit,canonicalTree:c.tree,repositoryCommit:commit,runtimeTree:runtimeHash,pacingVersion:'cozy-10min-v1',runSeconds:600,files:manifest.length},null,2)+'\n');
+  await writeFile(join(dist,'release.json'),JSON.stringify({canonicalCommit:c.commit,canonicalTree:c.tree,repositoryCommit:commit,runtimeTree:runtimeHash,pacingVersion:'cozy-10min-v1',speciesVersion:SPECIES_VERSION,runSeconds:600,files:manifest.length},null,2)+'\n');
   await writeFile(join(dist,'asset-manifest.json'),JSON.stringify(manifest,null,2)+'\n');
   await mkdir(join(root,'test-results'),{recursive:true});
-  await writeFile(join(root,'test-results/integrity.json'),JSON.stringify({canonicalTree:hash,repositoryCommit:commit,files:manifest.length,bytes:manifest.reduce((s,f)=>s+f.bytes,0),runtimeTree:runtimeHash,baselineSourceUnchanged:true,changedRuntimeFiles:['index.html','assets/main-critter-v4.js','assets/encounter-director.js']},null,2));
+  await writeFile(join(root,'test-results/integrity.json'),JSON.stringify({canonicalTree:hash,repositoryCommit:commit,files:manifest.length,bytes:manifest.reduce((s,f)=>s+f.bytes,0),runtimeTree:runtimeHash,baselineSourceUnchanged:true,changedRuntimeFiles:['index.html','assets/main-critter-v4.js','assets/encounter-director.js','assets/species/**']},null,2));
   console.log(`CANON VERIFIED: tree=${hash}, ${manifest.length} files, source preserved; runtime=${runtimeHash} hash-locked`);
 }
 export function serve(dir = join(root,'dist'), port = 4173) {

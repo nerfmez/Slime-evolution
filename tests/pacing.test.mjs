@@ -10,8 +10,8 @@ const step=(w,t,cap=100)=>{w.time=t;tickEncounter(w,.05,[0,0,0],cap);};
 test('normal-play timeline covers exactly 600 seconds without gaps; quiet and bounded encounters alternate',()=>{
  assert.equal(RUN_SECONDS,600);assert.equal(PACING_VERSION,'cozy-10min-v1');assert.equal(PHASES[0].start,0);assert.equal(PHASES.at(-1).end,600);
  for(let i=0;i<PHASES.length;i++){const p=PHASES[i];assert.ok(p.end>p.start);if(i)assert.equal(PHASES[i-1].end,p.start);if(p.kind==='wave'){assert.ok(p.cap>=6&&p.cap<=28);assert.ok(p.end-p.start<=40);assert.ok(p.budget<=60);}}
- assert.equal(PHASES.filter(p=>p.kind==='calm').reduce((s,p)=>s+p.end-p.start,0),245);
- assert.deepEqual(PHASES.filter(p=>p.kind==='panda').map(p=>p.start),[300,480]);assert.deepEqual(PHASES.filter(p=>p.kind==='elite').map(p=>p.start),[420]);
+ assert.equal(PHASES.filter(p=>p.kind==='calm').reduce((s,p)=>s+p.end-p.start,0),185);
+ assert.deepEqual(PHASES.filter(p=>p.kind==='panda').map(p=>p.start),[300,480]);assert.deepEqual(PHASES.filter(p=>p.kind==='elite').map(p=>[p.start,p.focus]),[[105,'thorn'],[215,'spark'],[420,'turtle'],[520,'water']]);
  assert.equal(encounterPhase(599.99).kind,'calm');assert.equal(encounterPhase(600).kind,'boss');assert.equal(encounterPhase(NaN).start,0);
 });
 test('normal unlocks are explicit and cannot reintroduce retired species',()=>{
@@ -29,7 +29,7 @@ test('wave cap includes survivors and never removes existing living enemies',()=
  const w=world(540);for(let t=540;t<575;t+=.05)step(w,t);assert.equal(w.enemies.length,28);
  const ids=w.enemies.map(e=>e.id);step(w,575);assert.deepEqual(w.enemies.map(e=>e.id),ids);
  const limited=world(540);for(let t=540;t<575;t+=.05)step(limited,t,12);assert.equal(limited.enemies.length,12);
- const zero=world();for(const t of [15,120,300,420,480,540,600])step(zero,t,0);assert.equal(zero.serial,0);
+ const zero=world();for(const t of [15,105,120,215,300,420,480,520,540,600])step(zero,t,0);assert.equal(zero.serial,0);
 });
 test('per-wave budgets and spawn attempts are bounded even with instant kills or blocked terrain',()=>{
  for(const p of PHASES.filter(p=>p.kind==='wave')){const w=world(p.start);for(let t=p.start;t<p.end;t+=.05){w.enemies=[];step(w,t);}assert.ok(w.serial<=p.budget);assert.ok(w.serial>=p.budget-2,`${p.start}: ${w.serial}/${p.budget}`);}
@@ -45,17 +45,17 @@ test('events expire without backlogging; reset restores all event state; boss is
  const w=world(299);step(w,299);assert.equal(w.bossSpawned,false);step(w,300);assert.equal(w.enemies[0].type,'panda');
  step(w,600);assert.equal(w.bossSpawned,false);w.enemies=[];step(w,601);step(w,609.1);assert.equal(w.bossSpawned,true);const id=w.serial;step(w,630);assert.equal(w.serial,id);
  w.bossSpawned=false;w.enemies=[];w.time=0;resetEncounter(w);step(w,15);assert.equal(w.encounter.history.length,1);assert.equal(w.encounter.phase,1);
- const skipped=world(539);step(skipped,539);assert.equal(skipped.serial,0);step(skipped,540);assert.equal(skipped.enemies[0].miniBoss,false);
+ const skipped=world(539);step(skipped,539,0);assert.equal(skipped.serial,0);step(skipped,540);assert.equal(skipped.enemies[0].miniBoss,false);
 });
 test('early/late HP and rewards scale while speed, radius, art and AI timing data stay unchanged',()=>{
  const base={hp:18,damage:5,speed:1.18,radius:.3,stride:.42};const early=encounterStats(0,base,'thorn'),late=encounterStats(600,base,'thorn');
  assert.equal(early.hp,16);assert.equal(early.damage,4);assert.equal(early.xp,4);assert.equal(late.hp,32);assert.equal(late.xp,8);
  for(const key of ['speed','radius','stride'])assert.equal(early[key],base[key]);assert.equal(base.hp,18);
  assert.equal(encounterStats(300,base,'panda').hp,420);assert.equal(encounterStats(480,base,'panda').hp,640);
- assert.equal(encounterStats(420,base,'water',true).damage,14);assert.equal(encounterStats(600,base,'boss',false,true).hp,6200);
+ const elite={hp:190,damage:9,xp:42,speed:1.08,radius:.4};const tuned=encounterStats(105,elite,'thorn',true);assert.equal(tuned.xp,42);assert.ok(tuned.hp>=elite.hp*.95);assert.equal(tuned.speed,elite.speed);assert.equal(encounterStats(600,base,'boss',false,true).hp,6200);
 });
 test('training modes and stopped/dead games are not driven by normal-play pacing',()=>{
- for(const mode of ['all','thorn','spark','turtle','water','panda','elites','elite-water','boss']){const w=world(540);w.mode=mode;step(w,540);assert.equal(w.serial,0);}
+ for(const mode of ['all','thorn','spark','turtle','water','panda','elites','elite-thorn','elite-spark','elite-turtle','elite-water','boss']){const w=world(540);w.mode=mode;step(w,540);assert.equal(w.serial,0);}
  for(const flags of [{hp:0},{finished:true}]){const w=world(540);Object.assign(w,flags);step(w,540);assert.equal(w.serial,0);}
  const w=world(540);tickEncounter(w,0,[0,0,0]);assert.equal(w.serial,0);
 });

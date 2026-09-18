@@ -1,3 +1,9 @@
+# Current handoff — Species EXP + Elite combat (2026-09-18)
+
+Read docs/SPECIES-EXP-ELITES.md. Current branch keeps all approved normal animation art and adds runtime-only Elite scale/color/UI/skills plus species-matched EXP drops. Frog/Spark/Turtle/Water have elites; Panda does not. Tiny Water Calf EXP elephant is the only new critter art. Elite schedule: Frog 105s, Spark 215s, Turtle 420s, Water 520s.
+
+Important implementation rule: do not replace normal monster atlases with the concept-art Elite images. Elites use the existing normal frame atlases 100%; selective shader accents avoid the cost and inconsistency of redrawing every animation. Name/HP is overlay UI.
+
 # Current handoff — Ten-minute Cozy pacing (2026-09-18)
 
 Read docs/COZY-PACING.md and AGENTS.md. Requested scope is normal-play timing and balance; no future essence skills or two-socket Mod system yet.
