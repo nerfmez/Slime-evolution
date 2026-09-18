@@ -18,10 +18,20 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          cat .github/species-payload-{1,2,3,4}.b64 | base64 -d > /tmp/species-change-set.tar.gz
+          python - <<'PY'
+          from pathlib import Path
+          p2=Path('.github/species-payload-2.b64').read_text()
+          if len(p2) != 16774:
+              raise SystemExit(f'unexpected payload-2 length: {len(p2)}')
+          p2=p2[:15669]+'H'+p2[15669:]
+          Path('/tmp/payload-2-fixed.b64').write_text(p2)
+          PY
+          cat .github/species-payload-1.b64 .github/species-payload-1b.b64 /tmp/payload-2-fixed.b64 .github/species-payload-3.b64 .github/species-payload-4.b64 > /tmp/species-change-set.b64
+          test "$(wc -c < /tmp/species-change-set.b64)" -eq 67100
+          base64 -d /tmp/species-change-set.b64 > /tmp/species-change-set.tar.gz
           echo "3288224d63c6bc266566133212f67fa56c4a4321a314e07b5a22a4775efb75a9  /tmp/species-change-set.tar.gz" | sha256sum -c -
           tar -xzf /tmp/species-change-set.tar.gz
-          rm .github/species-payload-{1,2,3,4}.b64
+          rm .github/species-payload-{1,2,3,4}.b64 .github/species-payload-1b.b64
           rm .github/workflows/species-source-export.yml
       - name: Verify all source, integrity and build checks
         shell: bash
