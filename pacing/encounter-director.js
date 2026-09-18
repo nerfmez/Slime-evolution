@@ -10,21 +10,21 @@ const rows = [
   [15,45,'wave','กบในพงหญ้า',6,12,2.0,'thorn'],
   [45,70,'calm','พักเก็บ EXP'],
   [70,105,'wave','ฝูงกบ',8,18,1.5,'thorn'],
-  [105,120,'calm','เสียงป่าสงบลง'],
+  [105,120,'elite','กบอีลิท',0,0,1,'thorn'],
   [120,155,'wave','เม่นสายฟ้า',10,26,1.0,'spark'],
   [155,180,'calm','พักเก็บ EXP'],
   [180,215,'wave','สิ่งมีชีวิตในป่า',12,30,.95],
-  [215,240,'calm','พักเก็บ EXP'],
+  [215,240,'elite','เม่นอีลิท',0,0,1,'spark'],
   [240,275,'wave','เต่าริมบึง',14,34,.85,'turtle'],
   [275,300,'calm','เตรียมพบแพนด้า'],
   [300,340,'panda','แพนด้าป่า'],
   [340,365,'calm','พักเก็บ EXP'],
   [365,400,'wave','ลูกช้างน้ำ',16,40,.70,'water'],
   [400,420,'calm','เตรียมพบอีลิท'],
-  [420,455,'elite','ลูกช้างน้ำอัลฟ่า'],
+  [420,455,'elite','เต่าอีลิท',0,0,1,'turtle'],
   [455,480,'calm','พักเก็บ EXP'],
   [480,520,'panda','แพนด้าผู้พิทักษ์'],
-  [520,540,'calm','พักเก็บ EXP'],
+  [520,540,'elite','ลูกช้างน้ำอัลฟ่า',0,0,1,'water'],
   [540,575,'wave','ฝูงใหญ่ครั้งสุดท้าย',28,60,.45],
   [575,600,'calm','เตรียมพบบอส'],
 ];
@@ -52,7 +52,7 @@ export function encounterStats(time,base,type,elite=false,boss=false) {
   const t=seconds(time),progress=Math.min(1,t/RUN_SECONDS);
   if(boss) return {...base,hp:6200,damage:22};
   if(type==='panda') return {...base,hp:t>=480?640:420,damage:t>=480?12:10,xp:t>=480?140:90};
-  if(elite) return {...base,hp:420,damage:14,xp:100};
+  if(elite) return {...base,hp:Math.round(base.hp*(.95+.35*progress)),damage:Math.max(1,Math.round(base.damage*(.9+.2*progress))),xp:base.xp};
   const xp={thorn:4,spark:6,turtle:8,water:10}[type] || 4;
   return {...base,hp:Math.round(base.hp*(.9+.9*progress)),
     damage:Math.max(1,Math.round(base.damage*(.8+.2*progress))),xp:Math.round(xp*(1+progress))};
@@ -96,7 +96,7 @@ export function tickEncounter(world,dt,player,requestedCap=100) {
     if(ordinary>4){state.blocked=true;return;}
     // Retry terrain failures with a bounded interval; expire with this phase, never backlog.
     if(t+1e-7<state.nextSpawn)return;
-    const type=phase.kind==='panda'?'panda':'water';
+    const type=phase.kind==='panda'?'panda':phase.focus;
     if(world.spawn(player,type,phase.kind==='elite')){
       state.eventSpawned=true;record(world,state,phase,type);
     }

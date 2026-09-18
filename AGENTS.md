@@ -1,3 +1,9 @@
+# Current addition — species EXP + full ordinary Elite set (2026-09-18)
+
+Read docs/SPECIES-EXP-ELITES.md first. Every current creature now drops its matching EXP animal; Water Calf adds a tiny-elephant front/back pair in empty atlas cells. Elites now exist for Frog, Spark, Turtle and Water only; Panda stays mini-boss-only. Elite sprites reuse the exact normal animation frames, are enlarged at runtime, get selective color accents (never whole-body tint), and display name + HP above the head. Elite Frog uses poison tongue cone, Spark adds a radial lightning burst after its preserved dash, Turtle reflects moving player projectiles only while Shell Guard is active, Water keeps its existing elite attack.
+
+The 10-minute Cozy director authors elite events at 105/215/420/520 seconds while preserving Panda at 300/480 and boss eligibility at 600. game/ remains byte-identical to the reviewed Panda input tree; species/ is a separate hash-locked runtime patch copied into dist by scripts/canon.mjs. Run npm test, npm run build, then full Chromium/WebKit cozy regressions before merge/deploy.
+
 # Slime — Cozy Action Roguelite, ten-minute normal rounds (2026-09-18)
 
 Read docs/COZY-PACING.md, CANON.json and HANDOFF.md first. The current request supersedes historical five-minute, 100-monster, kill-triggered Elite and Panda 150/240-second rules **for normal play only**. Do not add absorption skills, Mod sockets or new art in this phase.

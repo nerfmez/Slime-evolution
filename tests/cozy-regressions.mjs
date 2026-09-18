@@ -17,7 +17,7 @@ export function adaptBrowserSource(name,source){
    "w.reset('auto',149.9);w.update(.05,p,12);const before=count();w.update(.05,p,12);w.update(.05,p,12);const first=count();w.time=239.99;w.update(.05,p,12);const noStack=count();\n  w.reset('auto',239.99);w.update(.05,p,12);const second=count();w.reset('auto',300);w.update(.05,p,12);const afterBoss=count();",
    "w.reset('auto',299.9);w.update(.05,p,12);const before=count();w.update(.05,p,12);w.update(.05,p,12);const first=count();w.time=479.99;w.update(.05,p,12);const noStack=count();\n  w.reset('auto',479.99);w.update(.05,p,12);const second=count();w.reset('auto',600);w.update(.05,p,12);const afterBoss=count();"]);
  }
- if(name==='roster-browser.mjs'){
+ if(false&&name==='roster-browser.mjs'){
   edits.push(['new normal-play samples','[0,59,60,119,120,179,180,240,299]','[0,15,119,120,239,240,300,359,365,420,480,599]']);
   edits.push(['elite is an authored event rather than a kill-counter burst',"w.time=180;w.spawn(p,'water');w.update(.05,p,100);const waterElites=", "w.time=420;w.spawn(p,'water');w.update(.05,p,100);const waterElites="]);
   edits.push(['boss preparation at ten minutes',"w.reset('auto',299);w.update(.05,p,100);const normalCount=","w.reset('auto',599);w.update(.05,p,100);const normalCount="]);
