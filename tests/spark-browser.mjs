@@ -7,9 +7,15 @@ const browser=await({chromium,webkit}[engine]).launch({headless:true,...(engine=
 const page=await browser.newPage({viewport:{width:1000,height:700},deviceScaleFactor:1});
 page.setDefaultTimeout(45000);let report={engine,url:base,passed:false},errors=[];
 page.on('pageerror',e=>errors.push(e.message));page.on('response',r=>{if(r.status()>=400&&!r.url().endsWith('favicon.ico'))errors.push(`${r.status()} ${r.url()}`)});
-await page.addInitScript(()=>{const raf=requestAnimationFrame.bind(window);window.__sparkFreeze=false;window.requestAnimationFrame=f=>raf(t=>{if(!__sparkFreeze)f(t)});localStorage.setItem('slime.graphics.v1',JSON.stringify({preset:'low',showStats:false}));});
+await page.addInitScript(()=>{const raf=requestAnimationFrame.bind(window);window.__sparkNativeRAF=raf;window.__sparkFreeze=false;window.requestAnimationFrame=f=>raf(t=>{if(!__sparkFreeze)f(t)});localStorage.setItem('slime.graphics.v1',JSON.stringify({preset:'low',showStats:false}));});
 // Let the previous buffer present before redrawing the same frozen state (WebKit software compositor).
-async function capture(name){await page.waitForTimeout(150);await page.evaluate(()=>{__slimeGameQA.draw();document.querySelector('#world').getContext('webgl2').finish()});await page.waitForTimeout(180);await page.screenshot({path:`test-results/spark-${engine}-${name}.png`});}
+async function capture(name){
+ const snapshot=()=>page.evaluate(()=>({time:__slimeGameQA.world.time,enemies:__slimeGameQA.world.enemies.map(e=>[e.id,e.x,e.z,e.sparkAge??null])}));
+ const before=await snapshot();await page.waitForTimeout(150);
+ await page.evaluate(()=>{__slimeGameQA.draw();document.querySelector('#world').getContext('webgl2').finish()});
+ await page.waitForTimeout(180);await page.screenshot({path:`test-results/spark-${engine}-${name}.png`});
+ assert.deepEqual(await snapshot(),before,'screenshot must not advance the frozen game');
+}
 try{
  const url=new URL(base);url.searchParams.set('qa','1');assert.ok((await page.goto(url.href,{waitUntil:'load',timeout:60000})).ok());
  await page.waitForFunction(()=>document.querySelector('#error')?.hidden===false||(window.__slimeGameQA?.sparkRenderer&&document.querySelector('.skill-card')),null,{timeout:60000});
@@ -17,6 +23,8 @@ try{
  await page.locator('.skill-card').first().click({force:true});
  await page.waitForFunction(()=>window.__slimeGameQA?.world?.enemies.length>0);
  await page.evaluate(()=>{__sparkFreeze=true});await page.waitForTimeout(400);
+ // The game's queued loop is now stopped. Restore native RAF so browser screenshot helpers can request frames.
+ await page.evaluate(()=>{window.requestAnimationFrame=window.__sparkNativeRAF;});
  const atlas=await page.evaluate(async()=>{const im=new Image();im.src='assets/enemies/spark-hedgehog-atlas.webp';await im.decode();const c=document.createElement('canvas');c.width=c.height=1536;const x=c.getContext('2d');x.drawImage(im,0,0);let solid=0,clear=0,borders=0;const d=x.getImageData(0,0,1536,1536).data;for(let y=0;y<1536;y++)for(let z=0;z<1536;z++){const a=d[(y*1536+z)*4+3];if(a===0)clear++;if(a>220)solid++;if((y%384<2||y%384>381||z%384<2||z%384>381)&&a>10)borders++;}return {width:im.width,height:im.height,clear,solid,borders};});
  report.atlas=atlas;
  assert.equal(atlas.width,1536);assert.equal(atlas.height,1536);assert.ok(atlas.clear>1500000);assert.ok(atlas.solid>150000);assert.equal(atlas.borders,0,'effects must not be cropped at cell borders');
@@ -51,7 +59,7 @@ try{
    const x=e.x,z=e.z;w.update(.05,p,12);elapsed+=.05;
    trace.push({time:elapsed,age:e.sparkAge??null,cell:sparkPose(e).cell,hp:w.hp,x:e.x,z:e.z,speed:Math.hypot(e.x-x,e.z-z)/.05});
    if(i===5||i===13||i===18)poses[i===5?'charge':i===13?'dash':'impact']={...e};
-   q.draw();
+   // Render the three recorded states below, rather than queueing 30 identical GPU frames.
   }
   return {range:2.8,start:spot,trace,poses};
  });
