@@ -10,7 +10,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - run: git archive 196e49f03c73e44ea746bc0284187d92bbaac015 | gzip -1 > /tmp/panda-parent.tar.gz
+      - shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD:game)" = '0ee1f341376fb02cddd04c899517ba6d8a097649'
+          git archive HEAD | gzip -1 > /tmp/panda-parent.tar.gz
+          test "$(stat -c%s /tmp/panda-parent.tar.gz)" -gt 100000000
       - uses: actions/upload-artifact@v4
         with:
           name: panda-parent-source
