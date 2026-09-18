@@ -39,7 +39,7 @@ try{
  await page.evaluate(()=>{__rosterQA.freeze=true;});await page.waitForTimeout(500);
  const result=await page.evaluate(()=>{
   const q=__slimeGameQA,w=q.world,p=q.state.player;const snapshots=[];
-  for(const time of [0,15,105,120,215,240,300,365,420,480,520,599]){
+  for(const time of [0,75,95,120,205,240,300,360,395,480,535,599]){
    w.reset('auto',time);w.update(.05,p,100);
    snapshots.push({time,unlocked:w.unlocked(),types:[...new Set(w.enemies.filter(e=>!e.miniBoss).map(e=>e.type))],miniBosses:w.enemies.filter(e=>e.miniBoss).map(e=>e.type),count:w.enemies.length});
   }
@@ -48,16 +48,16 @@ try{
   }
   const denied=[];for(const[type,elite]of[['moss',false],['petal',false],['moss',true],['petal',true],['crystal',false]])denied.push(w.spawn(p,type,elite));
   w.reset('auto',0);w.update(.05,p,100);w.kills=30;w.update(.05,p,100);const earlyElite=w.enemies.some(e=>e.elite);
-  const authoredElites=[];for(const time of [105,215,420,520]){w.reset('auto',time);w.update(.05,p,100);authoredElites.push(w.enemies.filter(e=>e.elite).map(e=>e.type));}
+  const authoredElites=[];for(const time of [95,150,205,255,395,445,535,570]){w.reset('auto',time);w.update(.05,p,100);authoredElites.push(w.enemies.filter(e=>e.elite).map(e=>e.type));}
   w.reset('auto',599);w.update(.05,p,100);const normalCount=w.enemies.filter(e=>!e.boss).length;
   w.time=599.99;w.update(.05,p,100);const bossCount=w.enemies.filter(e=>e.boss).length;
   const nextId=w.serial;w.spawnClock=-100;for(let n=0;n<20;n++)w.update(.05,p,100);
   const transition={normalCount,afterNormalCount:w.enemies.filter(e=>!e.boss).length,bossCount,afterBossCount:w.enemies.filter(e=>e.boss).length,serialUnchanged:w.serial===nextId};
   return {snapshots,modes,denied,earlyElite,authoredElites,transition,models:q.modelAssets,graphics:{view:q.state.thornView,quality:q.state.quality,grass:q.state.grass,sentinel:localStorage.getItem('roster-save-sentinel')},options:[...document.querySelector('#enemy-mode').options].map(e=>e.value)};
  });
- for(const row of result.snapshots){const active=[15,105,120,215,240,300,365,420,480,520].includes(row.time);assert.equal(row.count>0,active,row.time);assert.deepEqual(row.unlocked,row.time<120?['thorn']:row.time<240?['thorn','spark']:row.time<360?['thorn','spark','turtle']:['thorn','spark','turtle','water']);assert.ok(row.types.every(t=>row.unlocked.includes(t)));assert.deepEqual(row.miniBosses,[300,480].includes(row.time)?['panda']:[]);}
+ for(const row of result.snapshots){assert.ok(row.count>0,row.time);assert.deepEqual(row.unlocked,row.time<120?['thorn']:row.time<240?['thorn','spark']:row.time<360?['thorn','spark','turtle']:['thorn','spark','turtle','water']);assert.ok(row.types.every(t=>row.unlocked.includes(t)));assert.deepEqual(row.miniBosses,[300,480].includes(row.time)?['panda']:[]);}
  for(const row of result.modes){assert.ok(row.count>0,row.requested);assert.ok(row.types.every(t=>['thorn','spark','turtle','water'].includes(t)),row.requested);}
- assert.ok(result.denied.every(v=>v===false));assert.equal(result.earlyElite,false);assert.deepEqual(result.authoredElites,[['thorn'],['spark'],['turtle'],['water']]);
+ assert.ok(result.denied.every(v=>v===false));assert.equal(result.earlyElite,false);assert.deepEqual(result.authoredElites,[['thorn'],['thorn'],['spark'],['spark'],['turtle'],['turtle'],['water'],['water']]);
  assert.equal(result.transition.bossCount,1);assert.equal(result.transition.afterBossCount,1);assert.equal(result.transition.serialUnchanged,true);
  assert.deepEqual(result.models,['boss_walk','boss_run','boss_charge','boss_push','boss_spell']);
  assert.deepEqual(result.graphics,{view:'sprite',quality:1,grass:1200,sentinel:'keep'});
