@@ -2,9 +2,9 @@
   "name": "Moss Frog + Spark Hedgehog + Pond Turtle + Water Calf + Ancient Bloom",
   "commit": "cf841e09ad37da59a8edb1911200d6a41979c5cc",
   "originalPath": "published/2026-09-14",
-  "tree": "326bd98cc2fa119152af79293bbb15b62e854fdf",
+  "tree": "0c1fa1d4f954d0de18e812f00ac768edf0ff6bbb",
   "directory": "game",
-  "kind": "scoped-pond-turtle-real-video",
+  "kind": "scoped-turtle-walk-palette-match",
   "archiveBranch": "archive/before-frog-canon-cleanup-20260917",
   "production": {
     "url": "https://slime-evolution-five.vercel.app",
@@ -14,5 +14,5 @@
   },
   "baselineCommit": "cf841e09ad37da59a8edb1911200d6a41979c5cc",
   "baselineTree": "8290f60b6708eae7689ded9568264b70d5363eda",
-  "previousCandidateTree": "28af42874d11c618a130db9fb9c1800d1a77b53a"
+  "previousCandidateTree": "326bd98cc2fa119152af79293bbb15b62e854fdf"
 }

@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import {mkdir,writeFile} from 'node:fs/promises';
+import {mkdir,writeFile,readFile} from 'node:fs/promises';
 import {chromium,webkit} from 'playwright';
 const engine=process.env.BROWSER||'chromium',base=process.env.SMOKE_URL||'http://127.0.0.1:4173/';
 await mkdir('test-results',{recursive:true});
@@ -34,10 +34,17 @@ try{
   const x=c.getContext('2d');x.drawImage(im,0,0);const data=x.getImageData(0,0,1536,1536).data;let clear=0,solid=0,borders=0;const occupied=Array(16).fill(0);
   for(let y=0;y<1536;y++)for(let z=0;z<1536;z++){const a=data[(y*1536+z)*4+3];if(a===0)clear++;if(a>220){solid++;occupied[Math.floor(y/384)*4+Math.floor(z/384)]++;}
    if((y%384<2||y%384>381||z%384<2||z%384>381)&&a>10)borders++;}
-  return {width:im.width,height:im.height,clear,solid,borders,occupied};
+  const digest=async a=>Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',a)),b=>b.toString(16).padStart(2,'0')).join('');
+  const alpha=new Uint8Array(1536*1536),opaque=Array.from({length:16},()=>[]);
+  for(let y=0;y<1536;y++)for(let z=0;z<1536;z++){const j=(y*1536+z)*4;alpha[y*1536+z]=data[j+3];if(data[j+3]===255)opaque[Math.floor(y/384)*4+Math.floor(z/384)].push(data[j],data[j+1],data[j+2],255);}
+  const alphaSHA256=await digest(alpha),opaqueSHA256=await Promise.all(opaque.map(a=>digest(new Uint8Array(a))));
+  return {width:im.width,height:im.height,clear,solid,borders,occupied,alphaSHA256,opaqueSHA256};
  });report.atlas=atlas;
  assert.equal(atlas.width,1536);assert.equal(atlas.height,1536);assert.ok(atlas.clear>1400000);assert.ok(atlas.solid>250000);assert.equal(atlas.borders,0);
  assert.ok(atlas.occupied.slice(0,15).every(x=>x>5000));
+ const colorMetadata=JSON.parse(await readFile(new URL('../game/assets/enemies/pond-turtle-atlas.json',import.meta.url),'utf8')).walkColorMatch;
+ assert.equal(atlas.alphaSHA256,colorMetadata.source.alphaSHA256,'Browser decoded alpha must remain unchanged');
+ assert.deepEqual(atlas.opaqueSHA256,colorMetadata.output.cells.map(c=>c.opaqueRGBA_SHA256),'Every opaque sprite pixel must match the reviewed color bake');
  const behavior=await page.evaluate(async()=>{
   const q=__slimeGameQA,w=q.world,p=q.state.player;w.reset('turtle',120);w.update(.05,p,12);const types=w.enemies.map(e=>e.type),e=w.enemies[0];let spot;
   for(let a=0;a<64&&!spot;a++){const angle=a*Math.PI*2/64,x=Math.cos(angle)*2.6,z=Math.sin(angle)*2.6;
