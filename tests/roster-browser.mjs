@@ -86,7 +86,7 @@ try{
  for(const camera of ['game','side','top']){
   const state=await page.evaluate(camera=>{
    const q=__slimeGameQA,w=q.world,p=q.state.player;w.reset('all',180);w.update(.05,p,12);
-   w.enemies=w.enemies.filter(e=>e.type!=='spark').slice(0,2);w.enemies.forEach((e,i)=>{e.x=p[0]-2+i*4;e.z=p[2]-.5});
+   w.enemies=w.enemies.filter(e=>e.type==='thorn'||e.type==='water').slice(0,2);w.enemies.forEach((e,i)=>{e.x=p[0]-2+i*4;e.z=p[2]-.5});
    q.state.camera=camera;q.state.paused=true;q.draw();const gl=document.querySelector('#world').getContext('webgl2');gl.finish();
    return {camera,types:w.enemies.map(e=>e.type),gl:gl.getError(),errorHidden:document.querySelector('#error').hidden};
   },camera);
@@ -104,6 +104,6 @@ try{
  assert.ok(!requests.some(u=>/\/enemies\/(?:thorn|moss|petal|crystal)(?:[.-])/.test(u)),'no removed model/atlas requested');
  assert.deepEqual(errors,[]);
  report={...report,passed:true,result,attacks,death,cameras,skills,errors,requests,cancellations};
- console.log('THREE SPECIES VERIFIED',JSON.stringify({engine,transition:result.transition,models:result.models,attacks:attacks.map(e=>e.kind),skills:skills.length,errors}));
+ console.log('ROSTER VERIFIED',JSON.stringify({engine,transition:result.transition,models:result.models,attacks:attacks.map(e=>e.kind),skills:skills.length,errors}));
 }catch(e){report={...report,error:e.stack,errors,requests};console.error(JSON.stringify(report,null,2));process.exitCode=1;}
 finally{await writeFile(`test-results/roster-${engine}.json`,JSON.stringify(report,null,2));await browser.close();}
