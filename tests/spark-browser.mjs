@@ -27,17 +27,47 @@ try{
   if(!spot)throw Error('No open ground for real Spark collision test');
   Object.assign(e,spot,{hp:10000,maxHP:10000,attack:0,hit:0,sparkAge:null});delete e.sparkAge;w.enemies=[e];w.spawnClock=1e6;w.nextElite=1e6;q.combat.cooldown=1e6;
   const {sparkPose}=await import('./assets/spark-hedgehog.js');let frames=[],hp=[];
-  for(let i=0;i<20;i++){w.update(.05,p,12);frames.push(sparkPose(e).cell);hp.push(w.hp);q.draw();}
+  for(let i=0;i<30;i++){w.update(.05,p,12);frames.push(sparkPose(e).cell);hp.push(w.hp);q.draw();}
   const beforeDeath=w.kills;e.hit=.2;q.draw();const hitCell=q.sparkRenderer.stats.last.cell;
   e.hp=0;w.update(.05,p,12);q.draw();const died={corpse:w.sparkDead.length,cell:q.sparkRenderer.stats.last.cell,defeated:w.defeated.some(d=>d.type==='spark'),kills:w.kills-beforeDeath};
   for(let i=0;i<20;i++)w.update(.05,p,12);
   return {types,frames,hp,hitCell,died,expired:w.sparkDead.length};
  });
  report.simulation=simulation;
- assert.ok(simulation.types.every(t=>t==='spark'));assert.ok(simulation.hp.slice(0,6).every(h=>h===100));assert.ok(simulation.hp.some(h=>h===94));
+ assert.ok(simulation.types.every(t=>t==='spark'));assert.ok(simulation.hp.slice(0,18).every(h=>h===100));assert.ok(simulation.hp.some(h=>h===94));
  assert.ok([6,7,8,9,10,11].every(f=>simulation.frames.includes(f)));assert.equal(simulation.hitCell,12);assert.deepEqual(simulation.died,{corpse:1,cell:13,defeated:true,kills:1});assert.equal(simulation.expired,0);
+ const longRange=await page.evaluate(async()=>{
+  const q=__slimeGameQA,w=q.world,p=q.state.player;
+  w.reset('spark',60);w.update(.05,p,12);const e=w.enemies[0];let spot;
+  for(let a=0;a<64&&!spot;a++){
+   const angle=a*Math.PI*2/64,x=Math.cos(angle)*2.8,z=Math.sin(angle)*2.8;
+   if(Array.from({length:65},(_,i)=>q.canStand(p[0]+x*i/64,p[2]+z*i/64,.30)).every(Boolean))spot={x:p[0]+x,z:p[2]+z};
+  }
+  if(!spot)throw Error('No collision-clear 2.8-unit lane for long-range charge test');
+  Object.assign(e,spot,{hp:10000,maxHP:10000,attack:0,hit:0});delete e.sparkAge;delete e.sparkDashRemaining;
+  w.enemies=[e];w.spawnClock=w.nextElite=1e6;q.combat.cooldown=1e6;
+  const {sparkPose}=await import('./assets/spark-hedgehog.js'),trace=[],poses={};let elapsed=0;
+  for(let i=0;i<30;i++){
+   const x=e.x,z=e.z;w.update(.05,p,12);elapsed+=.05;
+   trace.push({time:elapsed,age:e.sparkAge??null,cell:sparkPose(e).cell,hp:w.hp,x:e.x,z:e.z,speed:Math.hypot(e.x-x,e.z-z)/.05});
+   if(i===5||i===13||i===18)poses[i===5?'charge':i===13?'dash':'impact']={...e};
+   q.draw();
+  }
+  return {range:2.8,start:spot,trace,poses};
+ });
+ report.longRange=longRange;
+ assert.ok(longRange.trace[0].age!==null,'skill must activate from 2.8 units, beyond the old 1.22 range');
+ assert.ok(longRange.trace.slice(0,12).every(t=>Math.hypot(t.x-longRange.start.x,t.z-longRange.start.z)<1e-8),'charge must remain stationary for .60s');
+ assert.ok(longRange.trace.slice(0,18).every(t=>t.hp===100),'no pre-impact damage');
+ assert.ok(longRange.trace.some(t=>t.hp===94));assert.equal(longRange.trace.filter((t,i)=>t.hp<(i?longRange.trace[i-1].hp:100)).length,1);
+ assert.ok(Math.abs(Math.max(...longRange.trace.map(t=>t.speed))-8)<1e-6,'dash speed must be doubled to 8 units/s');
+ assert.ok([6,7,8,9,10,11].every(c=>longRange.trace.some(t=>t.cell===c)));
+ for(const [name,pose] of Object.entries(longRange.poses)){
+  await page.evaluate(pose=>{const q=__slimeGameQA,w=q.world;w.enemies=[pose];q.state.camera='game';q.draw()},pose);
+  await capture(`long-range-${name}`);
+ }
  const cells=[];
- for(const [name,data] of [['run',{walkBlend:1,walkPhase:.22}],['charge',{sparkAge:.18}],['dash',{sparkAge:.3}],['impact',{sparkAge:.42}],['recovery',{sparkAge:.64}],['hurt',{hit:.2}],['death',{sparkDeath:.2}]]){
+ for(const [name,data] of [['run',{walkBlend:1,walkPhase:.22}],['charge',{sparkAge:.30}],['dash',{sparkAge:.72}],['impact',{sparkAge:.97}],['recovery',{sparkAge:1.20}],['hurt',{hit:.2}],['death',{sparkDeath:.2}]]){
   const result=await page.evaluate(({name,data})=>{
    const q=__slimeGameQA,w=q.world,p=q.state.player;w.reset('spark',60);w.update(.05,p,12);const e=w.enemies[0];
    Object.assign(e,{x:p[0]-1.6,z:p[2]-.1,yaw:Math.PI/2,sparkFacing:1,walkBlend:0,hit:0},data);w.enemies=[e];q.state.camera='game';q.draw();return {...q.sparkRenderer.stats.last,gl:document.querySelector('#world').getContext('webgl2').getError()};
@@ -55,6 +85,6 @@ try{
  }
  const mixed=await page.evaluate(()=>{const q=__slimeGameQA,w=q.world,p=q.state.player;w.reset('all',180);w.update(.05,p,12);w.enemies=w.enemies.slice(0,3);w.enemies.forEach((e,i)=>{e.x=p[0]-3+i*3;e.z=p[2]-.5;e.walkBlend=1;e.walkPhase=.2});q.draw();return w.enemies.map(e=>e.type)});assert.deepEqual(mixed,['thorn','spark','water']);await capture('mixed-roster');
  for(const camera of ['side','top']){await page.evaluate(camera=>{__slimeGameQA.state.camera=camera;__slimeGameQA.draw()},camera);await capture(camera);}
- assert.deepEqual(errors,[]);report={engine,url:base,passed:true,atlas,simulation,cells,runCells,leftCells,mixed,errors};console.log('SPARK GAMEPLAY VERIFIED',JSON.stringify(report));
+ assert.deepEqual(errors,[]);report={engine,url:base,passed:true,atlas,simulation,longRange,cells,runCells,leftCells,mixed,errors};console.log('SPARK GAMEPLAY VERIFIED',JSON.stringify(report));
 }catch(e){report={...report,error:e.stack,errors};await page.screenshot({path:`test-results/spark-${engine}-failure.png`}).catch(()=>{});console.error(report);process.exitCode=1;}
 finally{await writeFile(`test-results/spark-${engine}.json`,JSON.stringify(report,null,2));await browser.close();}

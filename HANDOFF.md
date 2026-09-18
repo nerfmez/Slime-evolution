@@ -1,3 +1,9 @@
+# Current tuning — Spark charge and longer/faster dash (2026-09-18)
+
+On top of deployed main 563ce996. Only the independent Spark module changes at runtime: trigger 3.0 units, stationary anticipation/charge .60s, dash 8.0 units/s, impact at .92s, total attack 1.29s. Normal movement, damage, cooldown, approved art and other systems stay unchanged. Aim/travel lock before charge and stop short of nearby players. Read docs/SPARK-HEDGEHOG.md; the existing Chromium/WebKit and live-production audit now include long-range motion traces.
+
+## Previous integration handoff
+
 # Current handoff — Spark Hedgehog approved-art integration
 
 Read docs/SPARK-HEDGEHOG.md first. Added `spark` independently at 60 seconds using the final supplied Run/Attack/Hurt/Death poses. One alpha atlas, common body scale/foot pivot/facing, separate telegraphed melee attack state. No old enemies restored and no other creature replaced. Ten exact main-bundle hooks reverse back to main 7ed257a5 before the existing provenance checks. Run tests/spark-browser.mjs in both browsers in addition to the commands below. All hosting remains the same original Vercel project.
