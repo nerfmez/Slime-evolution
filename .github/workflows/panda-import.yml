@@ -1,0 +1,65 @@
+name: Import reviewed Bamboo Panda
+on:
+  push:
+    branches: [feature/bamboo-panda-approved]
+    paths: [.github/workflows/panda-import.yml]
+permissions:
+  contents: write
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feature/bamboo-panda-approved
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Fetch checksum-verified, bounded owner artwork and integration
+        env:
+          PATCH_URL: 'https://sdmntprnznorth.oaiusercontent.com/files/00000000-7b80-820b-bcbd-a83337d114b7/raw?se=2026-09-18T10%3A47%3A10Z&sp=r&sv=2026-02-06&sr=b&scid=ed0fccbd-abd3-5972-86b3-e41d4f325f0c&skoid=27fbae2c-124f-4566-a0d8-1b07a5a41c53&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2026-09-18T01%3A51%3A56Z&ske=2026-09-19T01%3A51%3A56Z&sks=b&skv=2026-02-06&sig=T4VyBH%2BAJ40RdSBIU9wwxmwmL0tdA56rwF0Z%2BJ5uKEU%3D'
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD:game)" = '0ee1f341376fb02cddd04c899517ba6d8a097649'
+          curl --fail --location --retry 2 "$PATCH_URL" -o /tmp/panda.zip
+          echo '180d4b6078dd6b670eb5fa0b4a2e3b690393a64b6c50bbb996ecec5c4020c70d  /tmp/panda.zip' | sha256sum -c -
+          python3 - <<'PY'
+          import zipfile,json,pathlib,hashlib
+          h=lambda b:hashlib.sha256(b).hexdigest()
+          with zipfile.ZipFile('/tmp/panda.zip') as z:
+              m=json.loads(z.read('TRANSFER-MANIFEST.json')); assert len(m['files'])==29
+              assert set(z.namelist())==set(m['files'])|{'TRANSFER-MANIFEST.json'}
+              assert m['baseGameTree']=='0ee1f341376fb02cddd04c899517ba6d8a097649'
+              assert m['targetGameTree']=='4b7e3ef6e7e747aa5cb6d5dcb0dc8190800a7fff'
+              for name,v in m['files'].items():
+                  p=pathlib.Path(name)
+                  assert not p.is_absolute() and '..' not in p.parts
+                  assert p.parts[0] in ['game','art','docs','tests','tools','AGENTS.md','CANON.json','HANDOFF.md','.github']
+                  if p.parts[0]=='.github':assert name in ['.github/workflows/canon.yml','.github/workflows/verify-production.yml']
+                  assert (h(p.read_bytes()) if p.exists() else None)==v['parentSHA256'],name+' parent changed'
+                  b=z.read(name);assert len(b)==v['bytes'] and h(b)==v['sha256'],name
+                  p.parent.mkdir(parents=True,exist_ok=True);p.write_bytes(b)
+          pathlib.Path('/tmp/panda-files.json').write_text(json.dumps(list(m['files'])))
+          PY
+      - name: Verify all 43 tests, prior-game bytes and canonical build
+        run: npm test && npm run build
+      - name: Commit only the verified bounded changes to feature branch
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          python3 - <<'PY'
+          import json,subprocess
+          paths=json.load(open('/tmp/panda-files.json'))
+          subprocess.run(['git','add','--',*paths],check=True)
+          PY
+          git rm .github/workflows/panda-source.yml .github/workflows/panda-import.yml
+          git commit -m 'Integrate approved Bamboo Panda mini-boss with cleaned source-frame edges and long roll'
+          git push origin HEAD:feature/bamboo-panda-approved
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: panda-import-integrity
+          path: test-results/
+          retention-days: 14
