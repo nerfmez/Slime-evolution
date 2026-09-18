@@ -1,0 +1,55 @@
+name: Fix species reflect import
+on:
+  push:
+    branches: [feature/species-exp-elites]
+    paths: [.github/workflows/fix-species-import.yml]
+permissions:
+  contents: write
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Apply exact runtime import fix
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          import json
+          p=Path('species/assemble.mjs')
+          s=p.read_text()
+          old="source=one(source,'turtle path',\"from './pond-turtle.js';\",\"from './species/pond-turtle.js';\");"
+          new="source=one(source,'turtle path',\"import {createPondTurtleRenderer,turtleGuard,turtleDamage,tickTurtleWorld} from './pond-turtle.js';\",\"import {createPondTurtleRenderer,turtleGuard,turtleDamage,tickTurtleWorld,reflectEliteTurtleProjectile} from './species/pond-turtle.js';\");"
+          if s.count(old)!=1:
+              raise SystemExit(f'expected one old turtle hook, found {s.count(old)}')
+          p.write_text(s.replace(old,new))
+          c=Path('CANON.json')
+          data=json.loads(c.read_text())
+          data['runtimeTree']='8444809992a7c3138684dde49f97f39bbc21fd2f'
+          data['species']['assemblerSHA256']='767e41139eb81ad48f16fc7ad6a61d0490a265bf4c18174fad209e2825bcb5c8'
+          data['species']['tree']='2132ebd80c0410b0f28f185dc1517e63420db961'
+          c.write_text(json.dumps(data,indent=2,ensure_ascii=False)+'\n')
+          PY
+          rm .github/workflows/fix-species-import.yml
+      - name: Verify source, integrity and canonical build
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm test
+          GITHUB_SHA="$(git rev-parse HEAD)" npm run build
+          grep -F "reflectEliteTurtleProjectile} from './species/pond-turtle.js';" dist/assets/main-critter-v4.js
+      - name: Commit fixed branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --check
+          git commit -m "Fix elite turtle projectile reflect runtime import"
+          git push origin HEAD:feature/species-exp-elites
