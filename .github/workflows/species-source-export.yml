@@ -1,0 +1,18 @@
+name: Species source support
+on:
+  push:
+    branches: [feature/species-exp-elites]
+    paths: [.github/workflows/species-source-export.yml]
+permissions:
+  contents: read
+jobs:
+  source:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: tar -czf species-source-support.tar.gz AGENTS.md CANON.json HANDOFF.md README.md package.json vercel.json baseline-manifest.json roster-parent-manifest.json docs pacing scripts tests tools art .github
+      - uses: actions/upload-artifact@v4
+        with:
+          name: species-source-support
+          path: species-source-support.tar.gz
+          retention-days: 3
