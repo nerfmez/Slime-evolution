@@ -1,0 +1,44 @@
+name: Candidate lock helper
+on:
+  push:
+    branches: [feature/elite-frog-supplied-art]
+permissions:
+  contents: read
+jobs:
+  lock:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Compute species locks and candidate runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          SPECIES_ASM=$(sha256sum species/assemble.mjs | awk '{print $1}')
+          SPECIES_TREE=$(node --input-type=module -e "import {treeHash} from './scripts/canon.mjs'; console.log(await treeHash('species'))")
+          export SPECIES_ASM SPECIES_TREE
+          node --input-type=module <<'NODE'
+          import {readFile,writeFile} from 'node:fs/promises';
+          const c=JSON.parse(await readFile('CANON.json','utf8'));
+          c.species.assemblerSHA256=process.env.SPECIES_ASM;
+          c.species.tree=process.env.SPECIES_TREE;
+          await writeFile('CANON.json',JSON.stringify(c,null,2)+'\n');
+          NODE
+          set +e
+          OUT=$(npm run build 2>&1)
+          CODE=$?
+          set -e
+          printf '%s\n' "$OUT"
+          RUNTIME=$(printf '%s\n' "$OUT" | sed -n 's/.*Wrong assembled runtime: \([0-9a-f]\{40\}\); expected.*/\1/p' | tail -1)
+          if [ -z "$RUNTIME" ]; then
+            echo "Could not extract candidate runtime (build exit $CODE)" >&2
+            exit 1
+          fi
+          printf '{"speciesAssemblerSHA256":"%s","speciesTree":"%s","runtimeTree":"%s"}\n' "$SPECIES_ASM" "$SPECIES_TREE" "$RUNTIME" | tee candidate-lock.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: elite-frog-candidate-lock
+          path: candidate-lock.json
+          retention-days: 2
