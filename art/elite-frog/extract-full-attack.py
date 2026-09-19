@@ -5,7 +5,7 @@ Run: python art/elite-frog/extract-full-attack.py (Pillow, numpy, scipy).
 from pathlib import Path
 import hashlib,json
 import numpy as np
-from PIL import Image
+from PIL import Image,ImageFilter
 from scipy.ndimage import binary_propagation,binary_dilation
 root=Path(__file__).resolve().parents[2];art=root/'art/elite-frog'
 source=art/'approved-eight-frames.webp';sheet=Image.open(source).convert('RGB')
@@ -60,6 +60,8 @@ for i,(kind,n) in enumerate(order):
   f=oldframes[n];factor=bodyh/183
   # Area-aware downsampling, not high-resolution artwork displayed at a small scale.
   small=masters[n].resize((round(768*factor),round(288*factor)),Image.Resampling.LANCZOS)
+  # Match the old body atlas's already-softened edge profile at native texel size.
+  small=small.filter(ImageFilter.GaussianBlur(.45))
   dx=round(px-128*factor);dy=round(py-244*factor);cell.paste(small,(dx,dy))
   sx=small.width/768;sy=small.height/288
   mouth=[round(f['mouth'][0]*sx+dx,3),round(f['mouth'][1]*sy+dy,3)];closed=False
