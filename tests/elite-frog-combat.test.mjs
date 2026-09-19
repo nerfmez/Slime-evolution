@@ -29,7 +29,12 @@ test('damage follows the visible tongue instead of hitting the entire cone at on
  assert.equal(tongueTouchesPlayer(e,.48,.54,[3,0,2]),true);
  assert.equal(tongueTouchesPlayer(e,0,.66,[0,0,-3]),false);
  assert.equal(tongueTouchesPlayer(e,0,.66,[0,0,5.1]),false);
- const p=eliteFrogTonguePoints(e,.33);assert.equal(p.length,29);
- assert.ok(Math.abs(Math.hypot(p.at(-1).x,p.at(-1).z)-4.5)<1e-8);
+ const p=eliteFrogTonguePoints(e,.33);assert.equal(p.length,49);
+ const furthest=Math.max(...p.map(q=>Math.hypot(q.x,q.z)));
+ assert.ok(furthest>4.49&&furthest<=4.5);
+ assert.ok(Math.hypot(p.at(-1).x,p.at(-1).z)<furthest-.6);
+ assert.ok(p.at(-1).y>p[30].y+1.4); // Raised return hook, matching the video.
+ assert.ok(eliteFrogTonguePoints(e,0).every(q=>q.width===0));
+ assert.ok(eliteFrogTonguePoints(e,.66).every(q=>q.width===0));
  assert.equal(eliteFrogTonguePoints({...e,hp:0},.33).length,0);
 });
