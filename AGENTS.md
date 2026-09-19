@@ -1,3 +1,7 @@
+# Current correction — visible tongue sweep, no sector graphic
+
+The user clarified that the TONGUE itself must visibly reach and sweep across the player. Do not draw a cone/sector on the ground, before OR after the strike. `elite-frog-combat.js` now shares its curved tongue centreline with the `elite-frog-tongue.js` WebGL ribbon renderer. The tongue extends, sweeps 120 degrees to 4.5 units, then retracts (.66 seconds total after .55-second anticipation). Apply damage and three-second poison only on actual swept tongue contact, once per attack. Use the supplied open-mouth body frame during the ribbon so there is no duplicate short tongue. Keep the larger Elite body and the normal Frog unchanged.
+
 # Current Elite Frog correction — 2026-09-19
 
 Elite Frog uses the supplied separate atlas from PR #27; normal Frog remains unchanged. Its cell world size is now 1.95 (previously 1.22), approximately 60% larger. `species/elite-frog-combat.js` owns the 4.5-unit, 120-degree sector and three-second poison. Aim locks during the .55-second animation anticipation; ordinary hits cannot cancel it. The user explicitly requested NO warning area: draw the sector only after impact, never during windup. Recovery lasts .22 seconds. The flipped sprite keeps the same body pivot. Preserve other creatures, art, stats and rewards.

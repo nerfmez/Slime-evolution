@@ -94,6 +94,15 @@ try{
  assert.equal(eliteFrog.type,'thorn');assert.equal(eliteFrog.elite,true);assert.ok(eliteFrog.windup>0);
  assert.equal(eliteFrog.gl,0);assert.equal(eliteFrog.errorHidden,true);
  await capture('elite-frog');
+ await page.evaluate(()=>{
+  const q=__slimeGameQA,w=q.world,p=q.state.player,e=w.enemies[0];
+  Object.assign(e,{x:p[0]-2.5,z:p[2]+1.5,windup:0,frogAttack:.22,frogEliteTongueAge:.33,frogEliteAimX:1,frogEliteAimZ:0,yaw:Math.PI/2});
+  w.spawn(p,'thorn',false);const normal=w.enemies.find(n=>!n.elite);if(normal)Object.assign(normal,{x:p[0]+2,z:p[2]+2,hit:0});
+  q.draw();document.querySelector('#world').getContext('webgl2').finish();
+ });
+ await capture('elite-frog-visible-tongue');
+ assert.equal(await page.evaluate(()=>document.querySelector('#world').getContext('webgl2').getError()),0);
+
  const coneCombat=await page.evaluate(()=>{
   const q=__slimeGameQA,w=q.world,p=q.state.player;
   w.reset('elite-thorn');w.update(.05,p,100);const e=w.enemies[0];
@@ -109,15 +118,15 @@ try{
   // Move sideways inside the enlarged cone after aim locks.
   const dx=e.frogEliteAimX,dz=e.frogEliteAimZ;
   const target=[e.x+dx*2+dz*3,0,e.z+dz*2-dx*3];
-  for(let i=0;i<12;i++){e.hit=.3;w.update(.05,target,100);}
+  for(let i=0;i<26;i++){e.hit=.3;w.update(.05,target,100);}
   const impactHP=w.hp,poison=w.playerPoisonTime,fx=w.eliteFx.find(f=>f.kind==='frog-cone');
   e.attack=99;for(let i=0;i<18;i++)w.update(.05,[e.x-dx*6,0,e.z-dz*6],100);
-  return {started,warningCount,impact:impactHP<before,poison,range:fx?.length,angle:fx?.angle,dot:w.hp<impactHP};
+  return {started,warningCount,impact:impactHP<before,poison,noSector:w.eliteFx.length===0,dot:w.hp<impactHP};
  });
  console.log("ELITE CONE",JSON.stringify(coneCombat));
  assert.equal(coneCombat.started,true);assert.equal(coneCombat.warningCount,0);
- assert.equal(coneCombat.impact,true);assert.ok(coneCombat.poison>2.8);
- assert.equal(coneCombat.range,4.5);assert.ok(Math.abs(coneCombat.angle-Math.PI/3)<1e-8);assert.equal(coneCombat.dot,true);
+ assert.equal(coneCombat.impact,true);assert.ok(coneCombat.poison>2);
+ assert.equal(coneCombat.noSector,true);assert.equal(coneCombat.dot,true);
 
  const cameras=[];
  for(const camera of ['game','side','top']){

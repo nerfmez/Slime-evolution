@@ -1,3 +1,4 @@
+import {createEliteFrogTongueRenderer} from './elite-frog-tongue.js';
 import {ELITE_FROG_WINDUP,ELITE_FROG_RECOVERY} from './elite-frog-combat.js';
 // Elite Moss Frog sprite renderer built from the user's supplied two-sheet art.
 // The ordinary Moss Frog remains on the approved frog-moveset.png renderer.
@@ -26,14 +27,9 @@ export function eliteFrogPose(e){
     return ELITE_FROG_FRAME.death[Math.min(2,Math.floor(age/.13))];
   }
   // The poison tongue has priority over hit-stun, matching Elite gameplay.
-  if((e?.windup||0)>0){
-    const progress=1-clamp01(e.windup/ELITE_FROG_WINDUP);
-    return ELITE_FROG_FRAME.attack[Math.min(5,Math.floor(progress*6))];
-  }
-  if((e?.frogAttack||0)>0){
-    const progress=1-clamp01(e.frogAttack/ELITE_FROG_RECOVERY);
-    return ELITE_FROG_FRAME.attack[6+Math.min(1,Math.floor(progress*2))];
-  }
+  if(e?.frogEliteTongueAge!=null)return ELITE_FROG_FRAME.attack[1];
+  if((e?.windup||0)>0)return e.windup>ELITE_FROG_WINDUP*.55?ELITE_FROG_FRAME.attack[0]:ELITE_FROG_FRAME.attack[1];
+  if((e?.frogAttack||0)>0)return ELITE_FROG_FRAME.attack[7];
   if((e?.hit||0)>0)return ELITE_FROG_FRAME.hit;
   if(e?.frogHopActive){
     const progress=clamp01(e.frogHopPhase||0);
@@ -81,6 +77,7 @@ export async function createEliteFrogRenderer(gl,{program,geometry,uniform,rende
     }`);
   const g=geometry(gl,[-.5,.5,0,.5,.5,0,.5,-.5,0,-.5,-.5,0],null,[0,1,1,1,1,0,0,0],[0,2,1,0,3,2]);
   gl.useProgram(p);gl.uniform1i(gl.getUniformLocation(p,'atlas'),12);gl.uniform1i(gl.getUniformLocation(p,'canopy'),1);
+  const tongue=createEliteFrogTongueRenderer(gl,{program,geometry,uniform,render});
   const stats={calls:0,poses:{},last:null,textureBytes:ELITE_FROG_ATLAS_WIDTH*ELITE_FROG_ATLAS_HEIGHT*4};
   return {stats,draw(e,vp,player,camera=[0,12,15]){
     const frame=eliteFrogPose(e),facing=eliteFrogFacing(e),lift=eliteFrogLift(e),size=ELITE_FROG_CELL_WORLD*(e.scale||1);
@@ -89,6 +86,7 @@ export async function createEliteFrogRenderer(gl,{program,geometry,uniform,rende
     gl.disable(gl.CULL_FACE);gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);gl.depthMask(true);render(gl,g);gl.disable(gl.BLEND);
     const name=frame===0?'idle':frame===1?'hit':frame<=4?'death':frame<=12?'walk':'attack';
     stats.calls++;stats.poses[name]=(stats.poses[name]||0)+1;stats.last={id:e.id,frame,name,facing,size,lift};
-    return {calls:1,triangles:2};
+    const sweep=tongue.draw(e,vp,camera);
+    return {calls:1+sweep.calls,triangles:2+sweep.triangles};
   }};
 }
