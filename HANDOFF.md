@@ -1,3 +1,7 @@
+# Current correction — original image pixels, not procedural tongue art
+
+The user rejected the code-drawn tongue because its style does not match the Frog. All visible tongue and poison must now come from `species/enemies/elite-frog-tongue.webp`, ten frames extracted from the supplied H3 video. No procedural ribbon colors, outlines, highlights or mist. `art/elite-frog/extract-tongue.py` and `tongue-source.json` record extraction and source/atlas hashes. The image renderer uses the same canopy lighting as the body. Solid-tongue pixel samples (excluding mist) drive contact; the same frame, scale and orientation drive rendering. Preserve the broad sweep, poison, larger Elite, normal Frog and absence of ground warnings.
+
 # Current refinement — curled tongue from supplied video
 
 Use the supplied 5.2-second frog clip as the movement reference: narrow shaft, raised backward hook, rounded fleshy tip and close-fitting green/purple poison mist. The shared tongue path now has 48 segments and smooth extension/retraction; preserve 4.5-unit reach, 120-degree sweep, once-per-attack contact damage and three-second poison. Mist is cosmetic and must never become a ground sector or warning area. Body art, Elite size and normal Frog remain unchanged.
