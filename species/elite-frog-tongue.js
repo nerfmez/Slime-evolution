@@ -1,6 +1,6 @@
 import {eliteFrogTongueState,eliteFrogTongueBasis} from './elite-frog-combat.js';
 import {TONGUE_ART} from './elite-frog-tongue-frames.js';
-// Every visible tongue/poison pixel comes from the supplied video atlas.
+// Every visible tongue/poison pixel comes from the approved eight-frame atlas.
 // This shader only places and lights the image, exactly like the Frog body.
 export async function createEliteFrogTongueRenderer(gl,{program,geometry,uniform,render}){
  const url=new URL('./enemies/elite-frog-tongue.webp',import.meta.url),response=await fetch(url);
@@ -34,7 +34,7 @@ export async function createEliteFrogTongueRenderer(gl,{program,geometry,uniform
  const mesh=geometry(gl,[0,1,0,1,1,0,1,0,0,0,0,0],null,[0,1,1,1,1,0,0,0],[0,2,1,0,3,2]);
  gl.useProgram(p);gl.uniform1i(gl.getUniformLocation(p,'atlas'),12);gl.uniform1i(gl.getUniformLocation(p,'canopy'),1);
  return {draw(e,vp,player){
-  const state=eliteFrogTongueState(e);if(!state||state.scale<=0)return {calls:0,triangles:0};
+  const state=eliteFrogTongueState(e);if(!state||state.closed||state.scale<=0)return {calls:0,triangles:0};
   const basis=eliteFrogTongueBasis(e,state.angle);
   gl.activeTexture(gl.TEXTURE12);gl.bindTexture(gl.TEXTURE_2D,texture);gl.activeTexture(gl.TEXTURE0);gl.useProgram(p);
   for(const [key,value] of Object.entries({vp,origin:[e.x,.90*(e.scale||1),e.z],forward:basis.forward,up:basis.up,pixelSize:TONGUE_ART.pixelWorld*state.scale,rect:state.rect,player}))uniform(gl,p,key,value);

@@ -1,0 +1,98 @@
+{
+  "sources": {
+    "exec-83e75bcb-61f9-45a6-8fa4-2cd675eaeecb.png": "014b75af36ae1b8b94c104fe1466a48b780c570ad31cd1495253510f8d39fb89",
+    "exec-e6733fe8-9a5d-4147-8168-1cc16704191c.png": "e42f5f94e9e4dbd2bae3e1eb7d2624638371ecf7c9cd77ce0d0feeca2ab4d129"
+  },
+  "frames": [
+    {
+      "sourceFrame": 0,
+      "originalSheet": "exec-83e75bcb-61f9-45a6-8fa4-2cd675eaeecb.png",
+      "originalCell": 0,
+      "mouth": [
+        168,
+        136
+      ],
+      "closed": false
+    },
+    {
+      "sourceFrame": 1,
+      "originalSheet": "exec-83e75bcb-61f9-45a6-8fa4-2cd675eaeecb.png",
+      "originalCell": 3,
+      "mouth": [
+        166,
+        129
+      ],
+      "closed": false
+    },
+    {
+      "sourceFrame": 2,
+      "originalSheet": "exec-83e75bcb-61f9-45a6-8fa4-2cd675eaeecb.png",
+      "originalCell": 5,
+      "mouth": [
+        166,
+        119
+      ],
+      "closed": false
+    },
+    {
+      "sourceFrame": 3,
+      "originalSheet": "exec-83e75bcb-61f9-45a6-8fa4-2cd675eaeecb.png",
+      "originalCell": 7,
+      "mouth": [
+        166,
+        110
+      ],
+      "closed": false
+    },
+    {
+      "sourceFrame": 4,
+      "originalSheet": "exec-e6733fe8-9a5d-4147-8168-1cc16704191c.png",
+      "originalCell": 0,
+      "mouth": [
+        167,
+        136
+      ],
+      "closed": false
+    },
+    {
+      "sourceFrame": 5,
+      "originalSheet": "exec-e6733fe8-9a5d-4147-8168-1cc16704191c.png",
+      "originalCell": 4,
+      "mouth": [
+        168,
+        120
+      ],
+      "closed": false
+    },
+    {
+      "sourceFrame": 6,
+      "originalSheet": "exec-e6733fe8-9a5d-4147-8168-1cc16704191c.png",
+      "originalCell": 6,
+      "mouth": [
+        168,
+        111
+      ],
+      "closed": false
+    },
+    {
+      "sourceFrame": 7,
+      "originalSheet": "exec-e6733fe8-9a5d-4147-8168-1cc16704191c.png",
+      "originalCell": 7,
+      "mouth": [
+        150,
+        111
+      ],
+      "closed": true
+    }
+  ],
+  "ends": [
+    0.12,
+    0.25,
+    0.39,
+    0.48,
+    0.55,
+    0.6,
+    0.64,
+    0.66
+  ]
+}

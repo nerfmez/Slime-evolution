@@ -1,3 +1,7 @@
+# Current request — eight approved sweep/retraction frames
+
+The user approved the edited follow-through and requested eight frames integrated into the game. `art/elite-frog/approved-eight-frames.webp` contains the selected original pixels: five sweep/follow-through poses, two retraction poses, then closed mouth. `eight-frame-selection.json` records the original sheets/cells; rebuild the transparent 2×4 tongue atlas with `extract-eight-frame-tongue.py`. The historical video extractor below does not build the current atlas. All visible tongue/venom comes from these images. The last frame closes the body mouth and has no tongue/contact samples. Keep the .66s attack, 4.5-unit maximum reach, 120-degree sweep, once-only contact damage, three-second poison, Elite size and no ground warning. Normal Frog and other creatures stay unchanged.
+
 # Current correction — original image pixels, not procedural tongue art
 
 The user rejected the code-drawn tongue because its style does not match the Frog. All visible tongue and poison must now come from `species/enemies/elite-frog-tongue.webp`, ten frames extracted from the supplied H3 video. No procedural ribbon colors, outlines, highlights or mist. `art/elite-frog/extract-tongue.py` and `tongue-source.json` record extraction and source/atlas hashes. The image renderer uses the same canopy lighting as the body. Solid-tongue pixel samples (excluding mist) drive contact; the same frame, scale and orientation drive rendering. Preserve the broad sweep, poison, larger Elite, normal Frog and absence of ground warnings.

@@ -1,5 +1,5 @@
 import {createEliteFrogTongueRenderer} from './elite-frog-tongue.js';
-import {ELITE_FROG_WINDUP,ELITE_FROG_RECOVERY} from './elite-frog-combat.js';
+import {ELITE_FROG_WINDUP,ELITE_FROG_RECOVERY,eliteFrogTongueState} from './elite-frog-combat.js';
 // Elite Moss Frog sprite renderer built from the user's supplied two-sheet art.
 // The ordinary Moss Frog remains on the approved frog-moveset.png renderer.
 export const ELITE_FROG_ATLAS_WIDTH=320;
@@ -27,7 +27,7 @@ export function eliteFrogPose(e){
     return ELITE_FROG_FRAME.death[Math.min(2,Math.floor(age/.13))];
   }
   // The poison tongue has priority over hit-stun, matching Elite gameplay.
-  if(e?.frogEliteTongueAge!=null)return ELITE_FROG_FRAME.attack[1];
+  if(e?.frogEliteTongueAge!=null)return ELITE_FROG_FRAME.attack[eliteFrogTongueState(e)?.closed?7:1];
   if((e?.windup||0)>0)return e.windup>ELITE_FROG_WINDUP*.55?ELITE_FROG_FRAME.attack[0]:ELITE_FROG_FRAME.attack[1];
   if((e?.frogAttack||0)>0)return ELITE_FROG_FRAME.attack[7];
   if((e?.hit||0)>0)return ELITE_FROG_FRAME.hit;

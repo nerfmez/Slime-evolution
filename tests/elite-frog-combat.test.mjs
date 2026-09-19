@@ -30,7 +30,11 @@ test('damage follows the visible tongue instead of hitting the entire cone at on
  assert.equal(tongueTouchesPlayer(e,0,.66,[0,0,-3]),false);
  assert.equal(tongueTouchesPlayer(e,0,.66,[0,0,5.1]),false);
  assert.ok(eliteFrogTonguePoints(e,.33).length>50);
- assert.equal(eliteFrogTongueState(e,.56).reach,4.5);
+ assert.equal(eliteFrogTongueState(e,.20).reach,4.5);
+ assert.ok(eliteFrogTongueState(e,.56).reach<eliteFrogTongueState(e,.52).reach);
+ assert.ok(eliteFrogTongueState(e,.61).reach<eliteFrogTongueState(e,.56).reach);
+ assert.equal(eliteFrogTongueState(e,.65).closed,true);
+ assert.equal(eliteFrogTonguePoints(e,.65).length,0);
  assert.ok(eliteFrogTongueState(e,.61).reach<1.6);
  assert.equal(tongueTouchesPlayer(e,.61,.66,[3.5,0,2]),false); // Mist persists; solid tongue has retracted.
  assert.equal(eliteFrogTonguePoints(e,0).length,0);
@@ -38,12 +42,17 @@ test('damage follows the visible tongue instead of hitting the entire cone at on
  assert.equal(eliteFrogTonguePoints({...e,hp:0},.33).length,0);
 });
 
-test('tongue image is the hash-locked supplied-video extraction',async()=>{
+test('tongue image has eight hash-locked approved sweep and retraction frames',async()=>{
  const {readFile}=await import('node:fs/promises');
  const {createHash}=await import('node:crypto');
  const meta=JSON.parse(await readFile(new URL('../art/elite-frog/tongue-source.json',import.meta.url),'utf8'));
  const atlas=await readFile(new URL('../species/enemies/elite-frog-tongue.webp',import.meta.url));
  assert.equal(createHash('sha256').update(atlas).digest('hex'),meta.atlasSHA256);
- assert.equal(meta.frames.length,10);
- assert.equal(new Set(meta.frames.map(f=>f.sourceFrame)).size,10);
+ assert.equal(meta.frames.length,8);
+ const source=await readFile(new URL('../art/elite-frog/'+meta.source,import.meta.url));
+ assert.equal(createHash('sha256').update(source).digest('hex'),meta.sourceSHA256);
+ assert.equal(meta.ends.length,8);
+ assert.equal(meta.frames[7].closed,true);
+ assert.equal(meta.frames[7].samples.length,0);
+ assert.equal(new Set(meta.frames.map(f=>f.sourceFrame)).size,8);
 });
