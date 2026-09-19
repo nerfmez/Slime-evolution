@@ -2,13 +2,12 @@ import {eliteFrogTonguePoints,ELITE_FROG_TONGUE_SEGMENTS} from './elite-frog-com
 // Reusable tongue and close-fitting poison mist; no ground or sector geometry.
 export function createEliteFrogTongueRenderer(gl,{program,geometry,uniform,render}){
  const count=ELITE_FROG_TONGUE_SEGMENTS+1,positions=new Float32Array(count*6),uv=[],indices=[];
- for(let i=0;i<count;i++){uv.push(i/(count-1),0,i/(count-1),1);if(i<count-1){const a=i*2;indices.push(a,a+1,a+2,a+1,a+3,a+2);}}
+ for(let i=0;i<count;i++){const t=1-Math.pow(1-i/(count-1),1.4);uv.push(t,0,t,1);if(i<count-1){const a=i*2;indices.push(a,a+1,a+2,a+1,a+3,a+2);}}
  const mesh=geometry(gl,positions,null,uv,indices);
  const vertex=`layout(location=0)in vec3 position;layout(location=2)in vec2 uv;uniform mat4 vp;out vec2 UV;void main(){UV=uv;gl_Position=vp*vec4(position,1.);}`;
  const p=program(gl,vertex,`in vec2 UV;out vec4 color;
  void main(){
-  float edge=abs(UV.y-.5)*2.,tip=smoothstep(.965,1.,UV.x);
-  if(edge>sqrt(max(0.,1.-tip*tip)))discard;
+  float edge=abs(UV.y-.5)*2.;
   float grain=sin(UV.x*113.+sin(UV.y*37.))*sin(UV.y*83.+UV.x*59.);
   vec3 flesh=mix(vec3(.48,.16,.19),vec3(.87,.43,.35),sqrt(max(0.,1.-edge*edge)));
   flesh+=grain*.023;

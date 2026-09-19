@@ -18,15 +18,15 @@ export function eliteFrogTonguePoints(e,age=e.frogEliteTongueAge){
  const tipAngle=aim-ELITE_FROG_HALF_ANGLE+2*ELITE_FROG_HALF_ANGLE*sweep;
  const points=[];
  for(let i=0;i<=ELITE_FROG_TONGUE_SEGMENTS;i++){
-  const t=i/ELITE_FROG_TONGUE_SEGMENTS;
+  const t=1-Math.pow(1-i/ELITE_FROG_TONGUE_SEGMENTS,1.4);
   // Reference clip: a narrow shaft opens into a raised, backward-curled tip.
   // The hook is part of the same collision path, never a separate fake effect.
   const shaft=clamp(t/.625),hook=clamp((t-.625)/.375),theta=hook*Math.PI*.95;
   const r=reach*(3.7*shaft+.8*Math.sin(theta));
   const angle=tipAngle-.13*Math.sin(Math.PI*shaft)*(1-hook);
   const mouth=.90*(e.scale||1),y=mouth+reach*((.38-mouth)*shaft+.8*(1-Math.cos(theta)));
-  const bulb=Math.sin(Math.PI*clamp((t-.70)/.30));
-  const width=(.075+.045*shaft+.075*bulb)*reach;
+  const bulb=clamp((t-.72)/.18),cap=clamp((t-.94)/.06);
+  const width=(.075+.045*shaft+.065*bulb)*Math.sqrt(1-cap*cap)*reach;
   points.push({x:e.x+Math.sin(angle)*r,z:e.z+Math.cos(angle)*r,y,width});
  }
  return points;
