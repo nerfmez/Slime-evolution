@@ -108,6 +108,11 @@ try{
 
  assert.equal(await page.evaluate(()=>document.querySelector('#world').getContext('webgl2').getError()),0);
 
+ for(const [label,x,z] of [['toward',0,1],['away',0,-1],['left',-1,0]]){
+  await page.evaluate(({x,z})=>{const q=__slimeGameQA,e=q.world.enemies.find(e=>e.elite);Object.assign(e,{frogEliteTongueAge:.33,frogEliteAimX:x,frogEliteAimZ:z,yaw:Math.atan2(x,z)});q.draw();const gl=document.querySelector('#world').getContext('webgl2');gl.finish();if(gl.getError())throw Error('Tongue image GL error');},{x,z});
+  await capture('elite-frog-image-'+label);
+ }
+
  const coneCombat=await page.evaluate(()=>{
   const q=__slimeGameQA,w=q.world,p=q.state.player;
   w.reset('elite-thorn');w.update(.05,p,100);const e=w.enemies[0];

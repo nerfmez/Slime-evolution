@@ -1,47 +1,45 @@
-// The visible tongue centreline is also the collision path. No ground sector.
+import {TONGUE_ART} from './elite-frog-tongue-frames.js';
+// Contact samples come from solid tongue pixels, excluding painted poison mist.
 export const ELITE_FROG_RANGE=4.5;
 export const ELITE_FROG_HALF_ANGLE=Math.PI/3;
 export const ELITE_FROG_WINDUP=.55;
 export const ELITE_FROG_RECOVERY=.22;
 export const ELITE_FROG_TONGUE_DURATION=.66;
-export const ELITE_FROG_TONGUE_SEGMENTS=48;
 const clamp=v=>Math.max(0,Math.min(1,v));
 export function insideEliteFrogCone(x,z,dx,dz){
  const distance=Math.hypot(x,z);
  return distance<=ELITE_FROG_RANGE&&(distance<1e-6||(x*dx+z*dz)/distance>=Math.cos(ELITE_FROG_HALF_ANGLE));
 }
-export function eliteFrogTonguePoints(e,age=e.frogEliteTongueAge){
- if(age==null||age<0||age>ELITE_FROG_TONGUE_DURATION||e.hp<=0||e.frogDeath!=null)return [];
+// Frame choice and extent are shared by the image renderer and contact test.
+export function eliteFrogTongueState(e,age=e.frogEliteTongueAge){
+ if(age==null||age<0||age>=ELITE_FROG_TONGUE_DURATION||e.hp<=0||e.frogDeath!=null)return null;
+ const ends=[.025,.05,.075,.12,.20,.30,.40,.54,.60,.66];
+ const frame=ends.findIndex(end=>age<end),art=TONGUE_ART.frames[frame];
  const ease=v=>v*v*(3-2*v);
- const reach=ease(clamp(age/.12))*ease(clamp((ELITE_FROG_TONGUE_DURATION-age)/.12));
+ const scale=ease(clamp(age/.045))*ease(clamp((ELITE_FROG_TONGUE_DURATION-age)/.06));
  const sweep=clamp((age-.12)/.42),aim=Math.atan2(e.frogEliteAimX??0,e.frogEliteAimZ??1);
- const tipAngle=aim-ELITE_FROG_HALF_ANGLE+2*ELITE_FROG_HALF_ANGLE*sweep;
- const points=[];
- for(let i=0;i<=ELITE_FROG_TONGUE_SEGMENTS;i++){
-  const t=1-Math.pow(1-i/ELITE_FROG_TONGUE_SEGMENTS,1.4);
-  // Reference clip: a narrow shaft opens into a raised, backward-curled tip.
-  // The hook is part of the same collision path, never a separate fake effect.
-  const shaft=clamp(t/.625),hook=clamp((t-.625)/.375),theta=hook*Math.PI*.95;
-  const r=reach*(3.7*shaft+.8*Math.sin(theta));
-  const angle=tipAngle-.13*Math.sin(Math.PI*shaft)*(1-hook);
-  const mouth=.90*(e.scale||1),y=mouth+reach*((.38-mouth)*shaft+.8*(1-Math.cos(theta)));
-  const bulb=clamp((t-.72)/.18),cap=clamp((t-.94)/.06);
-  const width=(.075+.045*shaft+.065*bulb)*Math.sqrt(1-cap*cap)*reach;
-  points.push({x:e.x+Math.sin(angle)*r,z:e.z+Math.cos(angle)*r,y,width});
- }
- return points;
+ return {frame,rect:art.rect,scale,reach:art.reach*scale,angle:aim-ELITE_FROG_HALF_ANGLE+2*ELITE_FROG_HALF_ANGLE*sweep};
 }
-function distanceToSegment(x,z,a,b){
- const dx=b.x-a.x,dz=b.z-a.z,length=dx*dx+dz*dz;
- const t=length?clamp(((x-a.x)*dx+(z-a.z)*dz)/length):0;
- return Math.hypot(x-a.x-t*dx,z-a.z-t*dz);
+export function eliteFrogTongueBasis(e,angle){
+ const x=Math.sin(angle),z=Math.cos(angle),sign=(e.frogEliteAimX??1)<0?-1:1;
+ const length=Math.hypot(12*z,15*x,12*x);
+ return {forward:[x,0,z],up:[12*z/length*sign,15*x/length*sign,-12*x/length*sign]};
+}
+export function eliteFrogTonguePoints(e,age=e.frogEliteTongueAge){
+ const state=eliteFrogTongueState(e,age);if(!state||state.scale===0)return [];
+ const basis=eliteFrogTongueBasis(e,state.angle),pixel=TONGUE_ART.pixelWorld*state.scale;
+ return TONGUE_ART.frames[state.frame].samples.map(([x,y,r])=>({
+  x:e.x+(basis.forward[0]*x+basis.up[0]*y)*pixel,
+  z:e.z+(basis.forward[2]*x+basis.up[2]*y)*pixel,
+  width:r*pixel
+ }));
 }
 export function tongueTouchesPlayer(e,from,to,player,radius=.25){
  // Subsample time as well as length so a fast sweep cannot tunnel on slow frames.
  const samples=Math.max(1,Math.ceil((to-from)/.008));
  for(let j=0;j<=samples;j++){
   const points=eliteFrogTonguePoints(e,from+(to-from)*j/samples);
-  for(let i=1;i<points.length;i++)if(distanceToSegment(player[0],player[2],points[i-1],points[i])<=radius+points[i].width)return true;
+  for(const point of points)if(Math.hypot(player[0]-point.x,player[2]-point.z)<=radius+point.width)return true;
  }
  return false;
 }
