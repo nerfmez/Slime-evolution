@@ -5,7 +5,7 @@ export const ELITE_FROG_RANGE=4.5;
 export const ELITE_FROG_HALF_ANGLE=Math.PI/3;
 export const ELITE_FROG_WINDUP=.55;
 export const ELITE_FROG_RECOVERY=.22;
-export const ELITE_FROG_TONGUE_DURATION=.66;
+export const ELITE_FROG_TONGUE_DURATION=ATTACK_ART.duration;
 const clamp=v=>Math.max(0,Math.min(1,v));
 export function insideEliteFrogCone(x,z,dx,dz){
  const distance=Math.hypot(x,z);

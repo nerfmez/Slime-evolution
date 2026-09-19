@@ -40,7 +40,7 @@ test('supplied Elite Frog atlas has dedicated idle/hit/death, eight movement and
  assert.deepEqual([0,.13,.26].map(frogDeath=>eliteFrogPose({...base,hp:0,frogDeath})),[2,3,4]);
  assert.deepEqual([.01,.14,.27,.39,.51,.64,.76,.89].map(frogHopPhase=>eliteFrogPose({...base,frogHopActive:true,frogHopPhase})),[5,6,7,8,9,10,11,12]);
  const tongue=[.55,.45,.35,.25,.15,.05].map(windup=>eliteFrogPose({...base,hit:.3,windup,frogAttack:.38}));
- assert.deepEqual(tongue,[20,20,20,20,20,20]);assert.equal(eliteFrogPose({...base,hit:.3,frogEliteTongueAge:.3}),15);assert.equal(eliteFrogPose({...base,hit:.3,frogAttack:.20}),20);assert.equal(eliteFrogPose({...base,hit:.3,frogAttack:.01}),20);
+ assert.deepEqual(tongue,[13,13,13,14,14,14]);assert.equal(eliteFrogPose({...base,hit:.3,frogEliteTongueAge:.3}),16);assert.equal(eliteFrogPose({...base,hit:.3,frogAttack:.20}),20);assert.equal(eliteFrogPose({...base,hit:.3,frogAttack:.01}),20);
  assert.ok(eliteFrogLift({...base,frogHopActive:true,frogHopPhase:.55})>.25);assert.equal(eliteFrogLift({...base,frogHopActive:true,frogHopPhase:.55,frogAttack:.2}),0);
 });
 
