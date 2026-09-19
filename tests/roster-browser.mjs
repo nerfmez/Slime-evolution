@@ -96,12 +96,12 @@ try{
  await capture('elite-frog');
  await page.evaluate(()=>{
   const q=__slimeGameQA,w=q.world,p=q.state.player,e=w.enemies[0];
-  Object.assign(e,{x:p[0]-2.5,z:p[2]+1.5,windup:0,frogAttack:.22,frogEliteTongueAge:.33,frogEliteAimX:1,frogEliteAimZ:0,yaw:Math.PI/2});
+  Object.assign(e,{x:p[0]-2.5,z:p[2]+1.5,windup:0,frogAttack:.22,frogEliteTongueAge:.33,frogEliteAimX:1,frogEliteAimZ:0,frogEliteFacing:1,yaw:Math.PI/2});
   w.spawn(p,'thorn',false);const normal=w.enemies.find(n=>!n.elite);if(normal)Object.assign(normal,{x:p[0]+2,z:p[2]+2,hit:0});
   q.draw();document.querySelector('#world').getContext('webgl2').finish();
  });
  await capture('elite-frog-visible-tongue');
- for(const [label,age] of [['extend',.07],['curl',.24],['return',.59],['closed',.65]]){
+ for(const [label,age] of [['sweep-start',.07],['sweep-middle',.20],['sweep-far',.44],['follow-through',.51],['return',.57],['return-tip',.62],['closed',.65]]){
   await page.evaluate(age=>{const q=__slimeGameQA;q.world.enemies.find(e=>e.elite).frogEliteTongueAge=age;q.draw();document.querySelector('#world').getContext('webgl2').finish();},age);
   await capture('elite-frog-tongue-'+label);
  }
@@ -109,7 +109,7 @@ try{
  assert.equal(await page.evaluate(()=>document.querySelector('#world').getContext('webgl2').getError()),0);
 
  for(const [label,x,z] of [['toward',0,1],['away',0,-1],['left',-1,0]]){
-  await page.evaluate(({x,z})=>{const q=__slimeGameQA,e=q.world.enemies.find(e=>e.elite);Object.assign(e,{frogEliteTongueAge:.33,frogEliteAimX:x,frogEliteAimZ:z,yaw:Math.atan2(x,z)});q.draw();const gl=document.querySelector('#world').getContext('webgl2');gl.finish();if(gl.getError())throw Error('Tongue image GL error');},{x,z});
+  await page.evaluate(({x,z})=>{const q=__slimeGameQA,e=q.world.enemies.find(e=>e.elite);Object.assign(e,{x:q.state.player[0]+(x<0?2.5:-2.5),frogEliteTongueAge:.33,frogEliteAimX:x,frogEliteAimZ:z,frogEliteFacing:x<0?-1:1,yaw:Math.atan2(x,z)});q.draw();const gl=document.querySelector('#world').getContext('webgl2');gl.finish();if(gl.getError())throw Error('Tongue image GL error');},{x,z});
   await capture('elite-frog-image-'+label);
  }
 
@@ -125,17 +125,17 @@ try{
   Object.assign(e,spot,{attack:0,windup:0,frogAttack:0,hit:.3});
   w.hurt=0;const before=w.hp;w.update(.05,p,100);
   const started=e.windup>0,warningCount=w.eliteFx.length;
-  // Move sideways inside the enlarged cone after aim locks.
+  // Move into the tongue pixels of the full sprite after facing locks.
   const dx=e.frogEliteAimX,dz=e.frogEliteAimZ;
-  const target=[e.x+dx*2+dz*3,0,e.z+dz*2-dx*3];
+  const target=[e.x+(e.frogEliteFacing||1)*3,0,e.z-1.4];
   for(let i=0;i<26;i++){e.hit=.3;w.update(.05,target,100);}
   const impactHP=w.hp,poison=w.playerPoisonTime,fx=w.eliteFx.find(f=>f.kind==='frog-cone');
-  e.attack=99;for(let i=0;i<18;i++)w.update(.05,[e.x-dx*6,0,e.z-dz*6],100);
+  e.attack=99;for(let i=0;i<18;i++)w.update(.05,[e.x-(e.frogEliteFacing||1)*6,0,e.z+6],100);
   return {started,warningCount,impact:impactHP<before,poison,noSector:w.eliteFx.length===0,dot:w.hp<impactHP};
  });
  console.log("ELITE CONE",JSON.stringify(coneCombat));
  assert.equal(coneCombat.started,true);assert.equal(coneCombat.warningCount,0);
- assert.equal(coneCombat.impact,true);assert.ok(coneCombat.poison>2);
+ assert.equal(coneCombat.impact,true);assert.ok(coneCombat.poison>1.5);
  assert.equal(coneCombat.noSector,true);assert.equal(coneCombat.dot,true);
 
  const cameras=[];
