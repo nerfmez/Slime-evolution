@@ -1,3 +1,7 @@
+# Current Elite Frog correction — 2026-09-19
+
+Elite Frog uses the supplied separate atlas from PR #27; normal Frog remains unchanged. Its cell world size is now 1.95 (previously 1.22), approximately 60% larger. `species/elite-frog-combat.js` owns the 4.5-unit, 120-degree sector and three-second poison. Aim locks during the .55-second animation anticipation; ordinary hits cannot cancel it. The user explicitly requested NO warning area: draw the sector only after impact, never during windup. Recovery lasts .22 seconds. The flipped sprite keeps the same body pivot. Preserve other creatures, art, stats and rewards.
+
 # Current correction — EXP color/Water size + Elite Frog animation (2026-09-18)
 
 Species v2 restores the original approved EXP atlas for Frog/Hedgehog/Turtle/Panda, enlarges/crops Water Calf EXP, and enables the same hop-cycle animation for Moss Frog Elite as the normal Frog. No new enemy animation frames are drawn. Read docs/SPECIES-EXP-ELITES.md.
