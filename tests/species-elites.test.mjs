@@ -1,3 +1,4 @@
+import {execFileSync} from 'node:child_process';
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
@@ -72,6 +73,7 @@ test('runtime patch keeps Frog Elite attack through hits and reduces fallback/bo
  assert.equal(sha256(await read('species/assemble.mjs')),c.species.assemblerSHA256);
  const pacing=assemble(await read('game/assets/main-critter-v4.js'),await read('game/index.html'));
  const bundle=applySpeciesBundle(pacing.bundle),html=applySpeciesHtml(pacing.html);
+ execFileSync(process.execPath,["--check","--input-type=module"],{input:bundle});
  for(const marker of ['sourceType:e.type','FElite','frog-cone','spark-ring','reflectEliteTurtleProjectile','pt(e).name','./species/critters-v4/renderer.js','./species/elite-frog.js','createEliteFrogRenderer','eliteFrogRenderer.draw','if(n.type===`thorn`&&!n.boss){','xp:28,scale:1.6'])assert.ok(bundle.includes(marker),marker);
  assert.ok(!bundle.includes('if(n.hit>0){n.windup=0,n.frogAttack=0'));
  assert.ok(bundle.includes('e.hit>0&&!(e.elite&&(e.frogAttack||0)>0)'));
