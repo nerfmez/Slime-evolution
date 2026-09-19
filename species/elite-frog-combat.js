@@ -19,7 +19,7 @@ export function eliteFrogTonguePoints(e,age=e.frogEliteTongueAge){
  for(let i=0;i<=ELITE_FROG_TONGUE_SEGMENTS;i++){
   const t=i/ELITE_FROG_TONGUE_SEGMENTS;
   const angle=tipAngle-.24*Math.sin(Math.PI*t),r=ELITE_FROG_RANGE*reach*t;
-  points.push({x:e.x+Math.sin(angle)*r,z:e.z+Math.cos(angle)*r,y:(.90*(e.scale||1))*(1-t)+.38*t+.20*Math.sin(Math.PI*t),width:(.11+.08*Math.sin(Math.PI*t))*(.25+.75*reach)});
+  points.push({x:e.x+Math.sin(angle)*r,z:e.z+Math.cos(angle)*r,y:.90*(e.scale||1)+(.38-.90*(e.scale||1))*t*reach+.20*Math.sin(Math.PI*t)*reach,width:(.11+.08*Math.sin(Math.PI*t))*(.25+.75*reach)});
  }
  return points;
 }
