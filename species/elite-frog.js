@@ -1,8 +1,9 @@
+import {ELITE_FROG_WINDUP,ELITE_FROG_RECOVERY} from './elite-frog-combat.js';
 // Elite Moss Frog sprite renderer built from the user's supplied two-sheet art.
 // The ordinary Moss Frog remains on the approved frog-moveset.png renderer.
 export const ELITE_FROG_ATLAS_WIDTH=320;
 export const ELITE_FROG_ATLAS_HEIGHT=880;
-export const ELITE_FROG_CELL_WORLD=1.22;
+export const ELITE_FROG_CELL_WORLD=1.95;
 export const ELITE_FROG_FRAME=Object.freeze({
   idle:0,hit:1,death:[2,3,4],
   walk:Object.freeze([5,6,7,8,9,10,11,12]),
@@ -26,11 +27,11 @@ export function eliteFrogPose(e){
   }
   // The poison tongue has priority over hit-stun, matching Elite gameplay.
   if((e?.windup||0)>0){
-    const progress=1-clamp01(e.windup/.38);
+    const progress=1-clamp01(e.windup/ELITE_FROG_WINDUP);
     return ELITE_FROG_FRAME.attack[Math.min(5,Math.floor(progress*6))];
   }
   if((e?.frogAttack||0)>0){
-    const progress=1-clamp01(e.frogAttack/.13);
+    const progress=1-clamp01(e.frogAttack/ELITE_FROG_RECOVERY);
     return ELITE_FROG_FRAME.attack[6+Math.min(1,Math.floor(progress*2))];
   }
   if((e?.hit||0)>0)return ELITE_FROG_FRAME.hit;
@@ -59,12 +60,12 @@ export async function createEliteFrogRenderer(gl,{program,geometry,uniform,rende
   gl.activeTexture(gl.TEXTURE0);
 
   const p=program(gl,`layout(location=0)in vec3 position;layout(location=2)in vec2 uv;
-    uniform mat4 vp;uniform vec3 origin,cameraDirection;uniform float size;
+    uniform mat4 vp;uniform vec3 origin,cameraDirection;uniform float size,facing;
     out vec2 UV;out vec3 world;
     void main(){
       vec3 forward=normalize(cameraDirection),right=normalize(cross(vec3(0,1,0),forward)),up=cross(forward,right);
       // Atlas cells are 2:1. The authored frog body pivot is one third across the cell.
-      vec2 local=vec2((position.x+.1666667)*2.,position.y+.474);
+      vec2 local=vec2((position.x+.1666667*facing)*2.,position.y+.474);
       world=origin+(right*local.x+up*local.y)*size;UV=uv;gl_Position=vp*vec4(world,1.);
     }`,
     `in vec2 UV;in vec3 world;uniform sampler2D atlas,canopy;uniform vec4 rect;uniform vec3 player;uniform float flipX,alpha;
@@ -84,7 +85,7 @@ export async function createEliteFrogRenderer(gl,{program,geometry,uniform,rende
   return {stats,draw(e,vp,player,camera=[0,12,15]){
     const frame=eliteFrogPose(e),facing=eliteFrogFacing(e),lift=eliteFrogLift(e),size=ELITE_FROG_CELL_WORLD*(e.scale||1);
     gl.activeTexture(gl.TEXTURE12);gl.bindTexture(gl.TEXTURE_2D,texture);gl.activeTexture(gl.TEXTURE0);gl.useProgram(p);
-    for(const [key,value] of Object.entries({vp,origin:[e.x,.02+lift,e.z],player,cameraDirection:camera,size,flipX:facing<0?1:0,alpha:1,rect:rectFor(frame)}))uniform(gl,p,key,value);
+    for(const [key,value] of Object.entries({vp,origin:[e.x,.02+lift,e.z],player,cameraDirection:camera,size,facing,flipX:facing<0?1:0,alpha:1,rect:rectFor(frame)}))uniform(gl,p,key,value);
     gl.disable(gl.CULL_FACE);gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);gl.depthMask(true);render(gl,g);gl.disable(gl.BLEND);
     const name=frame===0?'idle':frame===1?'hit':frame<=4?'death':frame<=12?'walk':'attack';
     stats.calls++;stats.poses[name]=(stats.poses[name]||0)+1;stats.last={id:e.id,frame,name,facing,size,lift};

@@ -94,6 +94,31 @@ try{
  assert.equal(eliteFrog.type,'thorn');assert.equal(eliteFrog.elite,true);assert.ok(eliteFrog.windup>0);
  assert.equal(eliteFrog.gl,0);assert.equal(eliteFrog.errorHidden,true);
  await capture('elite-frog');
+ const coneCombat=await page.evaluate(()=>{
+  const q=__slimeGameQA,w=q.world,p=q.state.player;
+  w.reset('elite-thorn');w.update(.05,p,100);const e=w.enemies[0];
+  let spot;
+  for(let a=0;a<96&&!spot;a++){
+   const angle=a*Math.PI*2/96,x=Math.sin(angle)*4,z=Math.cos(angle)*4;
+   if(Array.from({length:81},(_,i)=>q.canStand(p[0]+x*i/80,p[2]+z*i/80,e.radius)).every(Boolean))spot={x:p[0]+x,z:p[2]+z};
+  }
+  if(!spot)throw Error('No clear four-unit Elite Frog attack lane');
+  Object.assign(e,spot,{attack:0,windup:0,frogAttack:0,hit:.3});
+  w.hurt=0;const before=w.hp;w.update(.05,p,100);
+  const started=e.windup>0,warningCount=w.eliteFx.length;
+  // Move sideways inside the enlarged cone after aim locks.
+  const dx=e.frogEliteAimX,dz=e.frogEliteAimZ;
+  const target=[e.x+dx*2+dz*3,0,e.z+dz*2-dx*3];
+  for(let i=0;i<12;i++){e.hit=.3;w.update(.05,target,100);}
+  const impactHP=w.hp,poison=w.playerPoisonTime,fx=w.eliteFx.find(f=>f.kind==='frog-cone');
+  e.attack=99;for(let i=0;i<18;i++)w.update(.05,[e.x-dx*6,0,e.z-dz*6],100);
+  return {started,warningCount,impact:impactHP<before,poison,range:fx?.length,angle:fx?.angle,dot:w.hp<impactHP};
+ });
+ console.log("ELITE CONE",JSON.stringify(coneCombat));
+ assert.equal(coneCombat.started,true);assert.equal(coneCombat.warningCount,0);
+ assert.equal(coneCombat.impact,true);assert.ok(coneCombat.poison>2.8);
+ assert.equal(coneCombat.range,4.5);assert.ok(Math.abs(coneCombat.angle-Math.PI/3)<1e-8);assert.equal(coneCombat.dot,true);
+
  const cameras=[];
  for(const camera of ['game','side','top']){
   const state=await page.evaluate(camera=>{

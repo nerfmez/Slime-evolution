@@ -1,3 +1,7 @@
+# Current Elite Frog correction — 2026-09-19
+
+Elite Frog uses the supplied separate atlas from PR #27; normal Frog remains unchanged. Its cell world size is now 1.95 (previously 1.22), approximately 60% larger. `species/elite-frog-combat.js` owns the 4.5-unit, 120-degree sector and three-second poison. Aim locks during the .55-second animation anticipation; ordinary hits cannot cancel it. The user explicitly requested NO warning area: draw the sector only after impact, never during windup. Recovery lasts .22 seconds. The flipped sprite keeps the same body pivot. Preserve other creatures, art, stats and rewards.
+
 # Current addition — species EXP + full ordinary Elite set (2026-09-18)
 
 Read docs/SPECIES-EXP-ELITES.md first. Every current creature now drops its matching EXP animal; Water Calf adds a tiny-elephant front/back pair in empty atlas cells. Elites now exist for Frog, Spark, Turtle and Water only; Panda stays mini-boss-only. Elite sprites reuse the exact normal animation frames, are enlarged at runtime, get selective color accents (never whole-body tint), and display name + HP above the head. Elite Frog uses poison tongue cone, Spark adds a radial lightning burst after its preserved dash, Turtle reflects moving player projectiles only while Shell Guard is active, Water keeps its existing elite attack.
