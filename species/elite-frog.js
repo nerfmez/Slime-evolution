@@ -1,7 +1,7 @@
 // Elite Moss Frog sprite renderer built from the user's supplied two-sheet art.
 // The ordinary Moss Frog remains on the approved frog-moveset.png renderer.
-export const ELITE_FROG_ATLAS_WIDTH=1024;
-export const ELITE_FROG_ATLAS_HEIGHT=2816;
+export const ELITE_FROG_ATLAS_WIDTH=320;
+export const ELITE_FROG_ATLAS_HEIGHT=880;
 export const ELITE_FROG_CELL_WORLD=1.22;
 export const ELITE_FROG_FRAME=Object.freeze({
   idle:0,hit:1,death:[2,3,4],
