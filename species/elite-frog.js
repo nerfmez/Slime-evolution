@@ -1,5 +1,4 @@
-import {createEliteFrogTongueRenderer} from './elite-frog-tongue.js';
-import {ELITE_FROG_WINDUP,ELITE_FROG_RECOVERY,eliteFrogTongueState} from './elite-frog-combat.js';
+import {createEliteFrogAttackRenderer,eliteFrogAttackFrame,eliteFrogAttackFacing} from './elite-frog-attack.js';
 // Elite Moss Frog sprite renderer built from the user's supplied two-sheet art.
 // The ordinary Moss Frog remains on the approved frog-moveset.png renderer.
 export const ELITE_FROG_ATLAS_WIDTH=320;
@@ -26,10 +25,9 @@ export function eliteFrogPose(e){
     const age=Math.max(0,e?.frogDeath||0);
     return ELITE_FROG_FRAME.death[Math.min(2,Math.floor(age/.13))];
   }
-  // The poison tongue has priority over hit-stun, matching Elite gameplay.
-  if(e?.frogEliteTongueAge!=null)return ELITE_FROG_FRAME.attack[eliteFrogTongueState(e)?.closed?7:1];
-  if((e?.windup||0)>0)return e.windup>ELITE_FROG_WINDUP*.55?ELITE_FROG_FRAME.attack[0]:ELITE_FROG_FRAME.attack[1];
-  if((e?.frogAttack||0)>0)return ELITE_FROG_FRAME.attack[7];
+  // One complete pose owns the body, mouth and tongue, including recovery.
+  const attackFrame=eliteFrogAttackFrame(e);
+  if(attackFrame!=null)return ELITE_FROG_FRAME.attack[attackFrame];
   if((e?.hit||0)>0)return ELITE_FROG_FRAME.hit;
   if(e?.frogHopActive){
     const progress=clamp01(e.frogHopPhase||0);
@@ -77,16 +75,21 @@ export async function createEliteFrogRenderer(gl,{program,geometry,uniform,rende
     }`);
   const g=geometry(gl,[-.5,.5,0,.5,.5,0,.5,-.5,0,-.5,-.5,0],null,[0,1,1,1,1,0,0,0],[0,2,1,0,3,2]);
   gl.useProgram(p);gl.uniform1i(gl.getUniformLocation(p,'atlas'),12);gl.uniform1i(gl.getUniformLocation(p,'canopy'),1);
-  const tongue=await createEliteFrogTongueRenderer(gl,{program,geometry,uniform,render});
+  const attack=await createEliteFrogAttackRenderer(gl,{program,geometry,uniform,render});
   const stats={calls:0,poses:{},last:null,textureBytes:ELITE_FROG_ATLAS_WIDTH*ELITE_FROG_ATLAS_HEIGHT*4};
   return {stats,draw(e,vp,player,camera=[0,12,15]){
+    const attackFrame=eliteFrogAttackFrame(e);
+    if(attackFrame!=null){
+      stats.calls++;stats.poses.attack=(stats.poses.attack||0)+1;
+      stats.last={id:e.id,frame:13+attackFrame,attackFrame,name:'attack',wholeBody:true,facing:eliteFrogAttackFacing(e),size:ELITE_FROG_CELL_WORLD*(e.scale||1),lift:0};
+      return attack.draw(e,attackFrame,vp,player,camera);
+    }
     const frame=eliteFrogPose(e),facing=eliteFrogFacing(e),lift=eliteFrogLift(e),size=ELITE_FROG_CELL_WORLD*(e.scale||1);
     gl.activeTexture(gl.TEXTURE12);gl.bindTexture(gl.TEXTURE_2D,texture);gl.activeTexture(gl.TEXTURE0);gl.useProgram(p);
     for(const [key,value] of Object.entries({vp,origin:[e.x,.02+lift,e.z],player,cameraDirection:camera,size,facing,flipX:facing<0?1:0,alpha:1,rect:rectFor(frame)}))uniform(gl,p,key,value);
     gl.disable(gl.CULL_FACE);gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);gl.depthMask(true);render(gl,g);gl.disable(gl.BLEND);
     const name=frame===0?'idle':frame===1?'hit':frame<=4?'death':frame<=12?'walk':'attack';
     stats.calls++;stats.poses[name]=(stats.poses[name]||0)+1;stats.last={id:e.id,frame,name,facing,size,lift};
-    const sweep=tongue.draw(e,vp,player);
-    return {calls:1+sweep.calls,triangles:2+sweep.triangles};
+    return {calls:1,triangles:2};
   }};
 }
