@@ -13,12 +13,12 @@ export function insideEliteFrogCone(x,z,dx,dz){
 // Frame choice and extent are shared by the image renderer and contact test.
 export function eliteFrogTongueState(e,age=e.frogEliteTongueAge){
  if(age==null||age<0||age>=ELITE_FROG_TONGUE_DURATION||e.hp<=0||e.frogDeath!=null)return null;
- const ends=[.025,.05,.075,.12,.20,.30,.40,.54,.60,.66];
+ const ends=TONGUE_ART.ends;
  const frame=ends.findIndex(end=>age<end),art=TONGUE_ART.frames[frame];
  const ease=v=>v*v*(3-2*v);
- const scale=ease(clamp(age/.045))*ease(clamp((ELITE_FROG_TONGUE_DURATION-age)/.06));
+ const scale=ease(clamp(age/.045));
  const sweep=clamp((age-.12)/.42),aim=Math.atan2(e.frogEliteAimX??0,e.frogEliteAimZ??1);
- return {frame,rect:art.rect,scale,reach:art.reach*scale,angle:aim-ELITE_FROG_HALF_ANGLE+2*ELITE_FROG_HALF_ANGLE*sweep};
+ return {frame,closed:art.closed,rect:art.rect,scale,reach:art.reach*scale,angle:aim-ELITE_FROG_HALF_ANGLE+2*ELITE_FROG_HALF_ANGLE*sweep};
 }
 export function eliteFrogTongueBasis(e,angle){
  const x=Math.sin(angle),z=Math.cos(angle),sign=(e.frogEliteAimX??1)<0?-1:1;

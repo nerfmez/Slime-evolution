@@ -101,7 +101,7 @@ try{
   q.draw();document.querySelector('#world').getContext('webgl2').finish();
  });
  await capture('elite-frog-visible-tongue');
- for(const [label,age] of [['extend',.07],['curl',.24],['return',.59]]){
+ for(const [label,age] of [['extend',.07],['curl',.24],['return',.59],['closed',.65]]){
   await page.evaluate(age=>{const q=__slimeGameQA;q.world.enemies.find(e=>e.elite).frogEliteTongueAge=age;q.draw();document.querySelector('#world').getContext('webgl2').finish();},age);
   await capture('elite-frog-tongue-'+label);
  }
