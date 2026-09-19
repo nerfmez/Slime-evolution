@@ -4,7 +4,7 @@ export const ELITE_FROG_HALF_ANGLE=Math.PI/3;
 export const ELITE_FROG_WINDUP=.55;
 export const ELITE_FROG_RECOVERY=.22;
 export const ELITE_FROG_TONGUE_DURATION=.66;
-export const ELITE_FROG_TONGUE_SEGMENTS=28;
+export const ELITE_FROG_TONGUE_SEGMENTS=48;
 const clamp=v=>Math.max(0,Math.min(1,v));
 export function insideEliteFrogCone(x,z,dx,dz){
  const distance=Math.hypot(x,z);
@@ -12,14 +12,22 @@ export function insideEliteFrogCone(x,z,dx,dz){
 }
 export function eliteFrogTonguePoints(e,age=e.frogEliteTongueAge){
  if(age==null||age<0||age>ELITE_FROG_TONGUE_DURATION||e.hp<=0||e.frogDeath!=null)return [];
- const reach=clamp(age/.12)*clamp((ELITE_FROG_TONGUE_DURATION-age)/.12);
+ const ease=v=>v*v*(3-2*v);
+ const reach=ease(clamp(age/.12))*ease(clamp((ELITE_FROG_TONGUE_DURATION-age)/.12));
  const sweep=clamp((age-.12)/.42),aim=Math.atan2(e.frogEliteAimX??0,e.frogEliteAimZ??1);
  const tipAngle=aim-ELITE_FROG_HALF_ANGLE+2*ELITE_FROG_HALF_ANGLE*sweep;
  const points=[];
  for(let i=0;i<=ELITE_FROG_TONGUE_SEGMENTS;i++){
-  const t=i/ELITE_FROG_TONGUE_SEGMENTS;
-  const angle=tipAngle-.24*Math.sin(Math.PI*t),r=ELITE_FROG_RANGE*reach*t;
-  points.push({x:e.x+Math.sin(angle)*r,z:e.z+Math.cos(angle)*r,y:.90*(e.scale||1)+(.38-.90*(e.scale||1))*t*reach+.20*Math.sin(Math.PI*t)*reach,width:(.11+.08*Math.sin(Math.PI*t))*(.25+.75*reach)});
+  const t=1-Math.pow(1-i/ELITE_FROG_TONGUE_SEGMENTS,1.4);
+  // Reference clip: a narrow shaft opens into a raised, backward-curled tip.
+  // The hook is part of the same collision path, never a separate fake effect.
+  const shaft=clamp(t/.625),hook=clamp((t-.625)/.375),theta=hook*Math.PI*.95;
+  const r=reach*(3.7*shaft+.8*Math.sin(theta));
+  const angle=tipAngle-.13*Math.sin(Math.PI*shaft)*(1-hook);
+  const mouth=.90*(e.scale||1),y=mouth+reach*((.38-mouth)*shaft+.8*(1-Math.cos(theta)));
+  const bulb=clamp((t-.72)/.18),cap=clamp((t-.94)/.06);
+  const width=(.075+.045*shaft+.065*bulb)*Math.sqrt(1-cap*cap)*reach;
+  points.push({x:e.x+Math.sin(angle)*r,z:e.z+Math.cos(angle)*r,y,width});
  }
  return points;
 }

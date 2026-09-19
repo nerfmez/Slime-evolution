@@ -1,3 +1,7 @@
+# Current refinement — curled tongue from supplied video
+
+Use the supplied 5.2-second frog clip as the movement reference: narrow shaft, raised backward hook, rounded fleshy tip and close-fitting green/purple poison mist. The shared tongue path now has 48 segments and smooth extension/retraction; preserve 4.5-unit reach, 120-degree sweep, once-per-attack contact damage and three-second poison. Mist is cosmetic and must never become a ground sector or warning area. Body art, Elite size and normal Frog remain unchanged.
+
 # Current correction — visible tongue sweep, no sector graphic
 
 The user clarified that the TONGUE itself must visibly reach and sweep across the player. Do not draw a cone/sector on the ground, before OR after the strike. `elite-frog-combat.js` now shares its curved tongue centreline with the `elite-frog-tongue.js` WebGL ribbon renderer. The tongue extends, sweeps 120 degrees to 4.5 units, then retracts (.66 seconds total after .55-second anticipation). Apply damage and three-second poison only on actual swept tongue contact, once per attack. Use the supplied open-mouth body frame during the ribbon so there is no duplicate short tongue. Keep the larger Elite body and the normal Frog unchanged.
