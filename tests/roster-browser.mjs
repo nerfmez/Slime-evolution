@@ -101,11 +101,28 @@ try{
   q.draw();document.querySelector('#world').getContext('webgl2').finish();
  });
  await capture('elite-frog-visible-tongue');
- for(const [label,age] of [['sweep-start',.07],['sweep-middle',.20],['sweep-far',.44],['follow-through',.51],['return',.57],['return-tip',.62],['closed',.65]]){
+ for(const [label,age] of [['open',.03],['extend',.10],['sweep-start',.20],['sweep-far',.47],['return',.60],['return-tip',.70],['closed',.80]]){
   await page.evaluate(age=>{const q=__slimeGameQA;q.world.enemies.find(e=>e.elite).frogEliteTongueAge=age;q.draw();document.querySelector('#world').getContext('webgl2').finish();},age);
   await capture('elite-frog-tongue-'+label);
  }
 
+ // Same-position walk -> anticipation -> all eight attack poses -> walk proof.
+ const transition=[
+  ...[.12,.30,.52,.74,.89].map(p=>({phase:'walk',p,ms:90})),
+  {phase:'windup',p:.5,ms:250},{phase:'windup',p:.25,ms:250},
+  ...[.03,.10,.20,.33,.47,.60,.70,.80].map((p,i)=>({phase:'attack',p,ms:[60,90,130,120,140,120,100,80][i]})),
+  {phase:'recover',p:.2,ms:220},
+  ...[.12,.30,.52,.74,.89].map(p=>({phase:'walk',p,ms:90}))
+ ];
+ for(let i=0;i<transition.length;i++){
+  await page.evaluate(({phase,p})=>{
+   const q=__slimeGameQA,e=q.world.enemies.find(e=>e.elite);
+   Object.assign(e,{hit:0,windup:phase==='windup'?p:0,frogAttack:phase==='recover'?.2:0,frogEliteTongueAge:phase==='attack'?p:null,frogHopActive:phase==='walk',frogHopPhase:phase==='walk'?p:0});
+   q.draw();document.querySelector('#world').getContext('webgl2').finish();
+  },transition[i]);
+  await capture('frog-transition-'+String(i).padStart(2,'0'));
+ }
+ await writeFile(`test-results/frog-transition-${engine}.json`,JSON.stringify(transition));
  assert.equal(await page.evaluate(()=>document.querySelector('#world').getContext('webgl2').getError()),0);
 
  for(const [label,x,z] of [['toward',0,1],['away',0,-1],['left',-1,0]]){

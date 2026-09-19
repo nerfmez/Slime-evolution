@@ -1,3 +1,11 @@
+# Current correction — match normal-body size/texel density and complete the eight-frame motion
+
+The user identified that the attack body was both larger and much sharper than the ordinary Elite poses. Do not treat a fixed height inside the attack sheet as proof of a match. The original preparation/recovery body is visibly 54-59 texels tall, not the 80px cell height. Bake the full attack poses to 56px body height at the SAME 1.95/80 world-units-per-texel as the original body renderer. New cells are 256x96 in a 512x384 atlas. Preserve the original body atlas bytes.
+
+Use the existing whole-body open-mouth/short-extension/closed-mouth poses to connect to the same character. Eight active poses: open, short extension, front curl, broadside, far-side follow-through, medium retraction, tip retraction, closed. Anticipation uses original poses 13/14 and recovery uses original 20. The active sequence lasts .84s so retraction is readable; metadata is authoritative for duration/timing. Whole-body pictures only, never detached tongue layers. Contact remains tied to rendered pixels; no warning ground area. Other attacks/stats/movement are out of scope.
+
+Before merge: unit tests, canonical build, Chromium/WebKit regressions, and ANIMATED review of same-position walk -> anticipation -> all eight attack frames -> recovery -> walk. Static attack-only screenshots did not catch the user's reported defect.
+
 # Current correction — full-body attack images, no detached tongue
 
 The user explicitly rejected cutting out the tongue and attaching it to the old body. During anticipation, all eight attack frames and recovery, render ONE complete frog+mouth+tongue image from `elite-frog-attack.webp`. Never draw the old body underneath, rotate the tongue separately, or scale tongue length independently. `extract-full-attack.py` removes only the exterior white matte and registers the whole images by feet and body height. The cream belly remains opaque. Normal movement/hit/death art is unchanged.

@@ -4,8 +4,8 @@ export const FROG_CAMERA=[0,12,15];
 export function eliteFrogAttackFrame(e){
  if(e.hp<=0||e.frogDeath!=null)return null;
  const age=e.frogEliteTongueAge;
- if(age!=null&&age>=0&&age<.66)return ATTACK_ART.ends.findIndex(end=>age<end);
- return (e.windup||0)>0||(e.frogAttack||0)>0?7:null;
+ if(age!=null&&age>=0&&age<ATTACK_ART.duration)return ATTACK_ART.ends.findIndex(end=>age<end);
+ return null;
 }
 export function eliteFrogAttackFacing(e){
  if(e.frogEliteFacing===-1||e.frogEliteFacing===1)return e.frogEliteFacing;
@@ -36,7 +36,7 @@ export async function createEliteFrogAttackRenderer(gl,{program,geometry,uniform
   world=origin+right*local.x+up*local.y;UV=uv;gl_Position=vp*vec4(world,1.);
  }`,`in vec2 UV;in vec3 world;uniform sampler2D atlas,canopy;uniform vec4 rect;uniform vec3 player;out vec4 color;
  void main(){
-  vec2 u=clamp(UV,vec2(.0007,.0018),vec2(.9993,.9982));
+  vec2 u=clamp(UV,vec2(.002,.0052),vec2(.998,.9948));
   vec4 c=texture(atlas,rect.xy+u*rect.zw);if(c.a<.055)discard;
   vec2 shadowPoint=world.xz-vec2(.65,-.45)*max(world.y,0.);
   float shade=texture(canopy,(shadowPoint+40.)/80.).r;

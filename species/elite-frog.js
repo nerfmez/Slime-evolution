@@ -28,6 +28,8 @@ export function eliteFrogPose(e){
   // One complete pose owns the body, mouth and tongue, including recovery.
   const attackFrame=eliteFrogAttackFrame(e);
   if(attackFrame!=null)return ELITE_FROG_FRAME.attack[attackFrame];
+  if((e.windup||0)>0)return e.windup>.55*.55?13:14;
+  if((e.frogAttack||0)>0)return 20;
   if((e?.hit||0)>0)return ELITE_FROG_FRAME.hit;
   if(e?.frogHopActive){
     const progress=clamp01(e.frogHopPhase||0);
