@@ -102,11 +102,12 @@ try{
   const started=e.windup>0,warningCount=w.eliteFx.length;
   // Move sideways inside the enlarged cone after aim locks.
   const target=[e.x+3,0,e.z+2];
-  for(let i=0;i<12;i++){e.hit=.3;w.update(.05,target,100);}
+  const trace=[];for(let i=0;i<12;i++){e.hit=.3;w.update(.05,target,100);trace.push({windup:e.windup,attack:e.frogAttack,fired:e.frogEliteFired,x:e.x,z:e.z,aim:[e.frogEliteAimX,e.frogEliteAimZ],hp:w.hp,finished:w.finished});}
   const impactHP=w.hp,poison=w.playerPoisonTime,fx=w.eliteFx.find(f=>f.kind==='frog-cone');
   e.attack=99;for(let i=0;i<18;i++)w.update(.05,[e.x,0,e.z-6],100);
-  return {started,warningCount,impact:impactHP<before,poison,range:fx?.length,angle:fx?.angle,dot:w.hp<impactHP};
+  return {trace,target,started,warningCount,impact:impactHP<before,poison,range:fx?.length,angle:fx?.angle,dot:w.hp<impactHP};
  });
+ console.log("ELITE CONE",JSON.stringify(coneCombat));
  assert.equal(coneCombat.started,true);assert.equal(coneCombat.warningCount,0);
  assert.equal(coneCombat.impact,true);assert.ok(coneCombat.poison>2.8);
  assert.equal(coneCombat.range,4.5);assert.ok(Math.abs(coneCombat.angle-Math.PI/3)<1e-8);assert.equal(coneCombat.dot,true);
