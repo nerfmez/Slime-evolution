@@ -82,6 +82,18 @@ try{
  await capture('boss');
  const death=await page.evaluate(()=>{const q=__slimeGameQA,w=q.world;w.enemies[0].hp=0;w.update(.05,q.state.player,100);return {finished:w.finished,bossDefeated:w.bossDefeated}});
  assert.deepEqual(death,{finished:true,bossDefeated:true});
+ const eliteFrog=await page.evaluate(()=>{
+  const q=__slimeGameQA,w=q.world,p=q.state.player;
+  w.reset('elite-thorn');w.update(.05,p,100);
+  const e=w.enemies[0];
+  Object.assign(e,{x:p[0]-2.2,z:p[2]-.5,hit:0,windup:.24,frogAttack:.38,frogEliteFired:false});
+  q.state.camera='game';q.state.paused=true;q.draw();
+  const gl=document.querySelector('#world').getContext('webgl2');gl.finish();
+  return {type:e.type,elite:e.elite,windup:e.windup,gl:gl.getError(),errorHidden:document.querySelector('#error').hidden};
+ });
+ assert.equal(eliteFrog.type,'thorn');assert.equal(eliteFrog.elite,true);assert.ok(eliteFrog.windup>0);
+ assert.equal(eliteFrog.gl,0);assert.equal(eliteFrog.errorHidden,true);
+ await capture('elite-frog');
  const cameras=[];
  for(const camera of ['game','side','top']){
   const state=await page.evaluate(camera=>{
@@ -104,8 +116,9 @@ try{
  // The skill lab lists combat targets, not the ordinary spawn pool: explicitly include the new Panda target.
  for(const skill of skills)assert.deepEqual(skill.targets,['thorn','spark','turtle','water','panda'],skill.id+' exact training targets');
  assert.ok(!requests.some(u=>/\/enemies\/(?:thorn|moss|petal|crystal)(?:[.-])/.test(u)),'no removed model/atlas requested');
+ assert.ok(requests.some(u=>u.includes('/assets/species/enemies/elite-frog-atlas.webp')),'supplied Elite Frog atlas requested');
  assert.deepEqual(errors,[]);
- report={...report,passed:true,result,attacks,death,cameras,skills,errors,requests,cancellations};
+ report={...report,passed:true,result,attacks,death,eliteFrog,cameras,skills,errors,requests,cancellations};
  console.log('ROSTER VERIFIED',JSON.stringify({engine,transition:result.transition,models:result.models,attacks:attacks.map(e=>e.kind),skills:skills.length,errors}));
 }catch(e){report={...report,error:e.stack,errors,requests};console.error(JSON.stringify(report,null,2));process.exitCode=1;}
 finally{await writeFile(`test-results/roster-${engine}.json`,JSON.stringify(report,null,2));await browser.close();}
