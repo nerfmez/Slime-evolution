@@ -1,3 +1,4 @@
+import {applySpriteClarity} from './sprite-clarity.mjs';
 /** Runtime-only species/elite integration. The reviewed game/ baseline stays byte-identical. */
 export const SPECIES_VERSION='species-exp-elites-v4';
 function one(source,label,from,to){
@@ -45,7 +46,7 @@ export function applySpeciesBundle(source){
 
   const feedback='function ci(){let e=B(`combat-feedback`),t=V.clientWidth,n=V.clientHeight;(e.width!==t||e.height!==n)&&(e.width=t,e.height=n);let r=e.getContext(`2d`);r.clearRect(0,0,t,n);let proj=(e,a,o)=>[(X[0]*e+X[4]*a+X[8]*o+X[12]+1)*t/2,(1-(X[1]*e+X[5]*a+X[9]*o+X[13]))*n/2];r.textAlign=`center`,r.font=`bold 18px system-ui`,r.lineWidth=3;for(let e of Y.numbers){let t=.75+e.age*.8,[n,i]=proj(e.x,t,e.z);r.globalAlpha=Math.min(1,(.75-e.age)*4),r.strokeStyle=`#5b301c`,r.fillStyle=`#fff0b9`,r.strokeText(String(Math.round(e.value)),n,i),r.fillText(String(Math.round(e.value)),n,i)}for(let e of J.eliteFx||[]){let a=Math.max(0,1-e.age/e.life);if(e.kind===`frog-cone`)continue;{let o=e.r||1,s=[];for(let i=0;i<=28;i++){let c=i/28*Math.PI*2;s.push(proj(e.x+Math.cos(c)*o,.09,e.z+Math.sin(c)*o))}r.beginPath();for(let e=0;e<s.length;e++)e?r.lineTo(s[e][0],s[e][1]):r.moveTo(s[e][0],s[e][1]);r.closePath(),r.lineWidth=e.kind===`spark-ring`?3:2,r.strokeStyle=e.kind===`spark-ring`?`rgba(255,224,91,${.92*a})`:`rgba(144,214,255,${.86*a})`,r.stroke()}}r.globalAlpha=1;for(let e of J.enemies){if(!e.elite||e.hp<=0)continue;let a=({thorn:1.95,spark:1.08,turtle:1.25,water:1.38}[e.type]||1.15)*(e.scale||1),[o,s]=proj(e.x,a,e.z),c=Math.max(66,Math.min(104,74*(e.scale||1))),l=7,u=s-16,d=Math.max(0,Math.min(1,e.hp/Math.max(1,e.maxHP||e.hp)));r.font=`700 12px system-ui`,r.lineWidth=3,r.strokeStyle=`rgba(54,37,26,.9)`,r.fillStyle=`#fff4d7`,r.strokeText(pt(e).name,o,u-5),r.fillText(pt(e).name,o,u-5),r.fillStyle=`rgba(45,31,25,.88)`,r.fillRect(o-c/2-2,u-2,c+4,l+4),r.fillStyle=`#f1dfbb`,r.fillRect(o-c/2,u,c,l),r.fillStyle=d>.35?`#e74e47`:`#d43d3d`,r.fillRect(o-c/2,u,c*d,l),r.strokeStyle=`rgba(86,50,32,.9)`,r.lineWidth=1,r.strokeRect(o-c/2,u,c,l)}r.globalAlpha=1}';
   source=replaceBetween(source,'elite overlay','function ci(){','function li(e){',feedback);
-  return source;
+  return applySpriteClarity(source,.65,'local');
 }
 export function applySpeciesHtml(html){
   return one(html,'manual elite options','<option value="elites">อีลิทที่ใช้งาน · Water Calf</option><option value="elite-water">Water Calf Alpha</option>','<option value="elites">อีลิททั้งหมด · กบ / เม่น / เต่า / ช้าง</option><option value="elite-thorn">Moss Frog Elite</option><option value="elite-spark">Spark Hedgehog Elite</option><option value="elite-turtle">Pond Turtle Elite</option><option value="elite-water">Water Calf Alpha</option>');

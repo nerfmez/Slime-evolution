@@ -5,6 +5,7 @@ import { resolve, join, extname, sep } from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { assemble } from '../pacing/assemble.mjs';
+import {applySpriteClarity} from '../species/sprite-clarity.mjs';
 import { applySpeciesBundle, applySpeciesHtml, SPECIES_VERSION } from '../species/assemble.mjs';
 
 const root = resolve(fileURLToPath(new URL('..', import.meta.url)));
@@ -61,6 +62,13 @@ export async function build() {
   const expAtlasSource=join(dist,'assets/species/critters-v4/atlas.webp.b64');
   await writeFile(join(dist,'assets/species/critters-v4/atlas.webp'),Buffer.from((await readFile(expAtlasSource,'utf8')).trim(),'base64'));
   await rm(expAtlasSource);
+  // Refine every pose consistently without rewriting approved source textures.
+  for(const name of ['water-calf','spark-hedgehog','pond-turtle','elite-frog','elite-frog-attack']){
+    const path=join(dist,'assets/species',name+'.js');
+    await writeFile(path,applySpriteClarity(await readFile(path,'utf8')));
+  }
+  const pandaPath=join(dist,'assets/bamboo-panda.js');
+  await writeFile(pandaPath,applySpriteClarity(await readFile(pandaPath,'utf8'),.9,'u',true));
   const runtimeHash=await treeHash(dist);
   if(runtimeHash!==c.runtimeTree) throw new Error(`Wrong assembled runtime: ${runtimeHash}; expected ${c.runtimeTree}`);
   const manifest = [];
