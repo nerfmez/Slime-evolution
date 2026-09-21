@@ -1,3 +1,7 @@
+# Current correction — monster clarity (2026-09-21)
+
+The user requested clearer monster sprites, especially Elites and the Panda mini-boss. Apply the shared bounded, alpha-aware detail filter at BUILD TIME to monster fragment shaders only. Preserve all approved atlas bytes, world sizes, pivots, animation and combat. Both Elite Frog renderers use identical strength. Sample offsets are clamped inside each atlas frame and alpha is unchanged. Do not sharpen the scene, EXP animals or effects. Panda uses slightly stronger detail recovery. This is rendering refinement, not new source detail or an AI upscale. Verify Chromium/WebKit and compare actual game pose captures before merge; preserve the full production hash audit.
+
 # Current correction — match normal-body size/texel density and complete the eight-frame motion
 
 The user identified that the attack body was both larger and much sharper than the ordinary Elite poses. Do not treat a fixed height inside the attack sheet as proof of a match. The original preparation/recovery body is visibly 54-59 texels tall, not the 80px cell height. Bake the full attack poses to 56px body height at the SAME 1.95/80 world-units-per-texel as the original body renderer. New cells are 256x96 in a 512x384 atlas. Preserve the original body atlas bytes.
