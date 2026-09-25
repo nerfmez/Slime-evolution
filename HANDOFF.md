@@ -2,9 +2,13 @@
 
 Rules live in `AGENTS.md`; repository layout in `README.md`. This file only tracks where work stands. Earlier handoffs are in Git history.
 
-## In progress
+## In progress (branch `claude/check-organize-files-vqyx02`)
 
-- Elite Frog clarity: both Elite Frog atlases were rebuilt at 4x from the owner's supplied originals (`art/elite-frog/build-hires-atlas.py`). Geometry, timing and tongue samples are unchanged, and the colours are now the originals (the old atlas was washed out).
+- Skill style prototype (cel-shade + watercolour, no black outlines, fire rebuilt): `vfx/watercolor-style.mjs`. The owner reviews it on the iPad preview using Settings > Test (old/new switch and sliders). Next: fire evolutions (Sunfall, Meteor, Cyclone), per-element palettes, readability of faint skills, then remove the old-style switch once approved.
+
+## Merged in PR #45 (2026-09-25)
+
+- Elite Frog atlases rebuilt at 4x from the owner's originals, with the same body size in every frame. Verified live.
 
 ## Merged in PR #44 (2026-09-25)
 

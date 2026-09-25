@@ -40,6 +40,7 @@ Source of truth: `pacing/encounter-director.js`; details in `docs/COZY-PACING.md
 - **Turtle:** size 2.42, approved eight poses, walk palette, guard and shell death. See `docs/POND-TURTLE.md` and `docs/TURTLE-SIZE-8FRAME.md`.
 - **Spark / Water:** preserve sizes, Spark charge/dash and Water Alpha art. See `docs/SPARK-HEDGEHOG.md` and `docs/ENEMY-SIZE.md`.
 - **EXP:** every creature drops its matching EXP animal. See `docs/SPECIES-EXP-ELITES.md`.
+- **Skill style (prototype, owner request):** `vfx/watercolor-style.mjs` gives every skill one cel-shaded watercolour look: stepped values, same-hue pigment pooling at edges (NO black outlines), paper grain and wet edges. Fire is rebuilt with the same renderer (fireball, embers, blast, burn patches, burning monsters). Sunfall/Meteor/Cyclone still use the painted fire until they are rebuilt. The old look is kept behind Settings > Test > "เซลเฉด + สีน้ำ" until the owner approves; sliders tune wash strength, shade bands and edge darkness (`slime.vfxStyle.v1`). Skill shapes, sizes, timing and damage are unchanged.
 - **Sprite clarity:** a bounded, alpha-aware detail filter on monster shaders only. Panda is slightly stronger. Never apply it to the scene, EXP animals or effects.
 - **Opening cards:** the first three skill choices use fresh browser randomness. All later RNG stays deterministic.
 - **Audio:** default 50%, master gain up to 3× with a peak limiter. Saved volume always wins.
