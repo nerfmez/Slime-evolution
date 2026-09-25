@@ -4,3 +4,4 @@ test-results/
 .vercel/
 *.log
 .cozy-tests/
+__pycache__/

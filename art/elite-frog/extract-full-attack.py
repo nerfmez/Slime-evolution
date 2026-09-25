@@ -1,4 +1,7 @@
-"""Remove the exterior white matte from eight WHOLE frog attack poses.
+"""SUPERSEDED for textures: build-hires-atlas.py now renders both Elite Frog atlases at 4x.
+This script documents how the 1x attack metadata (pivot, samples, timing) was first derived.
+
+Remove the exterior white matte from eight WHOLE frog attack poses.
 No separation, reconstruction, rotation, or independent scaling of the tongue.
 Run: python art/elite-frog/extract-full-attack.py (Pillow, numpy, scipy).
 """

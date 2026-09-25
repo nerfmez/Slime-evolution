@@ -2,7 +2,11 @@
 
 Rules live in `AGENTS.md`; repository layout in `README.md`. This file only tracks where work stands. Earlier handoffs are in Git history.
 
-## Latest work (branch `claude/check-organize-files-vqyx02`, not yet merged or deployed)
+## In progress
+
+- Elite Frog clarity: both Elite Frog atlases were rebuilt at 4x from the owner's supplied originals (`art/elite-frog/build-hires-atlas.py`). Geometry, timing and tongue samples are unchanged, and the colours are now the originals (the old atlas was washed out).
+
+## Merged in PR #44 (2026-09-25)
 
 - README refreshed with current pacing, layout and docs index.
 - `ui/hud-polish.mjs` added: "Slime Evolution" title, compact Elite tags (English names), boss banner in the top row on wide screens, phone HUD, empty skill slots, hint fade, stronger EXP bar.

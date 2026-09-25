@@ -21,7 +21,8 @@ export async function createEliteFrogAttackRenderer(gl,{program,geometry,uniform
  if(!response.ok)throw Error(`Elite Frog full attack atlas ${response.status}`);
  const image=new Image(),url=URL.createObjectURL(await response.blob());
  try{image.src=url;await image.decode();}finally{URL.revokeObjectURL(url);}
- if(image.naturalWidth!==ATTACK_ART.width||image.naturalHeight!==ATTACK_ART.height)throw Error('Full Frog attack dimensions mismatch');
+ const scale=ATTACK_ART.textureScale||1;
+ if(image.naturalWidth!==ATTACK_ART.width*scale||image.naturalHeight!==ATTACK_ART.height*scale)throw Error('Full Frog attack dimensions mismatch');
  const texture=gl.createTexture();gl.activeTexture(gl.TEXTURE12);gl.bindTexture(gl.TEXTURE_2D,texture);
  const flip=gl.getParameter(gl.UNPACK_FLIP_Y_WEBGL);gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,true);
  gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,image);gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,flip);
@@ -45,7 +46,7 @@ export async function createEliteFrogAttackRenderer(gl,{program,geometry,uniform
  }`);
  const mesh=geometry(gl,[0,1,0,1,1,0,1,0,0,0,0,0],null,[0,1,1,1,1,0,0,0],[0,2,1,0,3,2]);
  gl.useProgram(p);gl.uniform1i(gl.getUniformLocation(p,'atlas'),12);gl.uniform1i(gl.getUniformLocation(p,'canopy'),1);
- return {textureBytes:ATTACK_ART.width*ATTACK_ART.height*4,draw(e,frame,vp,player,camera){
+ return {textureBytes:ATTACK_ART.width*ATTACK_ART.height*scale*scale*4,draw(e,frame,vp,player,camera){
   const layout=eliteFrogAttackLayout(e,frame,camera);e.frogSpriteCamera=camera;
   gl.activeTexture(gl.TEXTURE12);gl.bindTexture(gl.TEXTURE_2D,texture);gl.activeTexture(gl.TEXTURE0);gl.useProgram(p);
   const {right,up,pixelSize,facing,cell,pivot,rect}=layout;
