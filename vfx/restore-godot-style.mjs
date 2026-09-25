@@ -5,15 +5,12 @@
 import {readFileSync} from 'node:fs';
 import {adaptNeurotoxinCast} from './neurotoxin-cast-adapter.mjs';
 import {adaptOpaqueCrystals} from './opaque-crystal-adapter.mjs';
-export const VFX_RESTORE_VERSION='godot-source-port-v2';
+export const VFX_RESTORE_VERSION='godot-source-port-v1';
 const read=name=>readFileSync(new URL(name,import.meta.url),'utf8');
 export function applyRestoredSkillVfx(source){
   const start=source.indexOf('un={water:'),end=source.indexOf('function hn(',start);
   if(start<0||end<start||source.indexOf('un={water:',start+1)>=0)throw Error('Elemental renderer baseline changed');
-  const originalRenderer=source.slice(start,end);
-  let legacy=originalRenderer.replace('function pn(','function pnLegacy(').replace('function mn(','function mnLegacy(');
-  if(legacy===originalRenderer||!legacy.includes('function pnLegacy(')||!legacy.includes('function mnLegacy('))throw Error('Legacy renderer extraction failed');
-  legacy=legacy.replace('let u=pn(a,o,c,l)','let u=pnLegacy(a,o,c,l)');
+  const legacy=read('./legacy-status-renderer.txt');
   const module=adaptOpaqueCrystals(adaptNeurotoxinCast(read('./godot-elemental-renderer.mjs'))).replace('export function createGodotSkillVfxRenderer','function createGodotSkillVfxRenderer');
   const shaders=JSON.parse(read('./godot-shaders.json'));
   const wrapper=`function mn(e){
@@ -24,7 +21,7 @@ export function applyRestoredSkillVfx(source){
     for(let [t,n,r]of [[0,3,0],[1,3,12],[2,4,24]]){e.enableVertexAttribArray(t);e.vertexAttribPointer(t,n,e.FLOAT,false,40,r)}
     e.bindVertexArray(null);
     return {draw(a,o,s,c,l){
-      const extra=restored.draw(a,{...o,player:W.player},s,c,l),legacyInput={...o,abilities:(o.abilities||[]).filter(t=>t.family==="chain"),orbs:[]},u=pnLegacy(a,legacyInput,c,l);
+      const extra=restored.draw(a,{...o,player:W.player},s,c,l),u=pn(a,o,c,l);
       if(u.length){e.useProgram(t);e.bindVertexArray(n);e.bindBuffer(e.ARRAY_BUFFER,r);e.bufferData(e.ARRAY_BUFFER,u,e.DYNAMIC_DRAW);e.uniformMatrix4fv(i,false,s);e.disable(e.CULL_FACE);e.enable(e.BLEND);e.blendFunc(e.SRC_ALPHA,e.ONE_MINUS_SRC_ALPHA);e.depthMask(false);e.drawArrays(e.TRIANGLES,0,u.length/10);e.depthMask(true);e.disable(e.BLEND);e.bindVertexArray(null)}
       return {calls:extra.calls+(u.length?1:0),triangles:extra.triangles+u.length/30};
     }};
