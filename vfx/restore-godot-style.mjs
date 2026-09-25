@@ -24,7 +24,7 @@ export function applyRestoredSkillVfx(source){
     for(let [t,n,r]of [[0,3,0],[1,3,12],[2,4,24]]){e.enableVertexAttribArray(t);e.vertexAttribPointer(t,n,e.FLOAT,false,40,r)}
     e.bindVertexArray(null);
     return {draw(a,o,s,c,l){
-      const extra=restored.draw(a,{...o,player:W.player},s,c,l),legacyInput={...o,abilities:(o.abilities||[]).filter(t=>t.family===`chain`),orbs:[]},u=pnLegacy(a,legacyInput,c,l);
+      const extra=restored.draw(a,{...o,player:W.player},s,c,l),legacyInput={...o,abilities:(o.abilities||[]).filter(t=>t.family==="chain"),orbs:[]},u=pnLegacy(a,legacyInput,c,l);
       if(u.length){e.useProgram(t);e.bindVertexArray(n);e.bindBuffer(e.ARRAY_BUFFER,r);e.bufferData(e.ARRAY_BUFFER,u,e.DYNAMIC_DRAW);e.uniformMatrix4fv(i,false,s);e.disable(e.CULL_FACE);e.enable(e.BLEND);e.blendFunc(e.SRC_ALPHA,e.ONE_MINUS_SRC_ALPHA);e.depthMask(false);e.drawArrays(e.TRIANGLES,0,u.length/10);e.depthMask(true);e.disable(e.BLEND);e.bindVertexArray(null)}
       return {calls:extra.calls+(u.length?1:0),triangles:extra.triangles+u.length/30};
     }};
