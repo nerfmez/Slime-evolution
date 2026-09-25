@@ -1,8 +1,9 @@
 import {createEliteFrogAttackRenderer,eliteFrogAttackFrame,eliteFrogAttackFacing} from './elite-frog-attack.js';
-// Elite Moss Frog sprite renderer built from the user's supplied two-sheet art.
+// Elite Moss Frog sprite renderer built from the user's supplied two-sheet art
+// (art/elite-frog/supplied-*.png), rebuilt at 4x texel density by art/elite-frog/build-hires-atlas.py.
 // The ordinary Moss Frog remains on the approved frog-moveset.png renderer.
-export const ELITE_FROG_ATLAS_WIDTH=320;
-export const ELITE_FROG_ATLAS_HEIGHT=880;
+export const ELITE_FROG_ATLAS_WIDTH=1280;
+export const ELITE_FROG_ATLAS_HEIGHT=3520;
 export const ELITE_FROG_CELL_WORLD=1.95;
 export const ELITE_FROG_FRAME=Object.freeze({
   idle:0,hit:1,death:[2,3,4],

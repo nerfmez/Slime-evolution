@@ -31,10 +31,10 @@ test('EXP critter identity stays species-specific and Water remains visibly larg
 
 
 test('supplied Elite Frog atlas has dedicated idle/hit/death, eight movement and eight tongue frames',async()=>{
- assert.equal(ELITE_FROG_ATLAS_WIDTH,320);assert.equal(ELITE_FROG_ATLAS_HEIGHT,880);
+ assert.equal(ELITE_FROG_ATLAS_WIDTH,1280);assert.equal(ELITE_FROG_ATLAS_HEIGHT,3520);
  assert.deepEqual(ELITE_FROG_FRAME.walk,[5,6,7,8,9,10,11,12]);assert.deepEqual(ELITE_FROG_FRAME.attack,[13,14,15,16,17,18,19,20]);
  const bytes=await readFile(new URL('../species/enemies/elite-frog-atlas.webp',import.meta.url));
- assert.equal(bytes.length,53948);assert.equal(bytes.toString('ascii',0,4),'RIFF');assert.equal(bytes.toString('ascii',8,12),'WEBP');
+ const hires=JSON.parse(await readFile(new URL('../art/elite-frog/hires-atlas-source.json',import.meta.url),'utf8'));assert.equal(sha256(bytes),hires.atlasSHA256,'body atlas is the 4x rebuild from the supplied originals');assert.equal(hires.scale,4);assert.ok(hires.frames.every(f=>f.alphaMAE<4),'every 4x frame keeps the approved silhouette');assert.equal(bytes.toString('ascii',0,4),'RIFF');assert.equal(bytes.toString('ascii',8,12),'WEBP');
  const base={hp:190,elite:true,type:'thorn',hit:0,windup:0,frogAttack:0,frogDeath:null,frogHopActive:false,frogHopPhase:0};
  assert.equal(eliteFrogPose(base),0);assert.equal(eliteFrogPose({...base,hit:.2}),1);
  assert.deepEqual([0,.13,.26].map(frogDeath=>eliteFrogPose({...base,hp:0,frogDeath})),[2,3,4]);

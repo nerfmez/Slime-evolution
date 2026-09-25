@@ -1,0 +1,378 @@
+{
+  "scale": 4,
+  "bodySheetMatchToAttack": 0.88307,
+  "cell": [
+    640,
+    320
+  ],
+  "size": [
+    1280,
+    3520
+  ],
+  "sources": {
+    "supplied-body-sheet.png": "4e3402b340ea25e42eb6d4de9adf072fc4d7b72334db1bb51d0c362aa135779b",
+    "supplied-tongue-sheet.png": "f6da75e0f1d19675f8330fa7119d268b685712c4a2f356acd109d1b56e1542a6",
+    "supplied-portrait.png": "d55900882449f7b01a45dcc0c3f8bd5dc3784cfb3a1161ab18608a528ac49d71"
+  },
+  "legacyBodyAtlasSHA256": "bae1c982eda6a31a95958f7cb563e484680871b13f138ccedec7ae1e3db35679",
+  "atlasSHA256": "71e215609bc00a2b415afe868379551581518c3118114e06cb91d6d9681c7a41",
+  "frames": [
+    {
+      "frame": 0,
+      "sheet": "supplied-body-sheet.png",
+      "sourceBox": [
+        0,
+        49,
+        370,
+        477
+      ],
+      "scale": 0.20669,
+      "origin": [
+        17.615,
+        0.274
+      ],
+      "alphaMAE": 1.05,
+      "rgbMAEonBody": 10.85
+    },
+    {
+      "frame": 1,
+      "sheet": "supplied-body-sheet.png",
+      "sourceBox": [
+        286,
+        74,
+        647,
+        468
+      ],
+      "scale": 0.20606,
+      "origin": [
+        18.938,
+        7.278
+      ],
+      "alphaMAE": 0.76,
+      "rgbMAEonBody": 11.62
+    },
+    {
+      "frame": 2,
+      "sheet": "supplied-body-sheet.png",
+      "sourceBox": [
+        560,
+        65,
+        924,
+        471
+      ],
+      "scale": 0.20435,
+      "origin": [
+        18.691,
+        4.823
+      ],
+      "alphaMAE": 1.05,
+      "rgbMAEonBody": 9.8
+    },
+    {
+      "frame": 3,
+      "sheet": "supplied-body-sheet.png",
+      "sourceBox": [
+        851,
+        106,
+        1262,
+        470
+      ],
+      "scale": 0.20339,
+      "origin": [
+        12.373,
+        13.528
+      ],
+      "alphaMAE": 0.76,
+      "rgbMAEonBody": 10.85
+    },
+    {
+      "frame": 4,
+      "sheet": "supplied-body-sheet.png",
+      "sourceBox": [
+        1183,
+        109,
+        1536,
+        470
+      ],
+      "scale": 0.20405,
+      "origin": [
+        15.975,
+        13.62
+      ],
+      "alphaMAE": 0.61,
+      "rgbMAEonBody": 9.66
+    },
+    {
+      "frame": 5,
+      "sheet": "supplied-body-sheet.png",
+      "sourceBox": [
+        0,
+        414,
+        373,
+        746
+      ],
+      "scale": 0.20427,
+      "origin": [
+        15.852,
+        20.166
+      ],
+      "alphaMAE": 0.77,
+      "rgbMAEonBody": 10.97
+    },
+    {
+      "frame": 6,
+      "sheet": "supplied-body-sheet.png",
+      "sourceBox": [
+        309,
+        423,
+        745,
+        746
+      ],
+      "scale": 0.20501,
+      "origin": [
+        9.086,
+        21.843
+      ],
+      "alphaMAE": 0.46,
+      "rgbMAEonBody": 10.08
+    },
+    {
+      "frame": 7,
+      "sheet": "supplied-body-sheet.png",
+      "sourceBox": [
+        678,
+        460,
+        1118,
+        746
+      ],
+      "scale": 0.20455,
+      "origin": [
+        7.915,
+        29.255
+      ],
+      "alphaMAE": 0.59,
+      "rgbMAEonBody": 11.01
+    },
+    {
+      "frame": 8,
+      "sheet": "supplied-body-sheet.png",
+      "sourceBox": [
+        1073,
+        411,
+        1536,
+        751
+      ],
+      "scale": 0.20471,
+      "origin": [
+        -2.113,
+        18.122
+      ],
+      "alphaMAE": 0.88,
+      "rgbMAEonBody": 11.5
+    },
+    {
+      "frame": 9,
+      "sheet": "supplied-body-sheet.png",
+      "sourceBox": [
+        0,
+        677,
+        422,
+        986
+      ],
+      "scale": 0.20375,
+      "origin": [
+        16.833,
+        24.751
+      ],
+      "alphaMAE": 0.71,
+      "rgbMAEonBody": 9.95
+    },
+    {
+      "frame": 10,
+      "sheet": "supplied-body-sheet.png",
+      "sourceBox": [
+        334,
+        675,
+        732,
+        991
+      ],
+      "scale": 0.20572,
+      "origin": [
+        9.322,
+        23.225
+      ],
+      "alphaMAE": 0.68,
+      "rgbMAEonBody": 11.24
+    },
+    {
+      "frame": 11,
+      "sheet": "supplied-body-sheet.png",
+      "sourceBox": [
+        730,
+        736,
+        1152,
+        1024
+      ],
+      "scale": 0.20327,
+      "origin": [
+        9.538,
+        27.331
+      ],
+      "alphaMAE": 0.7,
+      "rgbMAEonBody": 10.48
+    },
+    {
+      "frame": 12,
+      "sheet": "supplied-body-sheet.png",
+      "sourceBox": [
+        1163,
+        682,
+        1536,
+        1024
+      ],
+      "scale": 0.20349,
+      "origin": [
+        12.805,
+        15.817
+      ],
+      "alphaMAE": 0.79,
+      "rgbMAEonBody": 10.95
+    },
+    {
+      "frame": 13,
+      "sheet": "supplied-tongue-sheet.png",
+      "sourceBox": [
+        0,
+        30,
+        369,
+        467
+      ],
+      "scale": 0.17601,
+      "origin": [
+        24.495,
+        9.487
+      ],
+      "alphaMAE": 0.59,
+      "rgbMAEonBody": 10.76
+    },
+    {
+      "frame": 14,
+      "sheet": "supplied-tongue-sheet.png",
+      "sourceBox": [
+        372,
+        38,
+        791,
+        468
+      ],
+      "scale": 0.17691,
+      "origin": [
+        16.86,
+        10.607
+      ],
+      "alphaMAE": 0.37,
+      "rgbMAEonBody": 10.82
+    },
+    {
+      "frame": 15,
+      "sheet": "supplied-tongue-sheet.png",
+      "sourceBox": [
+        789,
+        37,
+        1358,
+        467
+      ],
+      "scale": 0.17768,
+      "origin": [
+        17.424,
+        10.652
+      ],
+      "alphaMAE": 0.77,
+      "rgbMAEonBody": 11.9
+    },
+    {
+      "frame": 16,
+      "sheet": "supplied-tongue-sheet.png",
+      "sourceBox": [
+        1272,
+        42,
+        1774,
+        467
+      ],
+      "scale": 0.17693,
+      "origin": [
+        18.294,
+        11.453
+      ],
+      "alphaMAE": 1.23,
+      "rgbMAEonBody": 13.38
+    },
+    {
+      "frame": 17,
+      "sheet": "supplied-tongue-sheet.png",
+      "sourceBox": [
+        0,
+        503,
+        641,
+        876
+      ],
+      "scale": 0.17704,
+      "origin": [
+        17.17,
+        20.731
+      ],
+      "alphaMAE": 2.7,
+      "rgbMAEonBody": 16.7
+    },
+    {
+      "frame": 18,
+      "sheet": "supplied-tongue-sheet.png",
+      "sourceBox": [
+        546,
+        498,
+        1069,
+        876
+      ],
+      "scale": 0.17816,
+      "origin": [
+        14.634,
+        19.694
+      ],
+      "alphaMAE": 2.34,
+      "rgbMAEonBody": 14.66
+    },
+    {
+      "frame": 19,
+      "sheet": "supplied-tongue-sheet.png",
+      "sourceBox": [
+        990,
+        513,
+        1484,
+        876
+      ],
+      "scale": 0.17684,
+      "origin": [
+        22.896,
+        22.481
+      ],
+      "alphaMAE": 1.4,
+      "rgbMAEonBody": 13.59
+    },
+    {
+      "frame": 20,
+      "sheet": "supplied-tongue-sheet.png",
+      "sourceBox": [
+        1417,
+        481,
+        1774,
+        882
+      ],
+      "scale": 0.17752,
+      "origin": [
+        21.365,
+        15.64
+      ],
+      "alphaMAE": 0.65,
+      "rgbMAEonBody": 12.65
+    }
+  ]
+}
