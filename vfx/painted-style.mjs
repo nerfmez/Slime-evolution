@@ -27,7 +27,7 @@ const FIRE_NEW = `let n=${STYLE_ON}?{calls:0,triangles:0}:Vr.draw(Y,X,W.time,W.c
 
 const CONTROLS = '<details id="vfx-style-tools" open><summary>เอฟเฟกต์สกิลแบบใหม่ (รอตรวจ)</summary>' +
   '<label class="check"><input id="vfx-style-on" type="checkbox" checked>สีน้ำวาดมือแบบใหม่ (ปิด = เอฟเฟกต์เดิม)</label>' +
-  '<p class="settings-note">บันทึกในเครื่องนี้ · ใช้ปุ่มลองสกิลด้านบนเพื่อดูทุกสกิล</p></details>';
+  '<p class="settings-note">บันทึกในเครื่องนี้ · กดปุ่ม “ทดสอบสกิล” เพื่อดูทุกสกิล</p></details>';
 // Runs before the game module, so the renderer reads the saved choice on its first frame.
 const STATE_SCRIPT = '<script>(()=>{const K="slime.vfxStyle.v2";let s={on:!0};' +
   'try{const v=JSON.parse(localStorage.getItem(K));if(v&&typeof v.on==="boolean")s={on:v.on}}catch{}' +

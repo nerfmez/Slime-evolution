@@ -189,7 +189,7 @@ export function createPaintedSkillRenderer(gl) {
     const n = Math.max(3, Math.round(w * 2 / .55));
     for (let j = 0; j < n; j++) { // spray thrown off the crest
       const s = (j + .5) / n * 2 - 1, k = (time * 1.6 + hash(j + seed)) % 1, base = [t.x + sd[0] * s * w * .9 + d[0] * (.1 + k * .5), H * 1.45 + k * .45, t.z + sd[2] * s * w * .9 + d[2] * (.1 + k * .5)];
-      if (j % 2) bb(PUFF, [t.x + sd[0] * s * w * .92, H * 1.25, t.z + sd[2] * s * w * .92], .3, .2, P.foam, {alpha: A * .95, p: [time * 3 + j, 0, 0, 0], seed: j + seed, bias: .02, lift: .4});
+      if (j % 2) bb(PUFF, [t.x + sd[0] * s * w * .92, H * 1.25, t.z + sd[2] * s * w * .92], .22, .15, P.foam, {alpha: A * .95, p: [time * 3 + j, 0, 0, 0], seed: j + seed, bias: .02, lift: .4});
       trail(STREAK, base, [-d[0], -.4 + k, -d[2]], .15, .055, P.water, {alpha: A * (1 - k), p: [1, 0, 0, 0], seed: j, bias: .03, shine: 1, lift: .4});
     }
   }
@@ -290,13 +290,16 @@ export function createPaintedSkillRenderer(gl) {
     disc(BLOB, t.x, t.z, r, P.toxin, {alpha: .16 * A, p: [0, 0, .7, 0], layer: 0, seed, wobble: .08});
     disc(RING, t.x, t.z, r, P.toxinShade, {alpha: .8 * A, p: [.9, .025, .6, .03], layer: 1, seed, rag: 1});
     const fr = 1.6 * (.35 + .65 * open), pulse = 1 + .06 * Math.sin(t.age * TAU / .45);
-    disc(FLOWER, t.x + .08, t.z - .06, fr * 1.06 * pulse, P.toxinShade, {alpha: .55 * A, p: [6, 1.7, .28, seed * 6 + .26], layer: 2, seed});
-    disc(FLOWER, t.x, t.z, fr * pulse, P.petal, {alpha: A, p: [6, 1.7, .28, seed * 6], layer: 3, seed, rag: .3});
-    disc(FLOWER, t.x, t.z, fr * .55 * pulse, P.petal, {alpha: A, p: [6, 1.5, .4, seed * 6 + .52], layer: 4, seed: seed + 1});
-    disc(BLOB, t.x, t.z, fr * .24, P.toxin, {alpha: A, p: [1, .3, 0, 0], layer: 5, seed, shine: .6});
+    disc(FLOWER, t.x + .08, t.z - .06, fr * 1.06 * pulse, P.toxinShade, {alpha: .5 * A, p: [6, 1.7, .28, seed * 6 + .26], layer: 2, seed});
+    disc(FLOWER, t.x, t.z, fr * pulse, P.petal, {alpha: .85 * A, p: [6, 1.7, .28, seed * 6], layer: 3, seed, rag: .3});
+    const sway = Math.sin(t.age * 2.1) * .08, top = [t.x + sway, .15 + 1.05 * open, t.z], hs = .62 * open * pulse; at([t.x, .6, t.z]);
+    span(RIBBON, [t.x, .02, t.z], top, .1, P.toxinDeep, {alpha: A, p: [.75, 0, .04, .25], seed, lift: .6});
+    for (const side of [-1, 1]) flame([t.x, .12 + .12 * open, t.z], .42 * open, .17 * open, Math.PI / 2 - side * .95, P.toxin, {alpha: A, p: [0, 0, 0, .3], seed: seed + side, lift: .6});
+    bb(FLOWER, top, hs, hs * .72, P.petal, {alpha: A, p: [6, 1.6, .3, seed * 6], seed, lift: .62, rot: sway, rag: .3});
+    bb(BLOB, [top[0], top[1] + .02, top[2]], hs * .3, hs * .24, P.toxin, {alpha: A, p: [1, .3, 0, 0], seed, lift: .64, shine: .5});
     const k = (t.age % .45) / .45, wave = Math.floor(t.age / .45);
     for (let j = 0; j < 8; j++) {
-      const an = j * TAU / 8 + wave * .6, dist = r * (.1 + k * .75), c = [t.x + Math.cos(an) * dist, .3 + Math.sin(k * Math.PI) * .6 + .1 * hash(j + wave), t.z + Math.sin(an) * dist], s = .13 + .08 * k; at(c);
+      const an = j * TAU / 8 + wave * .6, dist = r * k * .8, c = [top[0] + Math.cos(an) * dist, top[1] + Math.sin(k * Math.PI) * .35 - k * .5 + .1 * hash(j + wave), top[2] + Math.sin(an) * dist], s = .13 + .08 * k; at(c);
       bb(PUFF, c, s, s * .8, j % 2 ? P.spore : P.toxin, {alpha: A * (1 - smooth(.65, 1, k)) * smooth(0, .12, k), p: [time + j, 0, 0, 0], seed: j, lift: .2});
     }
   }
@@ -334,8 +337,8 @@ export function createPaintedSkillRenderer(gl) {
   }
   function frostCone(t, time) { // WHITEOUT BREATH: a cone of swirling snow
     const p = clamp(t.age / t.life), A = smooth(0, .12, p) * (1 - smooth(.78, 1, p)), L = t.length * (.35 + .65 * smooth(0, .22, p)), ang = t.angle, d = [t.dx, 0, t.dz], yaw = Math.atan2(t.dx, t.dz), sd = hash(t.x + t.z);
-    decal(FAN, t.x + d[0] * L / 2, t.z + d[2] * L / 2, d[0], d[2], L / 2, L * Math.sin(ang), P.frost, {alpha: .75 * A, p: [ang, 1.4, 0, 0], layer: 1, seed: sd, rag: .6, shine: .6});
-    const L2 = L * .72; decal(FAN, t.x + d[0] * L2 / 2, t.z + d[2] * L2 / 2, d[0], d[2], L2 / 2, L2 * Math.sin(ang * .6), P.foam, {alpha: .7 * A, p: [ang * .6, 2, 0, 0], layer: 2, seed: sd + 1, rag: .6});
+    decal(FAN, t.x + d[0] * L / 2, t.z + d[2] * L / 2, d[0], d[2], L / 2, L * Math.sin(ang), P.foam, {alpha: .92 * A, p: [ang, 1.4, 0, 0], layer: 1, seed: sd, rag: .6, shine: 1});
+    const L2 = L * .78; decal(FAN, t.x + d[0] * L2 / 2, t.z + d[2] * L2 / 2, d[0], d[2], L2 / 2, L2 * Math.sin(ang * .55), P.frost, {alpha: .75 * A, p: [ang * .55, 2, 0, 0], layer: 2, seed: sd + 1, rag: .6, shine: .6});
     for (let j = 0; j < 6; j++) { // snow clouds rolling out along the cone
       const k = (time * .9 + j / 6) % 1, a = (hash(j * 3.3 + sd) - .5) * 1.2 * ang, dist = .5 + k * L * .85, c = [t.x + Math.sin(yaw + a) * dist, .35 + k * .25, t.z + Math.cos(yaw + a) * dist], s = .28 + k * .42; at(c);
       bb(PUFF, c, s, s * .75, P.frost, {alpha: A * smooth(0, .15, k) * (1 - smooth(.7, 1, k)) * .9, p: [time * 2 + j, 0, 0, 0], seed: j + sd, dissolve: smooth(.6, 1, k), lift: .2});
@@ -444,14 +447,15 @@ export function createPaintedSkillRenderer(gl) {
     for (let j = 0; j < 6; j++) { const an = j * TAU / 6 + seed * 5, c = [t.x + Math.cos(an) * R * .86, .32, t.z + Math.sin(an) * R * .86]; at(c); bb(STAR, c, .15, .15, P.sparkle, {alpha: A, p: [4, 8, .12, 0], seed: j}); }
   }
   // ---------------------------------------------------------------- Fire: layered painted flames, warm smoke, a painted sun, meteors, a fire twister
-  function fireball(t, time) { // Inferno shot: a flame wrapped round an ember core, like the card
-    const dx = t.vx ?? (t.tx - t.x), dz = t.vz ?? (t.tz - t.z), n = Math.hypot(dx, dz) || 1, d = [dx / n, 0, dz / n], y = (t.y ?? .36) + .14, c = [t.x, y, t.z], back = [-d[0], .35, -d[2]], sd = hash(t.x * .7 + t.z * 1.3);
+  function fireball(t, time) { // Inferno shot: the card's flame with its ember core, trailing sparks as it flies
+    const dx = t.vx ?? (t.tx - t.x), dz = t.vz ?? (t.tz - t.z), n = Math.hypot(dx, dz) || 1, d = [dx / n, 0, dz / n], y = (t.y ?? .36) + .16, c = [t.x, y, t.z], sd = hash(t.x * .7 + t.z * 1.3);
+    const sx = d[0] * cam.r[0] + d[2] * cam.r[2], rot = Math.PI / 2 + clamp(sx, -1, 1) * .5;
     at(c); shadow(t.x, t.z, .36, .26);
-    for (let j = 0; j < 5; j++) { const k = (time * 3 + j / 5 + sd) % 1, q = [c[0] - d[0] * (.4 + k * .7) + Math.sin(j * 2.3) * .08, y + .06 + k * .35, c[2] - d[2] * (.4 + k * .7)], s = .06 * (1 - k); bb(BLOB, q, s, s, j % 2 ? P.fire : P.flame, {alpha: 1 - k, p: [.5, 0, 0, 0], seed: j}); }
-    trail(FLAME, c, back, .85, .44, P.flame, {p: [9, 1, 0, 0], seed: sd, lift: .2});
-    trail(FLAME, c, back, .6, .31, P.fire, {p: [11, .8, 0, .35], seed: sd + 1, bias: .01, lift: .2});
-    bb(BLOB, c, .2, .2, P.fire, {p: [0, 0, 0, 0], seed: sd, bias: .02, lift: .2});
-    bb(BLOB, c, .13, .13, P.ember, {p: [1, .26, 0, 0], seed: sd, bias: .03, lift: .2});
+    for (let j = 0; j < 6; j++) { const k = (time * 3 + j / 6 + sd) % 1, q = [c[0] - d[0] * (.25 + k * .8) + Math.sin(j * 2.3) * .08, y + .05 + k * .4, c[2] - d[2] * (.25 + k * .8)], s = .065 * (1 - k); bb(BLOB, q, s, s, j % 2 ? P.fire : P.flame, {alpha: 1 - k, p: [.5, 0, 0, 0], seed: j, lift: .2}); }
+    flame(c, .78, .4, rot, P.flame, {p: [10, 1, 0, 0], seed: sd, lift: .2});
+    flame(c, .55, .28, rot, P.fire, {p: [12, .8, 0, .35], seed: sd + 1, bias: .01, lift: .2});
+    bb(BLOB, c, .19, .19, P.fire, {p: [0, 0, 0, 0], seed: sd, bias: .02, lift: .2});
+    bb(BLOB, c, .12, .12, P.ember, {p: [1, .26, 0, 0], seed: sd, bias: .03, lift: .2});
   }
   function fireEmber(t, time) {
     const dx = t.vx ?? 0, dz = t.vz ?? 1, n = Math.hypot(dx, dz) || 1, c = [t.x, (t.y ?? .16) + .14, t.z], fade = Math.min(1, (t.life ?? 1) * 3), sd = hash(t.x * 3 + t.z); at(c);
@@ -479,7 +483,8 @@ export function createPaintedSkillRenderer(gl) {
     const grow = smooth(0, .16, p), fade = 1 - smooth(.32, .62, p);
     if (fade > 0) flameCrown(e.x, e.z, r, grow, fade, time, seed);
     if (p < .5) { const f = 1 - smooth(.25, .5, p); flame([e.x, .05, e.z], r * 1.05 * grow, r * .55 * grow, Math.PI / 2, P.flame, {alpha: f, p: [9, 1, 0, .3], seed, bias: .02, lift: .3}); flame([e.x, .05, e.z], r * .68 * grow, r * .36 * grow, Math.PI / 2, P.fire, {alpha: f, p: [11, .7, 0, .6], seed: seed + 1, bias: .03, lift: .3}); }
-    at([e.x, .45, e.z]); if (p < .2) bb(BURST, [e.x, .45, e.z], r * mix(.4, 1.15, p / .2), r * mix(.4, 1.15, p / .2), P.fire, {alpha: 1 - smooth(.08, .2, p), p: [12, 2.4, .42, 0], seed, lift: .4});
+    at([e.x, .45, e.z]); if (p < .2) bb(BURST, [e.x, .45, e.z], r * mix(.5, 1.2, p / .2), r * mix(.5, 1.2, p / .2), P.fire, {alpha: 1 - smooth(.08, .2, p), p: [11, 1.4, .56, 0], seed, lift: .4});
+    if (p < .42) { const b = smooth(0, .12, p), c = [e.x, .15 + .45 * r * b, e.z]; bb(BLOB, c, r * .6 * b, r * .52 * b, P.fire, {alpha: 1 - smooth(.22, .42, p), p: [1, 0, 0, 0], seed, lift: .35, bias: .04, wobble: .12, rag: .4}); }
     smokeRise(e.x, e.z, r, clamp((p - .2) / .8), time, seed);
     for (let j = 0; j < 8; j++) { const an = j * TAU / 8 + seed * 3, k = clamp(p / .5), c = [e.x + Math.cos(an) * r * (.2 + k * 1.1), .2 + Math.sin(k * Math.PI) * .6 * r, e.z + Math.sin(an) * r * (.2 + k * 1.1)]; at(c); bb(BLOB, c, .065, .065, P.fire, {alpha: 1 - k, p: [.5, 0, 0, 0], seed: j, lift: .2}); }
   }
@@ -516,8 +521,8 @@ export function createPaintedSkillRenderer(gl) {
       const grow = smooth(0, .22, p), fade = 1 - smooth(.5, 1, p);
       flameCrown(e.x, e.z, R, grow, fade, time, seed, 9, .7, .62);
       const c = [e.x, .55 + p * .3, e.z]; at(c);
-      if (p < .5) { flame([e.x, .05, e.z], R * 1.1 * grow, R * .6 * grow, Math.PI / 2, P.flame, {alpha: 1 - smooth(.3, .5, p), p: [9, 1, 0, .3], seed, bias: .02, lift: .3}); paintedSun(c, R * (1 - p) * .8, time, 1 - smooth(.2, .45, p), 1.4); }
-      if (p < .22) bb(BURST, [e.x, .5, e.z], R * mix(.6, 1.4, p / .22), R * mix(.6, 1.4, p / .22), P.fire, {alpha: 1 - smooth(.1, .22, p), p: [14, 2.4, .4, 0], seed, lift: .45});
+      if (p < .5) { flame([e.x, .05, e.z], R * 1.1 * grow, R * .6 * grow, Math.PI / 2, P.flame, {alpha: 1 - smooth(.3, .5, p), p: [9, 1, 0, .3], seed, bias: .02, lift: .3}); const b = smooth(0, .18, p); bb(BLOB, [e.x, .2 + R * .5 * b, e.z], R * .75 * b, R * .62 * b, P.fire, {alpha: 1 - smooth(.28, .5, p), p: [1, .2, 0, 0], seed, lift: .35, bias: .04, wobble: .1, rag: .4}); }
+      if (p < .22) bb(BURST, [e.x, .5, e.z], R * mix(.7, 1.45, p / .22), R * mix(.7, 1.45, p / .22), P.fire, {alpha: 1 - smooth(.1, .22, p), p: [13, 1.4, .58, 0], seed, lift: .45});
     }
     smokeRise(e.x, e.z, R * .85, clamp((t - burst * .55) / (total - burst * .55)), time, seed, 5);
   }
@@ -544,15 +549,16 @@ export function createPaintedSkillRenderer(gl) {
     const A = smooth(0, cfg.cycloneRise, e.age) * clamp((e.life ?? 1) / cfg.cycloneFade), r = e.r, seed = hash(e.x * .1 + (e.id || 0)), H = r * 1.9;
     disc(SPIRAL, e.x, e.z, r * 1.05, P.scorch, {alpha: .6 * A, p: [1.5, 3, -e.age * 3, .42], layer: 0, seed, rag: .5});
     disc(RING, e.x, e.z, r, P.flame, {alpha: .55 * A, p: [.9, .05, .6, .05], layer: 1, seed, rag: .6});
-    const mid = [e.x, H * .5, e.z]; at(mid);
-    flame([e.x, H + .25, e.z], H * .55, r * .62, -Math.PI / 2, P.flame, {alpha: .55 * A, p: [6, 0, 0, 0], seed, bias: -.05});
-    for (let j = 0; j < 8; j++) {
-      const u = j / 7, y = .15 + u * H, rad = r * (.28 + .66 * u), spin = -e.age * 7 + u * 1.8 + j * .7, c = [e.x + Math.sin(e.age * 2 + u * 3) * .1 * u, y, e.z];
-      bb(ARC, c, rad, rad * .36, j % 2 ? P.flame : P.fire, {alpha: A * .95, p: [.86, spin, 4.6, .2 + .08 * u], seed: j, bias: j * .001});
+    const mid = [e.x, H * .5 + .1, e.z]; at(mid);
+    const sway = Math.sin(e.age * 2.2) * .12;
+    bb(DRILL, [e.x + sway * .5, H * .5 + .1, e.z], H * .5, r * .78, P.flame, {rot: -Math.PI / 2 + sway * .2, asp: H * .5 / (r * .78), alpha: .92 * A, p: [e.age * 2.6, 1.3, 0, 0], seed});
+    for (let j = 0; j < 6; j++) {
+      const u = j / 5, y = .2 + u * H * .95, rad = r * (.3 + .62 * u), spin = -e.age * 7 + u * 1.8 + j * .9, c = [e.x + sway * u, y, e.z];
+      bb(ARC, c, rad * 1.08, rad * .36, j % 2 ? P.fire : P.flame, {alpha: A, p: [.86, spin, 3.6, .2 + .06 * u], seed: j, bias: .01 + j * .001});
     }
-    for (let j = 0; j < 5; j++) { const an = e.age * 5 + j * TAU / 5, base = [e.x + Math.cos(an) * r * .5, .05, e.z + Math.sin(an) * r * .5]; flame(base, r * .5 * (.8 + .2 * Math.sin(e.age * 9 + j)), r * .24, Math.PI / 2 + Math.sin(an) * .3, j % 2 ? P.flame : P.fire, {alpha: A, p: [11, .8, 0, 0], seed: j + seed, bias: .01}); }
-    for (let j = 0; j < 7; j++) { const k = (e.age * .9 + j / 7) % 1, an = e.age * 6 + j * 2.4, c = [e.x + Math.cos(an) * r * (.3 + .6 * k), .2 + k * H, e.z + Math.sin(an) * r * (.3 + .6 * k)]; bb(BLOB, c, .07, .07, P.fire, {alpha: A * (1 - k), p: [.5, 0, 0, 0], seed: j, bias: .02}); }
-    const top = [e.x, H + .35, e.z]; bb(PUFF, top, r * .85, r * .5, P.smoke, {alpha: .6 * A, p: [e.age * 2, 0, 0, 0], seed, bias: .03});
+    for (let j = 0; j < 5; j++) { const an = e.age * 5 + j * TAU / 5, base = [e.x + Math.cos(an) * r * .5, .05, e.z + Math.sin(an) * r * .5]; flame(base, r * .5 * (.8 + .2 * Math.sin(e.age * 9 + j)), r * .25, Math.PI / 2 + Math.sin(an) * .3, j % 2 ? P.flame : P.fire, {alpha: A, p: [11, .8, 0, 0], seed: j + seed, bias: .02}); }
+    for (let j = 0; j < 8; j++) { const k = (e.age * .9 + j / 8) % 1, an = e.age * 6 + j * 2.4, c = [e.x + Math.cos(an) * r * (.3 + .6 * k), .2 + k * H, e.z + Math.sin(an) * r * (.3 + .6 * k)]; bb(BLOB, c, .07, .07, P.fire, {alpha: A * (1 - k), p: [.5, 0, 0, 0], seed: j, bias: .03}); }
+    bb(PUFF, [e.x + sway, H + .3, e.z], r * .9, r * .5, P.smoke, {alpha: .65 * A, p: [e.age * 2, 0, 0, 0], seed, bias: .04});
   }
   function fire(combat, world, time, visible, hideEnemies) {
     for (const t of combat.projectiles || []) { if (!Number.isFinite(t.x + t.z) || !visible(t.x, t.z, 2)) continue; note(t.ember ? 'fire:ember' : 'fire:fireball'); t.ember ? fireEmber(t, time) : fireball(t, time); }
@@ -748,15 +754,17 @@ void main(){
   float crest=mix(-1.15,.02+.6*pk*pk+.1*sin(q.x*4.3-T*3.),ends);
   d=max(q.y-crest,-q.y-1.);
   float u=(q.y+1.)/max(crest+1.,.01);
-  tone=clamp(.82-u*.62+(fbm(vec2(q.x*.7-T*.5,q.y*2.6)+seed)-.5)*.55,0.,1.);
-  hd=min(crest-.3-.12*vn(vec2(q.x*3.3+seed,T*2.))-q.y,abs(q.y-(crest-.62-.08*sin(q.x*3.1+T*2.)))-.035*ends);
+  tone=clamp(.64-u*.52+(fbm(vec2(q.x*.7-T*.5,q.y*2.6)+seed)-.5)*.55,0.,1.);
+  hd=min(crest-.22-.12*vn(vec2(q.x*3.3+seed,T*2.))-q.y,abs(q.y-(crest-.62-.08*sin(q.x*3.1+T*2.)))-.035*ends);
   fill=smoothstep(-1.,-.6,q.y);
  }
- float px=max(fwidth(d),1e-4),unitCss=1./(px*uDpr);
+ // All screen derivatives are taken before any discard (safe on every GPU, including iPad/Metal).
+ float px=max(fwidth(d),1e-4),tw=max(fwidth(tone),.012),hpx=max(fwidth(hd),1e-4),ipx=max(fwidth(ink),1e-4),unitCss=1./(px*uDpr);
+ if(d>px*uDpr*6.)discard;
  d+=(fbm(q*7.+seed*3.1)-.5)*px*uDpr*(2.4+vE.z*7.);
  if(d>px*1.5)discard;
  float cover=1.-smoothstep(-px,px,d);
- float tn=clamp(tone+(fbm(q*1.6+seed*9.)-.5)*.2,0.,1.),tw=max(fwidth(tn),.012);
+ float tn=clamp(tone+(fbm(q*1.6+seed*9.)-.5)*.2,0.,1.);
  float b1=smoothstep(.34-tw,.34+tw,tn),b2=smoothstep(.67-tw,.67+tw,tn);
  vec3 col=mix(mix(vD.rgb,vM.rgb,b1),vL.rgb,b2);
  col*=1.-max(0.,max(1.-abs(tn-.34)/(tw*2.2),1.-abs(tn-.67)/(tw*2.2)))*.12;
@@ -766,10 +774,10 @@ void main(){
  float pool=(1.-smoothstep(0.,iw*1.6,-d))*vM.w;
  col=mix(col,mix(col,vD.rgb*.92,.6),pool*.55);
  col=mix(col,pig,line*.88);
- float hpx=max(fwidth(hd),1e-4),white=1.-smoothstep(-hpx,hpx,hd);
+ float white=1.-smoothstep(-hpx,hpx,hd);
  if(vE.y>0.)white=max(white,smoothstep(.63,.69,fbm(q*2.2+seed*2.3))*b2*vE.y);
  col=mix(col,vec3(1.,.996,.975),white*.93);
- float ipx=max(fwidth(ink),1e-4);col=mix(col,pig*.7,(1.-smoothstep(-ipx,ipx,ink))*.95);
+ col=mix(col,pig*.7,(1.-smoothstep(-ipx,ipx,ink))*.95);
  vec2 sp=gl_FragCoord.xy/uDpr;float g=vn(sp*.85)*.55+vn(sp*.29+7.)*.45;
  col*=1.-(g-.5)*.18*(1.-b2*.45);
  col*=1.+(fbm(vQ*1.2+seed*4.)-.5)*.08;
