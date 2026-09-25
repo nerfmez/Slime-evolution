@@ -44,7 +44,8 @@ try{
  assert.ok((await page.goto(address.href,{waitUntil:'load',timeout:60000}))?.ok());
  await page.waitForFunction(()=>document.getElementById('error')?.hidden===false||(globalThis.__slimeGameQA?.waterRenderer&&document.querySelector('.skill-card')),null,{timeout:60000});
  assert.equal(await page.locator('#error').evaluate(e=>e.hidden),true,await page.locator('#error').textContent());
- await page.evaluate(()=>{document.querySelector('.skill-card').click();globalThis.__vfxFreezeRAF=true;document.getElementById('skill-test').click();});
+ // This suite covers the Godot port, which stays the old style behind Settings > Test (painted-vfx-browser.mjs covers the new look).
+ await page.evaluate(()=>{globalThis.__slimeVfxStyle.on=false;document.querySelector('.skill-card').click();globalThis.__vfxFreezeRAF=true;document.getElementById('skill-test').click();});
  assert.ok(await page.evaluate(()=>globalThis.__slimeGodotVfx?.diagnostics.version==='godot-source-port-v1'));
  for(const id of presets){
   await reset(id);

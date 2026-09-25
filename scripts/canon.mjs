@@ -11,7 +11,7 @@ import { applyRestoredSkillVfx, VFX_RESTORE_VERSION } from '../vfx/restore-godot
 import { applyOpeningRandom, OPENING_RANDOM_VERSION } from '../gameplay/opening-random.mjs';
 import { applyDefaultAudioVolume, AUDIO_DEFAULT_VERSION } from '../audio/default-volume.mjs';
 import { applyHudPolish, HUD_POLISH_VERSION } from '../ui/hud-polish.mjs';
-import { applyWatercolorUi, WATERCOLOR_STYLE_VERSION } from '../vfx/watercolor-style.mjs';
+import { applyPaintedVfx, PAINTED_VFX_VERSION } from '../vfx/painted-style.mjs';
 
 const root = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const digest = (b, algo = 'sha256') => createHash(algo).update(b).digest('hex');
@@ -60,8 +60,8 @@ export async function build() {
   if(digest(openingRandomSource)!==c.openingRandom.moduleSHA256) throw new Error('Opening skill randomizer differs from reviewed lock');
   const audioDefaultSource=await readFile(join(root,'audio/default-volume.mjs'));
   if(digest(audioDefaultSource)!==c.audioDefault.moduleSHA256) throw new Error('Default audio patch differs from reviewed lock');
-  const watercolorSource=await readFile(join(root,'vfx/watercolor-style.mjs'));
-  if(digest(watercolorSource)!==c.watercolorStyle.moduleSHA256) throw new Error('Watercolor skill style differs from reviewed lock');
+  const paintedStyle=await readFile(join(root,'vfx/painted-style.mjs')),paintedRenderer=await readFile(join(root,'vfx/painted-renderer.mjs'));
+  if(digest(paintedStyle)!==c.paintedVfx.moduleSHA256 || digest(paintedRenderer)!==c.paintedVfx.rendererSHA256) throw new Error('Painted skill effects differ from reviewed lock');
   const hudPolishSource=await readFile(join(root,'ui/hud-polish.mjs'));
   if(digest(hudPolishSource)!==c.hudPolish.moduleSHA256) throw new Error('HUD polish patch differs from reviewed lock');
   const speciesBundle=applySpeciesBundle(pacingOutput.bundle);
@@ -70,7 +70,7 @@ export async function build() {
   const speciesHtml=applySpeciesHtml(pacingOutput.html);
   const audioOutput=applyDefaultAudioVolume(openingBundle,speciesHtml);
   const hudOutput=applyHudPolish(audioOutput.bundle,audioOutput.html);
-  const output=applyWatercolorUi(hudOutput.bundle,hudOutput.html);
+  const output=applyPaintedVfx(hudOutput.bundle,hudOutput.html);
   await rm(dist,{recursive:true,force:true});
   await cp(game,dist,{recursive:true});
   if(await treeHash(dist)!==hash) throw new Error('Baseline copy changed source bytes');
@@ -101,10 +101,10 @@ export async function build() {
   }
   let commit = process.env.GITHUB_SHA;
   if (!commit) commit = execFileSync('git',['rev-parse','HEAD'],{cwd:root,encoding:'utf8'}).trim();
-  await writeFile(join(dist,'release.json'),JSON.stringify({canonicalCommit:c.commit,canonicalTree:c.tree,repositoryCommit:commit,runtimeTree:runtimeHash,pacingVersion:'cozy-10min-v2',speciesVersion:SPECIES_VERSION,vfxVersion:VFX_RESTORE_VERSION,openingRandomVersion:OPENING_RANDOM_VERSION,audioDefaultVersion:AUDIO_DEFAULT_VERSION,hudPolishVersion:HUD_POLISH_VERSION,watercolorStyleVersion:WATERCOLOR_STYLE_VERSION,runSeconds:600,files:manifest.length},null,2)+'\n');
+  await writeFile(join(dist,'release.json'),JSON.stringify({canonicalCommit:c.commit,canonicalTree:c.tree,repositoryCommit:commit,runtimeTree:runtimeHash,pacingVersion:'cozy-10min-v2',speciesVersion:SPECIES_VERSION,vfxVersion:VFX_RESTORE_VERSION,openingRandomVersion:OPENING_RANDOM_VERSION,audioDefaultVersion:AUDIO_DEFAULT_VERSION,hudPolishVersion:HUD_POLISH_VERSION,paintedVfxVersion:PAINTED_VFX_VERSION,runSeconds:600,files:manifest.length},null,2)+'\n');
   await writeFile(join(dist,'asset-manifest.json'),JSON.stringify(manifest,null,2)+'\n');
   await mkdir(join(root,'test-results'),{recursive:true});
-  await writeFile(join(root,'test-results/integrity.json'),JSON.stringify({canonicalTree:hash,repositoryCommit:commit,files:manifest.length,bytes:manifest.reduce((s,f)=>s+f.bytes,0),runtimeTree:runtimeHash,baselineSourceUnchanged:true,changedRuntimeFiles:['index.html','assets/main-critter-v4.js','assets/encounter-director.js','assets/species/**'],vfxVersion:VFX_RESTORE_VERSION,openingRandomVersion:OPENING_RANDOM_VERSION,audioDefaultVersion:AUDIO_DEFAULT_VERSION,hudPolishVersion:HUD_POLISH_VERSION},null,2));
+  await writeFile(join(root,'test-results/integrity.json'),JSON.stringify({canonicalTree:hash,repositoryCommit:commit,files:manifest.length,bytes:manifest.reduce((s,f)=>s+f.bytes,0),runtimeTree:runtimeHash,baselineSourceUnchanged:true,changedRuntimeFiles:['index.html','assets/main-critter-v4.js','assets/encounter-director.js','assets/species/**'],vfxVersion:VFX_RESTORE_VERSION,openingRandomVersion:OPENING_RANDOM_VERSION,audioDefaultVersion:AUDIO_DEFAULT_VERSION,hudPolishVersion:HUD_POLISH_VERSION,paintedVfxVersion:PAINTED_VFX_VERSION},null,2));
   console.log(`CANON VERIFIED: tree=${hash}, ${manifest.length} files, source preserved; runtime=${runtimeHash} hash-locked`);
 }
 export function serve(dir = join(root,'dist'), port = 4173) {

@@ -5,14 +5,13 @@
 import {readFileSync} from 'node:fs';
 import {adaptNeurotoxinCast} from './neurotoxin-cast-adapter.mjs';
 import {adaptOpaqueCrystals} from './opaque-crystal-adapter.mjs';
-import {adaptWatercolorStyle} from './watercolor-style.mjs';
 export const VFX_RESTORE_VERSION='godot-source-port-v1';
 const read=name=>readFileSync(new URL(name,import.meta.url),'utf8');
 export function applyRestoredSkillVfx(source){
   const start=source.indexOf('un={water:'),end=source.indexOf('function hn(',start);
   if(start<0||end<start||source.indexOf('un={water:',start+1)>=0)throw Error('Elemental renderer baseline changed');
   const legacy=read('./legacy-status-renderer.txt');
-  const module=adaptWatercolorStyle(adaptOpaqueCrystals(adaptNeurotoxinCast(read('./godot-elemental-renderer.mjs')))).replace('export function createGodotSkillVfxRenderer','function createGodotSkillVfxRenderer');
+  const module=adaptOpaqueCrystals(adaptNeurotoxinCast(read('./godot-elemental-renderer.mjs'))).replace('export function createGodotSkillVfxRenderer','function createGodotSkillVfxRenderer');
   const shaders=JSON.parse(read('./godot-shaders.json'));
   const wrapper=`function mn(e){
     const restored=createGodotSkillVfxRenderer(e,${JSON.stringify(shaders)});

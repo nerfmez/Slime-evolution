@@ -4,7 +4,10 @@ Rules live in `AGENTS.md`; repository layout in `README.md`. This file only trac
 
 ## In progress (branch `claude/check-organize-files-vqyx02`)
 
-- Skill style prototype (cel-shade + watercolour, no black outlines, fire rebuilt): `vfx/watercolor-style.mjs`. The owner reviews it on the iPad preview using Settings > Test (old/new switch and sliders). Next: fire evolutions (Sunfall, Meteor, Cyclone), per-element palettes, readability of faint skills, then remove the old-style switch once approved.
+- **Painted skill effects.** The owner rejected the watercolour filter prototype ("it only adjusts the old skills"), so every skill effect is now redrawn from its concept and card art by `vfx/painted-renderer.mjs`, fire included. Design table: `docs/PAINTED-VFX.md`.
+  - The owner reviews on the iPad preview. Settings > Test switches back to the old effects.
+  - Next: refine per owner feedback, then remove the switch and the old draw path once approved.
+- **Removed:** the filter prototype (`vfx/watercolor-style.mjs`, its tests and workflow).
 
 ## Merged in PR #45 (2026-09-25)
 

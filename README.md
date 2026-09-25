@@ -27,7 +27,7 @@ Everything in `game/` and `species/`, plus the build modules, is hash-locked by 
 | `gameplay/` | Build-time patch for random opening skill cards. |
 | `audio/` | Build-time patch for default volume. |
 | `ui/` | Build-time HUD polish and start menu: "Slime Evolution" title, compact Elite tags, boss banner placement, phone HUD, empty skill slots, movement hint fade. |
-| `vfx/` | Godot-style VFX port, adapters and provenance. |
+| `vfx/` | Painted watercolour skill effects (`painted-renderer.mjs`, `painted-style.mjs`) plus the older Godot-style port, kept behind the Settings > Test switch. |
 | `scripts/canon.mjs` | Build, serve and live-audit entry point. |
 | `tests/` | `*.test.mjs` run through `npm test`. `*-browser*.mjs` and `cozy-regressions.mjs` are Chromium/WebKit suites. `*-provenance.mjs` are shared helpers. |
 | `tools/` | One-time Python scripts that prepared approved art (Spark, Turtle, Water Calf, Panda). Kept for provenance. |
@@ -47,7 +47,7 @@ Everything in `game/` and `species/`, plus the build modules, is hash-locked by 
 | Spark Hedgehog | `docs/SPARK-HEDGEHOG.md` |
 | Water Calf | `docs/WATER-CALF.md` |
 | Water/Spark size | `docs/ENEMY-SIZE.md` |
-| Skill VFX | `docs/GODOT-VFX-PORT.md` |
+| Skill VFX | `docs/PAINTED-VFX.md` (current), `docs/GODOT-VFX-PORT.md` (old look) |
 | History (Frog canon recovery, roster cleanup) | `docs/RECOVERY-2026-09-17.md`, `docs/ROSTER-CLEANUP.md` |
 
 Retired models (Thorn Alpha, Mossback, Petal, Crystal) and older releases stay in Git history and archive branches only. Do not re-import them.

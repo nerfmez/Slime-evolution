@@ -21,7 +21,7 @@
     "bundleSHA256": "a88fd9e4ca5b35f6a1b06799e0fd46806c88ca1f0a7cde8621494f2604d4115e",
     "htmlSHA256": "70dcfc240d46d731e60fbc2b8b261684572c7d7a8596005d9460a9dcb6e3911e"
   },
-  "runtimeTree": "691cb1622ee91ba7921ee84cd51a1a4cd1dcec25",
+  "runtimeTree": "db5b354434093fe3a0083e0721045a8d6bd0f070",
   "species": {
     "assemblerSHA256": "e2bb471b7013268d36e641e718b517cdfefb02459c767968554d95a04580bc59",
     "tree": "f855e1d4bab5484f5e8738f41216f23170020eaf"
@@ -35,7 +35,8 @@
   "hudPolish": {
     "moduleSHA256": "625d76894cd7c2de868f2e3b40082a825214eceeb4d6813dbc8e376efb01482f"
   },
-  "watercolorStyle": {
-    "moduleSHA256": "bebdf1d2fb6a4dae70e80d8f8d1a209b1dce6ba9168356c0e4a2f6e6c6ed20d5"
+  "paintedVfx": {
+    "moduleSHA256": "d4f6b56b53cd3645365b8ba46716e34438b24b65fe9354b7ad4c4802259aa37d",
+    "rendererSHA256": "7e111348e2a56162407d6fdec304e1f6be029ffb5f8a71e551207a6288179599"
   }
 }
