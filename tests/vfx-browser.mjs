@@ -67,9 +67,9 @@ try{
   // Base + representative evolutions. Chain is intentionally omitted from visual
   // restoration and is guarded separately by the source-level regression test.
   for(const [id,delay] of [
-    ['water',220],['water-power',180],['water-flow',240],
+    ['water',90],['water-power',150],['water-flow',210],
     ['tide',210],['tide-impact',260],
-    ['toxin',220],['toxin-contagion',360],
+    ['toxin',120],['toxin-contagion',300],
     ['frost-freeze',280],['frost-shatter',230],
     ['orbit',280],['orbit-pulse',360],
     ['inferno',250],['sun',560]
