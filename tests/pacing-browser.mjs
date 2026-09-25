@@ -13,6 +13,11 @@ try{
  const u=new URL(base);u.searchParams.set('qa','1');assert.ok((await page.goto(u.href,{waitUntil:'load',timeout:60000})).ok());
  await page.waitForFunction(()=>document.querySelector('#error')?.hidden===false||(window.__slimeGameQA?.pandaRenderer&&document.querySelector('.skill-card')),null,{timeout:60000});
  assert.equal(await page.locator('#error').evaluate(e=>e.hidden),true,await page.locator('#error').textContent());
+ const openings=await page.evaluate(()=>Array.from({length:12},()=>__slimeGameQA.combat.initialCards()));
+ const openingKeys=openings.map(cards=>cards.join('|')),openingUnique=new Set(openingKeys).size;
+ assert.ok(openingUnique>1,'opening skill choices repeated identically across entropy samples');
+ for(const cards of openings){assert.equal(cards.length,3);assert.equal(new Set(cards.map(x=>x.split(':')[0])).size,3,'opening cards must use three distinct skill families');}
+ report.openings={unique:openingUnique,samples:openings.slice(0,4)};
  await page.locator('.skill-card').first().click({force:true});await page.evaluate(()=>{__pacingFreeze=true;});await page.waitForTimeout(250);await page.evaluate(()=>{window.requestAnimationFrame=__pacingRAF;});
  const cases=await page.evaluate(async()=>{
   const {encounterPhase,ELITE_EVENTS}=await import('./assets/encounter-director.js');const q=__slimeGameQA,w=q.world,p=q.state.player;
