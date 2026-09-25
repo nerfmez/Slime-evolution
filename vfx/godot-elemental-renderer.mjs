@@ -220,7 +220,7 @@ export function createGodotSkillVfxRenderer(gl, sources = {}) {
     }
   }
   function plan(combat,world={},time=0,visible=()=>true){commands=[];diagnostics.invalid=0;diagnostics.kinds={};impactPlan(combat,time,visible);
-    for(const t of combat.abilities||[]){if(t.delay>0||t.life<=0||t.age>=t.life||t.family==='fire')continue;
+    for(const t of combat.abilities||[]){if(t.delay>0||t.life<=0||t.age>=t.life||t.family==='fire'||t.family==='chain')continue;
       if(!Number.isFinite(t.x+t.z+t.age+t.life)){diagnostics.invalid++;continue}
       let x=t.x,z=t.z,r=Math.max(t.r||1,t.length||0);if(t.kind==='lob'){x=mix(t.x,t.tx,clamp(t.age/t.life));z=mix(t.z,t.tz,clamp(t.age/t.life))}
       if(!visible(x,z,r+1))continue;currentTag=t.family+':'+t.kind;diagnostics.kinds[currentTag]=(diagnostics.kinds[currentTag]||0)+1;
