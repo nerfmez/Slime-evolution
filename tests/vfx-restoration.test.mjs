@@ -1,42 +1,46 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {readFile} from 'node:fs/promises';
+import {readFileSync} from 'node:fs';
+import {createHash} from 'node:crypto';
 import {assemble} from '../pacing/assemble.mjs';
 import {applySpeciesBundle} from '../species/assemble.mjs';
 import {applyRestoredSkillVfx,VFX_RESTORE_VERSION} from '../vfx/restore-godot-style.mjs';
-
-test('Godot-style VFX restoration is visual-only and preserves Chain Spark', async()=>{
-  const [bundle,html]=await Promise.all([
-    readFile(new URL('../game/assets/main-critter-v4.js',import.meta.url),'utf8'),
-    readFile(new URL('../game/index.html',import.meta.url),'utf8')
-  ]);
-  const paced=assemble(bundle,html).bundle;
-  const species=applySpeciesBundle(paced);
-  const restored=applyRestoredSkillVfx(species);
-
-  assert.ok(restored.includes('/* GODOT_STYLE_VFX_RESTORED */'));
-  assert.equal(restored.split('chain:[.62,.83,1]').length-1,1,'Chain palette must stay unchanged');
-  assert.ok(restored.includes('t.family===`chain`'),'Chain arc mode must remain');
-  assert.ok(restored.includes('if(t.family!==`chain`)d('),'extra arc stroke must explicitly exclude Chain');
-  assert.ok(restored.includes('t.family===`tide`'),'Tide layers missing');
-  assert.ok(restored.includes('t.family===`water`'),'Water layers missing');
-  assert.ok(restored.includes('GODOT_STYLE_VFX_RESTORED'));
-
-  let first=-1,last=-1;
-  const limit=Math.max(species.length,restored.length);
-  for(let i=0;i<limit;i++)if(species[i]!==restored[i]){first=i;break}
-  for(let i=0;i<limit;i++)if(species[species.length-1-i]!==restored[restored.length-1-i]){last=Math.max(species.length,restored.length)-1-i;break}
-  const rendererStart=species.indexOf('un={water:');
-  const rendererEnd=species.indexOf('return new Float32Array(i)}',rendererStart);
-  assert.ok(first>=rendererStart,'patch changed code before the elemental renderer');
-  assert.ok(rendererEnd>rendererStart,'element renderer end marker missing');
-
-  // Combat/cast logic and the dedicated fire renderer live before this point.
-  assert.equal(
-    restored.slice(0,rendererStart),
-    species.slice(0,rendererStart),
-    'VFX restoration must not alter combat, skill balance, dedicated fire VFX, or Chain cast logic'
-  );
-
-  assert.equal(typeof VFX_RESTORE_VERSION,'string');
+import {createGodotSkillVfxRenderer} from '../vfx/godot-elemental-renderer.mjs';
+const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
+const shaders=JSON.parse(read('vfx/godot-shaders.json'));
+const provenance=JSON.parse(read('vfx/godot-provenance.json'));
+const renderer=createGodotSkillVfxRenderer(null,shaders);
+const families={water:['bolt','beam','jet','wave'],tide:['ring','dome','vacuum','resonance'],toxin:['lob','pool','infection','bloom','miasma','burst','arc'],frost:['crystal','borer','cone','chainburst','burst'],chain:['arc','strike','network','tesla','ring'],orbit:['arc','ring']};
+test('six shader bodies are exact supplied Godot source, including vertex motion',()=>{
+ for(const [name,body]of Object.entries(shaders))assert.equal(createHash('sha256').update(body).digest('hex'),provenance.originals['shaders/'+name+'.gdshader']);
+ assert.equal(Object.keys(shaders).length,6);
+ assert.match(renderer.shaderPair('tidal_wave_surface').vertex,/VERTEX.z \+= crest_weight/);
+ assert.match(renderer.shaderPair('frost_breath').vertex,/length_weight \* 0.055/);
+});
+test('all non-fire families emit finite geometry in eight directions without mutating gameplay',()=>{
+ for(const [family,kinds]of Object.entries(families))for(const kind of kinds)for(let direction=0;direction<8;direction++){
+  const angle=direction*Math.PI/4,dx=Math.sin(angle),dz=Math.cos(angle);
+  const c={abilities:[{family,kind,x:0,z:0,dx,dz,tx:3,tz:2,r:2,age:.2,life:.8,length:5,angle:.5}],orbs:[]};
+  const before=structuredClone(c),commands=renderer.plan(c,{},.2);assert.ok(commands.length,family+':'+kind);assert.deepEqual(c,before);assert.equal(renderer.diagnostics.invalid,0);
+  if(kind==='crystal'){const m=commands[0].model;assert.ok(m[8]*dx+m[10]*dz>.99,'crystal travel axis');}
+ }
+ for(const {vertices,indices}of renderer.meshes.values()){assert.ok(vertices.every(Number.isFinite));assert.ok(indices.every(i=>i<vertices.length/8));}
+});
+test('original curled cross section and three subdivided mist sheets replace flat strips',()=>{
+ const mesh=renderer.meshes.get('godot-tidal-body-24x8');assert.equal(mesh.indices.length,24*7*6);
+ assert.equal(renderer.meshes.get('godot-tidal-foam-24x3').indices.length,24*2*6);
+ const v=mesh.vertices,offset=12*8*8;assert.ok(v[offset+6*8+2]>v[offset+7*8+2],'crest must curl back');
+ assert.equal(renderer.meshes.get('godot-breath-5.0000-0.5000-0.0800-1.0000').indices.length,9*8*6);
+ assert.ok(renderer.meshes.has('godot-drill-helix-3.35-turns'));
+});
+test('Orbit keeps its four signatures; Fire never enters the new renderer',()=>{
+ for(const style of ['','power','multi','pulse'])assert.ok(renderer.plan({abilities:[],skills:{orbit:{evo:style}},orbs:[{x:0,z:0,r:.2}]},{},.2).length);
+ assert.equal(renderer.plan({abilities:[{family:'fire',kind:'blast',age:.2,life:1}],projectiles:[{x:1,z:1}],fx:[{type:'blast'}],orbs:[]},{},.2).length,0);
+});
+test('only elemental rendering changes; combat, Fire, scene and latest creature code are byte-identical',()=>{
+ const source=applySpeciesBundle(assemble(read('game/assets/main-critter-v4.js'),read('game/index.html')).bundle),result=applyRestoredSkillVfx(source);
+ assert.equal(result.slice(0,result.indexOf('un={water:')),source.slice(0,source.indexOf('un={water:')));
+ assert.equal(result.slice(result.indexOf('function hn(')),source.slice(source.indexOf('function hn(')));
+ assert.ok(!result.includes('for(let t of e.abilities||[])'),'rejected skill renderer remains');
+ assert.match(result,/GODOT_V100_SOURCE_PORT/);assert.equal(VFX_RESTORE_VERSION,'godot-source-port-v1');
 });

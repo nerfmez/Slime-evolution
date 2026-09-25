@@ -1,0 +1,41 @@
+name: Godot source VFX visual review
+on:
+  pull_request:
+    paths: ['vfx/**', 'tests/vfx-browser.mjs', 'CANON.json', '.github/workflows/vfx-port-review.yml']
+permissions:
+  contents: read
+concurrency:
+  group: godot-vfx-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  visuals:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium, webkit]
+    env:
+      BROWSER: ${{ matrix.browser }}
+      LIBGL_ALWAYS_SOFTWARE: '1'
+      WEBKIT_DISABLE_DMABUF_RENDERER: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm test && npm run build
+      - run: |
+          npm install --no-save --package-lock=false playwright@1.62.0
+          npx playwright install --with-deps ${{ matrix.browser }}
+      - run: |
+          node scripts/canon.mjs serve >/tmp/vfx-server.log 2>&1 &
+          trap 'kill $! || true' EXIT
+          for i in {1..20}; do curl -fsS http://127.0.0.1:4173/release.json && break || sleep 1; done
+          xvfb-run -a node tests/vfx-browser.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: godot-source-vfx-${{ matrix.browser }}
+          path: test-results/godot-vfx-*/
+          retention-days: 14
