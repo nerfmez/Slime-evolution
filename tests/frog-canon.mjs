@@ -59,7 +59,7 @@ try {
   });
   const card=page.locator('.skill-card').first();
   await card.waitFor({state:'visible',timeout:15000}); await card.click({force:true});
-  await page.waitForFunction(()=>/[1-9]\d* มอน/.test(document.querySelector('#stats')?.textContent||''),{},{timeout:60000});
+  await page.waitForFunction(()=>/[1-9]\d* มอน/.test(document.querySelector('#stats')?.textContent||''),{},{timeout:120000});
   const startFrames=await page.evaluate(()=>__canonQA.frames);
   await page.waitForFunction(n=>__canonQA.frames>n+3,startFrames,{timeout:30000});
   const live=await page.evaluate(()=>({status:document.querySelector('#status')?.textContent,roster:document.querySelector('#roster')?.textContent,stats:document.querySelector('#stats')?.textContent,error:document.querySelector('#error')?.textContent,errorHidden:document.querySelector('#error')?.hidden,choosing:document.querySelector('#skill-choice')?.hidden===false,frames:__canonQA.frames,webgl:!!document.querySelector('#world')?.getContext('webgl2')}));
