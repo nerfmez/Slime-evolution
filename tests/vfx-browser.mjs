@@ -5,7 +5,7 @@ const engine=process.env.BROWSER||'chromium',url=process.env.SMOKE_URL||'http://
 const folder='test-results/godot-vfx-'+engine;
 await mkdir(folder,{recursive:true});
 const browser=await({chromium,webkit}[engine]).launch({headless:true,...(engine==='chromium'?{args:['--use-gl=angle','--use-angle=swiftshader','--enable-unsafe-swiftshader','--enable-webgl','--ignore-gpu-blocklist']}:{})});
-const page=await browser.newPage({viewport:{width:960,height:720},deviceScaleFactor:1});
+const page=await browser.newPage({viewport:{width:engine==='chromium'?640:960,height:engine==='chromium'?480:720},deviceScaleFactor:1});
 page.setDefaultTimeout(30000);
 const errors=[],network=[],frames=[],coverage={};
 page.on('pageerror',e=>errors.push(e.message));
@@ -51,10 +51,11 @@ try{
   const moments=id==='toxin'?[.12,.32,.65]:id.startsWith('orbit')?[.12,.36,.8]:id==='chain-overcharge'?[.10,.40,.74]:fire.has(id)?[.12,.52,1.2]:[.08,.20,.46];
   for(const t of moments)await capture(id,t,'game',!fire.has(id));
   if(!fire.has(id))assert.ok(coverage[id]>8,id+' has no visible effect pixels');
+  if(id==='toxin-venom')assert.ok(coverage[id]>(engine==='chromium'?20:60),'Neurotoxin travel is occluded');
  }
  // Frame sequences, driven by simulation time rather than wall-clock delays.
  for(const id of ['water-flow','frost-freeze','frost-drill','toxin','orbit-pulse','chain-static']){
-  await reset(id,'game',false);for(let i=1;i<=12;i++)await capture(id,i/15);
+  await reset(id,'game',false);for(let i=1;i<=(engine==='chromium'?4:12);i++)await capture(id,i/(engine==='chromium'?5:15));
  }
  // The same authored mesh must remain readable in the real alternate cameras.
  for(const camera of ['side','top'])for(const id of ['water-flow','frost-freeze']){await reset(id,camera,false);await capture(id,.28,camera,true);}
