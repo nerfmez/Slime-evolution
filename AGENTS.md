@@ -27,7 +27,7 @@ Source of truth: `pacing/encounter-director.js`; details in `docs/COZY-PACING.md
 - **Moss Frog:** always uses its approved sprite.
 - **Elite Frog** (`species/elite-frog*.js`):
   - Separate atlas, cell world size 1.95.
-  - Textures are 4x density (body 1280x3520, attack 2048x1536), rebuilt by `art/elite-frog/build-hires-atlas.py` from the owner's originals in `art/elite-frog/supplied-*.png`. Each frame is registered to the old 1x frame (silhouette error < 4/255), so size, pivot and pose are unchanged. The `legacy-*` 1x atlases are only the registration reference. Attack metadata stays in 1x logical units, with `textureScale: 4`.
+  - Textures are 4x density (body 1280x3520, attack 2048x1536), rebuilt by `art/elite-frog/build-hires-atlas.py` from the owner's originals in `art/elite-frog/supplied-*.png`. Each frame is registered to the old 1x frame (silhouette error < 4/255), so size, pivot and pose are unchanged. Walk, hit and death poses (from the body sheet) are then scaled by 0.883 about the feet pivot, so they match the attack-sheet body size (owner request: the frog must not shrink when it attacks). The `legacy-*` 1x atlases are only the registration reference. Attack metadata stays in 1x logical units, with `textureScale: 4`.
   - The attack renders ONE whole frog+tongue image per frame from `species/enemies/elite-frog-attack.webp`. Never use detached tongue layers, procedural tongues or a body drawn underneath.
   - Motion: eight active poses, with `ATTACK_ART` metadata authoritative for timing. .55 s windup (aim locks, hits cannot cancel it), .22 s recovery.
   - Combat: 4.5-unit engagement. Damage comes only from contact with rendered tongue pixels, once per attack, plus a 3 s poison.

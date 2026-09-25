@@ -1,5 +1,6 @@
 {
   "scale": 4,
+  "bodySheetMatchToAttack": 0.88307,
   "cell": [
     640,
     320
@@ -14,7 +15,7 @@
     "supplied-portrait.png": "d55900882449f7b01a45dcc0c3f8bd5dc3784cfb3a1161ab18608a528ac49d71"
   },
   "legacyBodyAtlasSHA256": "bae1c982eda6a31a95958f7cb563e484680871b13f138ccedec7ae1e3db35679",
-  "atlasSHA256": "3fd18e3b4aeaf550881ee3c0cb58b39c56e9dd268eff1f0f578e1bfdb7089303",
+  "atlasSHA256": "8f5bdac083b1d41ef43a42fbac200e4449742027b2304c6d8545904cd7f45b90",
   "frames": [
     {
       "frame": 0,

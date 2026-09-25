@@ -26,6 +26,7 @@ species = root / 'species'
 OLD_BODY = art / 'legacy-body-atlas-320x880.webp'   # registration reference (the approved layout)
 OLD_ATTACK = art / 'legacy-attack-atlas-512x384.webp'
 CELL_W, CELL_H = 160, 80
+PIVOT = (160 / 3, 80 * (1 - .026))  # feet pivot of the body renderer (elite-frog.js vertex shader)
 
 # Approximate centre of each pose in its source sheet (x, y). Only used to pick the right sprite
 # when several poses look alike; the exact transform comes from the image match.
@@ -133,8 +134,6 @@ def main():
     report = []
     for r in regs:
         f = r['frame']
-        hi = render(r, sheets, SCALE)
-        atlas.paste(hi, (f % 2 * CELL_W * SCALE, f // 2 * CELL_H * SCALE))
         lo = render(r, sheets, 1)
         check.paste(lo, (f % 2 * CELL_W, f // 2 * CELL_H))
         a = np.asarray(old_body.crop((f % 2 * CELL_W, f // 2 * CELL_H, f % 2 * CELL_W + CELL_W, f // 2 * CELL_H + CELL_H))).astype(float)
@@ -142,10 +141,27 @@ def main():
         report.append({'frame': f, 'sheet': r['sheet'], 'sourceBox': r['box'], 'scale': round(r['scale'], 5), 'origin': [round(r['originX'], 3), round(r['originY'], 3)],
                        'alphaMAE': round(float(np.abs(a[:, :, 3] - b[:, :, 3]).mean()), 2),
                        'rgbMAEonBody': round(float(np.abs(a[:, :, :3] - b[:, :, :3])[(a[:, :, 3] > 200) & (b[:, :, 3] > 200)].mean()), 2)})
+    # The two supplied sheets draw the frog at different sizes: idle from the body sheet (frame 0)
+    # is ~12% larger than the identical idle pose from the tongue sheet (frame 13). Scale every
+    # body-sheet pose about the renderer's feet pivot so walking, hit and death match the attack size.
+    def size(reg):
+        x0, y0, x1, y1 = main_bbox(np.asarray(render(reg, sheets, SCALE))[:, :, 3])
+        return x1 - x0, y1 - y0
+    (w0, h0), (w13, h13) = size(regs[0]), size(regs[13])
+    match = ((w13 / w0) + (h13 / h0)) / 2
+    for r in regs:
+        if r['sheet'] == BODY_SHEET:
+            r['scale'] *= match
+            r['originX'] = PIVOT[0] + (r['originX'] - PIVOT[0]) * match
+            r['originY'] = PIVOT[1] + (r['originY'] - PIVOT[1]) * match
+    print(f'body-sheet poses scaled by {match:.4f} to match the attack sheet', flush=True)
+    for r in regs:
+        f = r['frame']
+        atlas.paste(render(r, sheets, SCALE), (f % 2 * CELL_W * SCALE, f // 2 * CELL_H * SCALE))
     out = species / 'enemies/elite-frog-atlas.webp'
     atlas.save(out, 'WEBP', quality=92, method=6, exact=True)
     build_attack(atlas, regs)
-    meta = {'scale': SCALE, 'cell': [CELL_W * SCALE, CELL_H * SCALE], 'size': list(atlas.size),
+    meta = {'scale': SCALE, 'bodySheetMatchToAttack': round(match, 5), 'cell': [CELL_W * SCALE, CELL_H * SCALE], 'size': list(atlas.size),
             'sources': {n: hashlib.sha256((art / n).read_bytes()).hexdigest() for n in (BODY_SHEET, TONGUE_SHEET, 'supplied-portrait.png')},
             'legacyBodyAtlasSHA256': hashlib.sha256(OLD_BODY.read_bytes()).hexdigest(),
             'atlasSHA256': hashlib.sha256(out.read_bytes()).hexdigest(), 'frames': report}
