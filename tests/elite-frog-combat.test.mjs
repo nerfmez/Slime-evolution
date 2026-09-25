@@ -54,7 +54,7 @@ test('whole frog atlas has eight hash-locked approved sweep and retraction frame
  assert.deepEqual(meta.pivot,[48,78]);
  assert.equal(meta.pixelWorld,1.95/80);
  assert.deepEqual(meta.cell,[256,96]);
- for(const frame of meta.frames)assert.ok(frame.bodyHeight>=54&&frame.bodyHeight<=59);
+ for(const frame of meta.frames)assert.ok(frame.bodyHeight>=54&&frame.bodyHeight<=61&&frame.sizeCorrection>.9&&frame.sizeCorrection<1.12,'every attack pose is corrected to the same apparent body size');
  assert.deepEqual(meta.frames.map(f=>f.originalFrame),[14,15,0,1,4,5,6,20]);
  const body=await readFile(new URL('../species/enemies/elite-frog-atlas.webp',import.meta.url));
  assert.equal(createHash('sha256').update(body).digest('hex'),meta.bodyAtlasSHA256);

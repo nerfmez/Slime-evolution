@@ -28,6 +28,18 @@ OLD_ATTACK = art / 'legacy-attack-atlas-512x384.webp'
 CELL_W, CELL_H = 160, 80
 PIVOT = (160 / 3, 80 * (1 - .026))  # feet pivot of the body renderer (elite-frog.js vertex shader)
 
+# Owner request: the frog's body must be the same size in EVERY frame. The artist drew poses at
+# slightly different sizes, so each frame's apparent size was measured against the pre-attack idle
+# pose (body frame 13) with pose-invariant features: SIFT similarity matches (strong for the attack
+# poses) and an eye-band template (reliable for the walk/leap poses); walk frames use their average.
+# Values are relative sizes after the 0.8831 body-sheet match; each frame is divided by its value.
+FRAME_SIZE = {
+    'b0': 1.013, 'b1': .955, 'b2': .995, 'b3': .995, 'b4': .995,
+    'b5': .945, 'b6': .975, 'b7': 1.02, 'b8': .99, 'b9': .94, 'b10': .85, 'b11': .97, 'b12': .98,
+    'b13': 1.0, 'b14': 1.022, 'b15': .993, 'b16': .934, 'b17': .825, 'b18': .812, 'b19': .818, 'b20': .908,
+    'a2': .95, 'a3': .952, 'a4': .94, 'a5': .94, 'a6': .933,
+}
+
 # Approximate centre of each pose in its source sheet (x, y). Only used to pick the right sprite
 # when several poses look alike; the exact transform comes from the image match.
 BODY_SHEET, TONGUE_SHEET = 'supplied-body-sheet.png', 'supplied-tongue-sheet.png'
@@ -156,6 +168,11 @@ def main():
             r['originY'] = PIVOT[1] + (r['originY'] - PIVOT[1]) * match
     print(f'body-sheet poses scaled by {match:.4f} to match the attack sheet', flush=True)
     for r in regs:
+        c = 1 / FRAME_SIZE['b%d' % r['frame']]
+        r['scale'] *= c
+        r['originX'] = PIVOT[0] + (r['originX'] - PIVOT[0]) * c
+        r['originY'] = PIVOT[1] + (r['originY'] - PIVOT[1]) * c
+    for r in regs:
         f = r['frame']
         atlas.paste(render(r, sheets, SCALE), (f % 2 * CELL_W * SCALE, f // 2 * CELL_H * SCALE))
     out = species / 'enemies/elite-frog-atlas.webp'
@@ -174,7 +191,8 @@ def main():
 def build_attack(body_hi, regs):
     """Rebuild the 8-frame whole-body attack atlas at the same SCALE; metadata geometry is unchanged."""
     meta_path = art / 'full-attack-source.json'
-    meta = json.loads(meta_path.read_text())
+    # Always start from the original 1x metadata so corrections never compound.
+    meta = json.loads((art / 'full-attack-source-1x.json').read_text())
     k = SCALE
     cw, ch = meta['cell']
     px, py = meta['pivot']
@@ -182,6 +200,12 @@ def build_attack(body_hi, regs):
     source = Image.open(art / meta['source']).convert('RGB')
     for i, f in enumerate(meta['frames']):
         cell = Image.new('RGBA', (cw * k, ch * k))
+        # Same-size correction about the attack pivot; contact samples follow the rendered pixels.
+        c = 1 / FRAME_SIZE[('b%d' if f['sourceKind'] == 'normal' else 'a%d') % (f['originalFrame'] if f['sourceKind'] == 'normal' else i)]
+        f['samples'] = [[round(x * c, 3), round(y * c, 3), round(rad * c, 3)] for x, y, rad in f['samples']]
+        f['mouth'] = [round(px + (f['mouth'][0] - px) * c, 3), round(py + (f['mouth'][1] - py) * c, 3)]
+        f['bodyHeight'] = round(f['bodyHeight'] * c, 3)
+        f['sizeCorrection'] = round(c, 5)
         if f['sourceKind'] == 'normal':
             n = f['originalFrame']
             pose = body_hi.crop((n % 2 * CELL_W * k, n // 2 * CELL_H * k, (n % 2 + 1) * CELL_W * k, (n // 2 + 1) * CELL_H * k))
@@ -204,9 +228,9 @@ def build_attack(body_hi, regs):
             cx = (int(footx.min()) + int(footx.max())) / 2
             factor = 183 / (bottom - top); dx = 128 - cx * factor; dy = 244 - bottom * factor
             master = raw.transform((768, 288), Image.Transform.AFFINE, (1 / factor, 0, -dx / factor, 0, 1 / factor, -dy / factor), Image.Resampling.BICUBIC)
-            factor2 = f['bodyHeight'] / 183
+            factor2 = f['bodyHeight'] / 183  # already includes the same-size correction
             small = master.resize((round(768 * factor2 * k), round(288 * factor2 * k)), Image.Resampling.LANCZOS)
-            cell.paste(small, (round(px - 128 * factor2) * k, round(py - 244 * factor2) * k))
+            cell.paste(small, (round((px - 128 * factor2) * k), round((py - 244 * factor2) * k)))
         atlas.paste(cell, (i % 2 * cw * k, i // 2 * ch * k))
     out = species / 'enemies/elite-frog-attack.webp'
     atlas.save(out, 'WEBP', quality=92, method=6, exact=True)
