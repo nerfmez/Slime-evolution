@@ -43,7 +43,7 @@ async function capture(id,delay){
   assert.equal(state.errorHidden,true,id+' game error panel');
   assert.equal(state.labHidden,false,id+' lab closed unexpectedly');
   const path=`test-results/vfx-${engine}-${id}.png`;
-  await page.screenshot({path,timeout:45000});
+  await page.locator('#world').screenshot({path,timeout:engine==='chromium'?120000:45000});
   frames.push({id,path,...state});
 }
 
