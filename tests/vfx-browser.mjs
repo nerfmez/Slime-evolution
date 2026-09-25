@@ -13,7 +13,7 @@ page.on('response',r=>{if(r.status()>=400&&!r.url().endsWith('/favicon.ico'))err
 page.on('requestfailed',r=>network.push({url:r.url(),reason:r.failure()?.errorText}));
 await page.addInitScript(()=>{const raf=window.requestAnimationFrame.bind(window);window.requestAnimationFrame=f=>raf(t=>{if(!window.__vfxFreezeRAF)f(t)})});
 const presets=['water','water-power','water-burst','water-flow','tide','tide-impact','tide-radius','tide-echo','toxin','toxin-venom','toxin-contagion','toxin-corrosion','frost','frost-drill','frost-freeze','frost-shatter','orbit','orbit-power','orbit-multi','orbit-pulse','chain','chain-overcharge','chain-relay','chain-static','inferno','blast','scatter','burn','sun','meteor','cyclone'];
-const fire=new Set(presets.slice(24)),preserved=new Set(['chain','chain-overcharge','chain-relay','chain-static',...fire]);
+const fire=new Set(presets.slice(24));
 async function reset(id,camera='game',targets=true){await page.evaluate(({id,camera,targets})=>{
  const q=globalThis.__slimeGameQA,lab=q.skillLab.lab;lab.select(id);lab.paused=true;lab.repeat=false;lab.showTargets=targets;q.state.time=0;q.state.camera=camera;
  document.getElementById('lab-preset').value=id;
@@ -45,12 +45,12 @@ try{
  await page.waitForFunction(()=>document.getElementById('error')?.hidden===false||(globalThis.__slimeGameQA?.waterRenderer&&document.querySelector('.skill-card')),null,{timeout:60000});
  assert.equal(await page.locator('#error').evaluate(e=>e.hidden),true,await page.locator('#error').textContent());
  await page.evaluate(()=>{document.querySelector('.skill-card').click();globalThis.__vfxFreezeRAF=true;document.getElementById('skill-test').click();});
- assert.ok(await page.evaluate(()=>globalThis.__slimeGodotVfx?.diagnostics.version==='godot-source-port-v1'||globalThis.__slimeGodotVfx?.diagnostics.version==='godot-source-port-v2'));
+ assert.ok(await page.evaluate(()=>globalThis.__slimeGodotVfx?.diagnostics.version==='godot-source-port-v1'));
  for(const id of presets){
   await reset(id);
   const moments=id==='toxin'?[.12,.32,.65]:id.startsWith('orbit')?[.12,.36,.8]:id==='chain-overcharge'?[.10,.40,.74]:fire.has(id)?[.12,.52,1.2]:[.08,.20,.46];
-  for(const t of moments)await capture(id,t,'game',!preserved.has(id));
-  if(!preserved.has(id))assert.ok(coverage[id]>8,id+' has no visible source-port effect pixels');
+  for(const t of moments)await capture(id,t,'game',!fire.has(id));
+  if(!fire.has(id))assert.ok(coverage[id]>8,id+' has no visible effect pixels');
   if(id==='toxin-venom')assert.ok(coverage[id]>(engine==='chromium'?20:60),'Neurotoxin travel is occluded');
  }
  // Frame sequences, driven by simulation time rather than wall-clock delays.
