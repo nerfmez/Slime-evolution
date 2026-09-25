@@ -1,19 +1,53 @@
-# Slime — Moss Frog + Water Calf + Ancient Bloom
+# Slime Evolution — Cozy Action Roguelite
 
-The only active game is **`game/`**. It continues from the completed Frog canon, through the tested Water Calf replacement, and removes the retired Thorn model/Alpha, Mossback and Petal. The new Water Calf Alpha remains a Water variant. See `CANON.json` for exact current and baseline trees, and `docs/ROSTER-CLEANUP.md` for the scoped changes.
+Ten-minute normal rounds with Moss Frog, Spark Hedgehog, Pond Turtle, Water Calf, the Bamboo Panda mini-boss and the Ancient Bloom boss. Read `AGENTS.md` (rules) and `HANDOFF.md` (current status) before editing.
 
 ```sh
-npm test
-npm run build
-npm run dev
+npm test            # unit + provenance tests
+npm run build       # verify hash locks and assemble dist/
+npm run dev         # serve the built game locally
+npm run audit:live  # check the live production release
 ```
 
-Node 22+; no downloaded packages are needed to build. Build validates the locked game and copies it to `dist/`; it never rebuilds the obsolete Vite prototype or creates a CDN wrapper. This is a preserved playable bundle with scoped readable modules, not fully recovered unbundled authoring source.
+Node 22+; no packages are downloaded. Always deploy `dist/` (never `game/` directly). The only production destination is https://slime-evolution-five.vercel.app. A GitHub merge or CI pass is not a deployment.
 
-`game/assets/enemy-roster.js` contains active species, eligible elites, model dependencies and independent unlock times. Frog starts at 0, Water at 180 seconds, boss at 300 seconds. The 100-monster cap and spawn-frequency formula are unchanged. Add future species under their own IDs; no old enemy slot is required.
+## Current pacing (normal mode)
 
-Tests check exact original art, all unchanged files, removal of retired dependencies, reverse-patch provenance back to the completed Frog game and numerical parity of all four boss attacks. Browser CI exercises Frog/Water/Boss, old saved modes, three cameras, real projectile damage and all skill presets in Chromium and WebKit.
+Unlocks: Frog 0 s, Spark 120 s, Turtle 240 s, Water 360 s. Elite events: Frog 95/150 s, Spark 205/255 s, Turtle 395/445 s, Water 535/570 s, Panda at 300/480 s, boss eligible at 600 s. Source of truth: `pacing/encounter-director.js`; details in `docs/COZY-PACING.md`.
 
-The earlier Water candidate is preserved on `archive/water-before-roster-cleanup-20260917`; completed Frog at `6e098d66` / `fix/frog-canon-only`; old root/abandoned experiments on `archive/before-frog-canon-cleanup-20260917`. History is retained, not re-imported into the build.
+## Repository layout
 
-The only production destination remains `https://slime-evolution-five.vercel.app/`. A GitHub merge or CI pass is NOT a deployment. `npm run audit:live` checks the actual original site after publishing. Read `AGENTS.md` and `HANDOFF.md` before editing.
+Everything in `game/` and `species/`, plus the build modules, is hash-locked by `CANON.json`. Do not move or rename these files. Changing them requires updating the locks on purpose.
+
+| Path | Purpose |
+| --- | --- |
+| `game/` | Locked engine and art input (reviewed Panda main). `game/review/` holds historical review captures. |
+| `species/` | Hash-locked runtime patch: creature logic, Elite Frog attack/combat, sprite clarity filter, Elite atlases. `species/assemble.mjs` applies it. |
+| `pacing/` | Ten-minute encounter director and its static-hook assembler. |
+| `gameplay/` | Build-time patch for random opening skill cards. |
+| `audio/` | Build-time patch for default volume. |
+| `ui/` | Build-time HUD polish and start menu: "Slime Evolution" title, compact Elite tags, boss banner placement, phone HUD, empty skill slots, movement hint fade. |
+| `vfx/` | Godot-style VFX port, adapters and provenance. |
+| `scripts/canon.mjs` | Build, serve and live-audit entry point. |
+| `tests/` | `*.test.mjs` run through `npm test`. `*-browser*.mjs` and `cozy-regressions.mjs` are Chromium/WebKit suites. `*-provenance.mjs` are shared helpers. |
+| `tools/` | One-time Python scripts that prepared approved art (Spark, Turtle, Water Calf, Panda). Kept for provenance. |
+| `art/` | Original owner-approved source images/videos and extraction scripts for each creature. Not shipped directly. |
+| `docs/` | Per-creature design notes plus parent manifests and integration proofs. |
+| `baseline-manifest.json`, `roster-parent-manifest.json` | Baseline file manifests used by provenance tests. |
+| `.github/workflows/` | CI: canon build/tests, browser regressions, production verification. |
+
+## Docs index
+
+| Topic | Doc |
+| --- | --- |
+| Pacing and director | `docs/COZY-PACING.md` |
+| Species EXP and Elites | `docs/SPECIES-EXP-ELITES.md` |
+| Bamboo Panda (art, combat) | `docs/BAMBOO-PANDA.md`, `docs/PANDA-COMBAT.md` |
+| Pond Turtle | `docs/POND-TURTLE.md`, `docs/TURTLE-SIZE-8FRAME.md`, `docs/TURTLE-WALK-COLOR.md` |
+| Spark Hedgehog | `docs/SPARK-HEDGEHOG.md` |
+| Water Calf | `docs/WATER-CALF.md` |
+| Water/Spark size | `docs/ENEMY-SIZE.md` |
+| Skill VFX | `docs/GODOT-VFX-PORT.md` |
+| History (Frog canon recovery, roster cleanup) | `docs/RECOVERY-2026-09-17.md`, `docs/ROSTER-CLEANUP.md` |
+
+Retired models (Thorn Alpha, Mossback, Petal, Crystal) and older releases stay in Git history and archive branches only. Do not re-import them.

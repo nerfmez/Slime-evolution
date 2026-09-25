@@ -19,5 +19,6 @@ test('opening cards use independent browser entropy while combat RNG stays deter
   assert.ok(!block.includes('this.random()'));
   assert.equal((base.match(/this\.random\(\)/g)||[]).length-(result.match(/this\.random\(\)/g)||[]).length,2);
   assert.match(result,/this\.seed=7421/,'combat/drop PRNG seed must remain unchanged');
-  assert.equal(OPENING_RANDOM_VERSION,'opening-crypto-v1');
+  assert.ok(result.includes('reset(){let r=(this.revision||0)+1;super.reset(),this.revision=r,'),'restart must bump the choice revision so re-rolled cards are redrawn');
+  assert.equal(OPENING_RANDOM_VERSION,'opening-crypto-v2');
 });
