@@ -17,6 +17,7 @@ try{
     await page.waitForFunction(()=>!document.getElementById('boss-health').hidden,null,{timeout:30000});
     const layout=await page.evaluate(()=>{const b=document.getElementById('boss-health'),t=document.querySelector('.title');return {text:b.querySelector('strong').textContent,bossTop:b.getBoundingClientRect().top,titleBottom:t.getBoundingClientRect().bottom,x:b.getBoundingClientRect().left<t.getBoundingClientRect().right}});
     assert.equal(layout.text,'มินิบอส · แพนด้าไผ่');
+    if(options.viewport.width>=960)assert.ok(layout.bossTop<40,`${label}: wide screens keep the boss banner in the top row ${JSON.stringify(layout)}`);
     if(layout.x)assert.ok(layout.bossTop>=layout.titleBottom,`${label}: boss banner must not cover the HUD ${JSON.stringify(layout)}`);
     await page.locator('#world').click({position:{x:5,y:300},force:true});
     await page.keyboard.down('d');

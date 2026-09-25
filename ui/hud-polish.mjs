@@ -19,6 +19,10 @@ const STYLE='<style id="hud-polish">'+
   '#level-text{color:#2f6f78}.title small{letter-spacing:.04em}'+
   '#hint{transition:opacity .8s ease}#hint.hint-done{opacity:0}'+
   '.equipped-skill.empty{width:22px;height:22px;box-sizing:border-box;border:1.5px dashed #b3a988;border-radius:50%;display:inline-grid;place-items:center;color:#a39a78;font-size:14px;line-height:1}'+
+  // Boss banner: compact everywhere; on wide screens it sits in the top row between the HUD and the buttons.
+  '#boss-health{padding:6px 14px}#boss-health strong{font-size:11px}#boss-health progress{height:8px;margin:4px 0}#boss-health small{font-size:10px}'+
+  '@media (min-width:960px){#boss-health{top:max(16px,env(safe-area-inset-top));width:clamp(220px,calc(100vw - 760px),420px)}}'+
+  '@media (min-width:601px) and (max-width:959px){#boss-health{top:calc(max(16px,env(safe-area-inset-top)) + 174px);width:min(360px,50vw)}}'+
   '@media (max-width:600px){'+
   '.title{max-width:min(58vw,220px);padding:8px 11px;gap:2px}.title small{display:none}.title strong{font-size:15px}'+
   '#status{font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}#health-text,#level-text{font-size:10.5px}'+
