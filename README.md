@@ -1,4 +1,4 @@
-# Slime — Cozy Action Roguelite
+# Slime Evolution — Cozy Action Roguelite
 
 Ten-minute normal rounds with Moss Frog, Spark Hedgehog, Pond Turtle, Water Calf, the Bamboo Panda mini-boss and the Ancient Bloom boss. Read `AGENTS.md` (rules) and `HANDOFF.md` (current status) before editing.
 
@@ -26,7 +26,7 @@ Everything in `game/` and `species/`, plus the build modules, is hash-locked by 
 | `pacing/` | Ten-minute encounter director and its static-hook assembler. |
 | `gameplay/` | Build-time patch for random opening skill cards. |
 | `audio/` | Build-time patch for default volume. |
-| `ui/` | Build-time HUD polish: Thai labels, compact Elite tags, mobile HUD, empty skill slots, movement hint fade. |
+| `ui/` | Build-time HUD polish: "Slime Evolution" title, compact Elite tags, boss banner placement, phone HUD, empty skill slots, movement hint fade. |
 | `vfx/` | Godot-style VFX port, adapters and provenance. |
 | `scripts/canon.mjs` | Build, serve and live-audit entry point. |
 | `tests/` | `*.test.mjs` run through `npm test`. `*-browser*.mjs` and `cozy-regressions.mjs` are Chromium/WebKit suites. `*-provenance.mjs` are shared helpers. |

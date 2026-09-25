@@ -1,4 +1,4 @@
-# Slime — agent instructions
+# Slime Evolution — agent instructions
 
 Current rules only; history lives in Git (this file was consolidated on 2026-09-25). When code and this file disagree, check the code, then fix whichever is wrong. The code is the source of truth for numbers.
 
@@ -43,10 +43,11 @@ Source of truth: `pacing/encounter-director.js`; details in `docs/COZY-PACING.md
 - **Opening cards:** the first three skill choices use fresh browser randomness. All later RNG stays deterministic.
 - **Audio:** default 50%, master gain up to 3× with a peak limiter. Saved volume always wins.
 - **HUD** (`ui/hud-polish.mjs`): presentation only.
-  - Thai title, header and boss banners.
-  - Compact Thai Elite tags: star + name, HP bar only once damaged, stacked instead of overlapping, faded over the player.
+  - The game is named **Slime Evolution** (page title and HUD title).
+  - Elite, mini-boss and boss names stay **English** (owner decision). Other UI text is Thai.
+  - Compact Elite tags: star + English roster name, HP bar only once damaged, stacked instead of overlapping, faded over the player.
   - Empty skill slots shown as "+", movement hint fades after the first move, compact phone HUD.
-  - Skill names and the test menu stay English.
+  - Skill names and the test menu stay English. The boss banner sits in the top row on screens 960px and wider.
 - **Scope:** do not add absorption skills or Mod sockets unless asked.
 
 ## Verification before merge or deploy

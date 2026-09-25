@@ -21,15 +21,14 @@ async function pipeline(){
 test('HUD polish is presentation-only and applies to the exact assembled runtime',async()=>{
   const {before,after}=await pipeline();
   execFileSync(process.execPath,['--check','--input-type=module'],{input:after.bundle});
-  // Elite tags: Thai names, damaged-only HP, overlap stacking and player fade.
-  for(const marker of ['thorn:`กบมอส`','spark:`เม่นสายฟ้า`','turtle:`เต่าโล่พลัง`','water:`ช้างน้ำ`','hurt=d<.999','placed.find(','proj(W.player[0],.45,W.player[2])'])assert.ok(after.bundle.includes(marker),marker);
+  // Elite tags: English roster names, damaged-only HP, overlap stacking and player fade.
+  for(const marker of ['label=`★ `+pt(e).name','hurt=d<.999','placed.find(','proj(W.player[0],.45,W.player[2])'])assert.ok(after.bundle.includes(marker),marker);
   assert.ok(!after.bundle.includes('r.strokeText(pt(e).name'),'old outlined English tag removed');
-  assert.ok(after.bundle.includes('`มินิบอส · แพนด้าไผ่`:`บอส · ยักษ์บุปผาโบราณ`'));
-  assert.ok(!after.bundle.includes('MINI-BOSS'));
+  assert.ok(after.bundle.includes('n?.miniBoss?`BAMBOO PANDA · MINI-BOSS`:`ANCIENT BLOOM COLOSSUS`'),'boss banners keep their English names');
   assert.ok(after.bundle.includes('W.moving&&B(`hint`)?.classList.add(`hint-done`)'));
   assert.ok(after.bundle.includes('i.classList.add(`empty`),i.title=`ช่องสกิลว่าง`'));
-  assert.match(after.html,/<title>Slime — ทุ่งหญ้าสไลม์<\/title>/);
-  assert.ok(after.html.includes('<small>สไลม์ · ไฟและวิญญาณ</small>'));
+  assert.match(after.html,/<title>Slime Evolution<\/title>/);
+  assert.ok(after.html.includes('<small>ทุ่งหญ้า</small><strong>Slime Evolution</strong>'));
   assert.equal(after.html.split('<style id="hud-polish">').length-1,1);
   // Combat/stat data untouched: only the listed UI segments differ.
   for(const keep of ['xp:28,scale:1.6','{thorn:1,spark:2,turtle:3,water:4,panda:8}','name:`Ancient Bloom Colossus`'])assert.ok(after.bundle.includes(keep),keep);
