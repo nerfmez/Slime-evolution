@@ -30,6 +30,9 @@ test('HUD polish is presentation-only and applies to the exact assembled runtime
   assert.match(after.html,/<title>Slime Evolution<\/title>/);
   assert.ok(after.html.includes('<small>ทุ่งหญ้า</small><strong>Slime Evolution</strong>'));
   assert.equal(after.html.split('<style id="hud-polish">').length-1,1);
+  // Start menu: one overlay, one script, skipped only for automation without ?menu=1.
+  assert.equal(after.html.split('id="start-menu"').length-1,1);
+  for(const marker of ['<h1 id="start-title">Slime <span>Evolution</span></h1>','id="start-play"','id="start-howto"','id="start-settings"','navigator.webdriver&&!new URLSearchParams(location.search).has("menu")'])assert.ok(after.html.includes(marker),marker);
   // Combat/stat data untouched: only the listed UI segments differ.
   for(const keep of ['xp:28,scale:1.6','{thorn:1,spark:2,turtle:3,water:4,panda:8}','name:`Ancient Bloom Colossus`'])assert.ok(after.bundle.includes(keep),keep);
   assert.equal(after.bundle.length-before.bundle.length>0,true);

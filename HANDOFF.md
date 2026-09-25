@@ -14,7 +14,7 @@ Rules live in `AGENTS.md`; repository layout in `README.md`. This file only trac
 ## Proposed next steps (owner to choose)
 
 1. Merge PR #44, then verify the live release on the iPad.
-   - Start menu before the game, titled "Slime Evolution" (requested; planned as a separate PR). Existing browser tests will need to press Start first.
+   - Start menu: done in PR #44 (Start / How to play / Settings).
 2. Lighting/contrast: stronger contact shadows or a light vignette so green monsters stand out from the grass, without changing approved art.
 3. Player Slime art (face/outline). Needs new art approved by the owner.
 4. Longer term: gradually replace minified-bundle patches with readable source modules, one system at a time.

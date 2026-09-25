@@ -43,7 +43,8 @@ Source of truth: `pacing/encounter-director.js`; details in `docs/COZY-PACING.md
 - **Opening cards:** the first three skill choices use fresh browser randomness. All later RNG stays deterministic.
 - **Audio:** default 50%, master gain up to 3× with a peak limiter. Saved volume always wins.
 - **HUD** (`ui/hud-polish.mjs`): presentation only.
-  - The game is named **Slime Evolution** (page title and HUD title).
+  - The game is named **Slime Evolution** (page title, HUD title and start menu).
+  - A start menu (Start / How to play / Settings) shows once per page load, over the paused opening card choice. Automated browsers skip it unless the URL has `?menu=1`, so regression suites click cards directly. Test the menu itself with `?menu=1`.
   - Elite, mini-boss and boss names stay **English** (owner decision). Other UI text is Thai.
   - Compact Elite tags: star + English roster name, HP bar only once damaged, stacked instead of overlapping, faded over the player.
   - Empty skill slots shown as "+", movement hint fades after the first move, compact phone HUD.

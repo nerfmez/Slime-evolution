@@ -21,6 +21,21 @@ const STYLE='<style id="hud-polish">'+
   '#boss-health{padding:6px 14px}#boss-health strong{font-size:11px}#boss-health progress{height:8px;margin:4px 0}#boss-health small{font-size:10px}'+
   '@media (min-width:960px){#boss-health{top:max(16px,env(safe-area-inset-top));width:clamp(220px,calc(100vw - 760px),420px)}}'+
   '@media (min-width:601px) and (max-width:959px){#boss-health{top:calc(max(16px,env(safe-area-inset-top)) + 174px);width:min(360px,50vw)}}'+
+  // Start menu.
+  '#start-menu{position:fixed;inset:0;z-index:20;display:grid;place-items:center;padding:16px;background:#1f3a2e73;-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);transition:opacity .25s ease}'+
+  '#start-menu.start-leaving{opacity:0;pointer-events:none}'+
+  'body.start-open #hint,body.start-open #joystick,body.start-open #cast,body.start-open #fire-slot{visibility:hidden}'+
+  '.start-card{width:min(420px,100%);max-height:calc(100dvh - 32px);overflow:auto;padding:26px 24px 20px;text-align:center;display:grid;gap:12px}'+
+  '.start-kicker{margin:0;color:#58715f;font-size:13px;letter-spacing:.04em}'+
+  '#start-title{margin:0;font-size:clamp(34px,8vw,46px);line-height:1.05;color:#233c36;letter-spacing:.01em}'+
+  '#start-title span{color:#3f8fb0}'+
+  '.start-tagline{margin:0 0 6px;color:#596953;font-size:14px}'+
+  '#start-play{max-width:none;min-height:56px;font-size:20px;font-weight:700;color:#fff2d0;background:#bd551c;border:2px solid #efc579;border-radius:14px;box-shadow:0 4px #733d1e}'+
+  '#start-play:active{transform:translateY(2px);box-shadow:0 2px #733d1e}'+
+  '.start-secondary{max-width:none;min-height:44px;font-size:15px;color:#233c36;background:#efe4c8;border:1px solid #b6b699;border-radius:12px}'+
+  '#start-howto{text-align:left;background:#efe4c8;border:1px solid #b6b699;border-radius:12px;padding:10px 14px;font-size:14px;color:#233c36}'+
+  '#start-howto summary{cursor:pointer;font-weight:700;text-align:center;list-style-position:inside}'+
+  '#start-howto ul{margin:10px 0 2px;padding-left:18px;display:grid;gap:6px;line-height:1.45}'+
   '@media (max-width:600px){'+
   '.title{max-width:min(58vw,220px);padding:8px 11px;gap:2px}.title small{display:none}.title strong{font-size:15px}'+
   '#status{font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}#health-text,#level-text{font-size:10.5px}'+
@@ -29,10 +44,36 @@ const STYLE='<style id="hud-polish">'+
   '#boss-health{top:calc(max(10px,env(safe-area-inset-top)) + 134px)}'+
   '}</style>';
 
+// Start menu shown once per page load, above the opening skill choice (the game is already
+// paused while that choice is open, so no game logic changes). Automated browsers skip it
+// unless ?menu=1 is set, so existing regression suites keep their direct card clicks.
+const MENU='<div id="start-menu" role="dialog" aria-modal="true" aria-labelledby="start-title"><div class="start-card paper">'+
+  '<p class="start-kicker">ทุ่งหญ้า · รอบละ 10 นาที</p><h1 id="start-title">Slime <span>Evolution</span></h1>'+
+  '<p class="start-tagline">สไลม์ตัวน้อยเติบโตด้วยสกิลที่คุณเลือก</p>'+
+  '<button id="start-play" type="button">เริ่มเกม</button>'+
+  '<details id="start-howto"><summary>วิธีเล่น</summary><ul>'+
+  '<li>ลากนิ้วฝั่งซ้ายของจอเพื่อเดิน หรือใช้ WASD / ปุ่มลูกศร</li>'+
+  '<li>สกิลร่ายเองอัตโนมัติ เลเวลขึ้นแล้วเลือกการ์ดอัปเกรด ใส่ได้ 3 สกิล</li>'+
+  '<li>เก็บ EXP จากสัตว์ที่ล้ม ระวัง Elite ที่มีดาว ★ และ Bamboo Panda</li>'+
+  '<li>อยู่รอดครบ 10 นาที แล้วล้ม Ancient Bloom Colossus เพื่อชนะ</li>'+
+  '</ul></details>'+
+  '<button id="start-settings" type="button" class="start-secondary">ตั้งค่า</button>'+
+  '</div></div>';
+const MENU_SCRIPT='<script>(()=>{const m=document.getElementById("start-menu");if(!m)return;'+
+  'if(navigator.webdriver&&!new URLSearchParams(location.search).has("menu")){m.remove();return}'+
+  'document.body.classList.add("start-open");'+
+  'const close=()=>{m.classList.add("start-leaving");document.body.classList.remove("start-open");setTimeout(()=>m.remove(),260);'+
+  'setTimeout(()=>document.querySelector(".skill-card")?.focus({preventScroll:true}),280)};'+
+  'document.getElementById("start-play").onclick=close;'+
+  'document.getElementById("start-settings").onclick=()=>document.getElementById("settings").click();'+
+  'document.getElementById("start-play").focus({preventScroll:true})})()</script>';
+
 const HTML_EDITS=[
   ['page title','<title>Slime — ฉากทดลองเว็บ</title>','<title>Slime Evolution</title>'],
   ['header title','<small>SLIME · FIRE & SOULS</small><strong>ทุ่งหญ้า Slime</strong>','<small>ทุ่งหญ้า</small><strong>Slime Evolution</strong>'],
   ['hud style','</head>',STYLE+'</head>'],
+  ['start menu','<body>','<body>'+MENU],
+  ['start menu script','<div id="error" class="paper" hidden></div></body>','<div id="error" class="paper" hidden></div>'+MENU_SCRIPT+'</body>'],
 ];
 
 function replaceOne(source,[label,from,to]){

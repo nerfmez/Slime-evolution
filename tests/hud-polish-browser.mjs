@@ -4,6 +4,24 @@ const base=new URL(process.env.SMOKE_URL||'http://127.0.0.1:4173/');base.searchP
 const engine=process.env.BROWSER||'chromium';
 const browser=await ({chromium,webkit}[engine]).launch({headless:true,...(engine==='chromium'?{args:['--use-gl=angle','--use-angle=swiftshader','--enable-unsafe-swiftshader','--enable-webgl','--ignore-gpu-blocklist']}:{})});
 try{
+  // Start menu (forced on with ?menu=1 because automated browsers skip it by default).
+  {
+    const page=await browser.newPage({viewport:{width:1000,height:695}}),errors=[];page.on('pageerror',e=>errors.push(e.message));
+    const menuUrl=new URL(base.href);menuUrl.searchParams.set('menu','1');
+    assert.ok((await page.goto(menuUrl.href,{waitUntil:'load',timeout:60000}))?.ok());
+    await page.waitForFunction(()=>globalThis.__slimeGameQA&&document.querySelector('.skill-card'),null,{timeout:90000});
+    const menu=await page.evaluate(()=>({title:document.getElementById('start-title')?.textContent,visible:!!document.getElementById('start-menu')?.getBoundingClientRect().width,top:document.elementFromPoint(innerWidth/2,innerHeight/2)?.closest('#start-menu')!==null}));
+    assert.deepEqual(menu,{title:'Slime Evolution',visible:true,top:true});
+    await page.locator('#start-howto summary').click();
+    assert.equal(await page.locator('#start-howto').evaluate(e=>e.open),true);
+    await page.locator('#start-play').click();
+    await page.waitForFunction(()=>!document.getElementById('start-menu'),null,{timeout:10000});
+    await page.locator('.skill-card').first().click();
+    await page.waitForFunction(()=>__slimeGameQA.world.time>0,null,{timeout:60000});
+    assert.deepEqual(errors,[]);
+    console.log('START MENU VERIFIED',engine);
+    await page.close();
+  }
   for(const [label,options] of [['desktop',{viewport:{width:1280,height:720}}],['phone',{viewport:{width:390,height:844},isMobile:engine==='chromium',hasTouch:true}]]){
     const page=await browser.newPage(options),errors=[];page.on('pageerror',e=>errors.push(e.message));
     assert.ok((await page.goto(base.href,{waitUntil:'load',timeout:60000}))?.ok());
