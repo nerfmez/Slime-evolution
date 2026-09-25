@@ -43,5 +43,5 @@ test('only elemental rendering changes; combat, Fire, scene and latest creature 
  assert.equal(result.slice(0,result.indexOf('un={water:')),source.slice(0,source.indexOf('un={water:')));
  assert.equal(result.slice(result.indexOf('function hn(')),source.slice(source.indexOf('function hn(')));
  assert.ok(!result.includes('for(let t of e.abilities||[])'),'rejected skill renderer remains');
- assert.match(result,/GODOT_V100_SOURCE_PORT/);assert.match(result,/function pnLegacy\(/);assert.match(result,/family===`chain`/);assert.match(result,/abilities:\(o\.abilities\|\|\[\]\)\.filter\(t=>t\.family===`chain`\)/);assert.equal(VFX_RESTORE_VERSION,'godot-source-port-v2');
+ assert.match(result,/GODOT_V100_SOURCE_PORT/);assert.match(result,/function pnLegacy\(/);assert.match(result,/family===`chain`/);assert.match(result,/abilities:\(o\.abilities\|\|\[\]\)\.filter\(t=>t\.family===\"chain\"\)/);assert.equal(VFX_RESTORE_VERSION,'godot-source-port-v2');
 });
