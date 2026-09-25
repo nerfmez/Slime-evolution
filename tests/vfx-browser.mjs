@@ -45,7 +45,7 @@ try{
  await page.waitForFunction(()=>document.getElementById('error')?.hidden===false||(globalThis.__slimeGameQA?.waterRenderer&&document.querySelector('.skill-card')),null,{timeout:60000});
  assert.equal(await page.locator('#error').evaluate(e=>e.hidden),true,await page.locator('#error').textContent());
  await page.evaluate(()=>{document.querySelector('.skill-card').click();globalThis.__vfxFreezeRAF=true;document.getElementById('skill-test').click();});
- assert.ok(await page.evaluate(()=>globalThis.__slimeGodotVfx?.diagnostics.version==='godot-source-port-v1'));
+ assert.ok(await page.evaluate(()=>globalThis.__slimeGodotVfx?.diagnostics.version==='godot-source-port-v1'||globalThis.__slimeGodotVfx?.diagnostics.version==='godot-source-port-v2'));
  for(const id of presets){
   await reset(id);
   const moments=id==='toxin'?[.12,.32,.65]:id.startsWith('orbit')?[.12,.36,.8]:id==='chain-overcharge'?[.10,.40,.74]:fire.has(id)?[.12,.52,1.2]:[.08,.20,.46];
