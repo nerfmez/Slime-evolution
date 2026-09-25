@@ -1,6 +1,6 @@
 # Slime — Cozy Action Roguelite
 
-Ten-minute normal rounds with Moss Frog, Spark Hedgehog, Pond Turtle, Water Calf, the Bamboo Panda mini-boss and the Ancient Bloom boss. Read `AGENTS.md`, `CANON.json` and `HANDOFF.md` before editing.
+Ten-minute normal rounds with Moss Frog, Spark Hedgehog, Pond Turtle, Water Calf, the Bamboo Panda mini-boss and the Ancient Bloom boss. Read `AGENTS.md` (rules) and `HANDOFF.md` (current status) before editing.
 
 ```sh
 npm test            # unit + provenance tests
