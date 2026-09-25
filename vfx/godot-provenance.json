@@ -1,0 +1,23 @@
+{
+  "archive": "Slime-v100-fire-evo-components.zip",
+  "archiveSHA256": "2a69e69e95faa47e28427bdce8966385474ab859e22a5a9becab23debebfddf4",
+  "originals": {
+    "shaders/procedural_water_vfx.gdshader": "4623e4021b7c778d3b8eb0cb9ea990c00fca843a3f05bd0fd4e45883a11e95d3",
+    "shaders/tidal_wave_surface.gdshader": "06239ca4a59297593b2253e98e081bdedb924dd535cf96f57d359d4d24177d1b",
+    "shaders/frost_breath.gdshader": "19c4f8713fd01b71e8b64cca97c987c28d4f100377bbfde559924b57d312cc61",
+    "shaders/ice_crystal.gdshader": "0cc5fb26dd6a244c2592bbe7554b7d512438e442bfe27ff0573cf65206a7ebe0",
+    "shaders/boundary_ripple.gdshader": "02749961a4326d5cc1e091620e8e5fc125a7f0c02406d96c79af0a36bc1ba16e",
+    "shaders/stylized_procedural_vfx.gdshader": "0c62f2f4bc88514926817dc090a0188f7b7f023116d5420af3c3a76b86807b3e",
+    "scripts/procedural_water_vfx.gd": "bf48539901527f73bd94b584eb481825d8e9c273639ab81a98683ed4eca24a6b",
+    "scripts/frost_breath_vfx.gd": "28837bd2bdfccf1c5008772c96f2dbd0594d0fa1ecdf16cdc7b0073196b6b4d2",
+    "scripts/frost_crystal_vfx.gd": "09ea384b8ddede1febfc6e8ea0d6f0df5679b736e232efcf09754b9e888c43d5",
+    "scripts/procedural_vfx.gd": "1808d5ab856b3582b20c9987efebb68602b224462cc98854501294ed6f275396",
+    "scripts/toxin_blob.gd": "de90bff8c7941a1fcd7c3a5964307f69985d1aaeee8ce1e74f32570c0b10a2a8",
+    "scripts/toxin_pool.gd": "522ec97bed5ae2a22883fc2fd6a765eafcd0dd094c0ed05fafdd98e65df430a5",
+    "scripts/tide_ring.gd": "1de23bc6d9f0d54ca8db5a7d7ff00881c84246d8b087be7e72c7690ccf8ce55f",
+    "scripts/orbit_core.gd": "c26199467caa4d5cabbea37fa28bd5d2381affe0a8f8de31a6132b4c188125b7",
+    "scripts/chain_spark.gd": "01369b2ea013679fab5e94614e9877be4123dd80f2da6045f889649dbfa08da3",
+    "scripts/slime_projectile.gd": "0ec9d792d9a21e26ead6063ab8c98e92c67ff7cac25541e2a45f531ebea3a95f",
+    "scripts/evolution_effect.gd": "c9654e4e14a546af1a942ba5b2d059d9ba2ce07b7618da204c2563feef1fdf6d"
+  }
+}
