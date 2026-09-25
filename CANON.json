@@ -21,7 +21,7 @@
     "bundleSHA256": "a88fd9e4ca5b35f6a1b06799e0fd46806c88ca1f0a7cde8621494f2604d4115e",
     "htmlSHA256": "70dcfc240d46d731e60fbc2b8b261684572c7d7a8596005d9460a9dcb6e3911e"
   },
-  "runtimeTree": "4d4a936971d5797c964a20b83b7aee686b973228",
+  "runtimeTree": "dbc30d54cb88e72994df7f39ab7026e26dc9e91e",
   "species": {
     "assemblerSHA256": "e2bb471b7013268d36e641e718b517cdfefb02459c767968554d95a04580bc59",
     "tree": "97b5269d0f8e4aa3723488a4f4c03a32fc50b640"
@@ -31,5 +31,8 @@
   },
   "audioDefault": {
     "moduleSHA256": "8019736fa60cfbd3db6edb0f665760237ac856d772448d8251b8419b971ba69c"
+  },
+  "hudPolish": {
+    "moduleSHA256": "6e49dd6dc5b433161695dbd782bbf1826d4e41a58793085ea1a328e66b3d03d0"
   }
 }

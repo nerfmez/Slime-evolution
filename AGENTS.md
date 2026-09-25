@@ -1,3 +1,7 @@
+# Current addition — HUD polish (2026-09-25)
+
+`ui/hud-polish.mjs` is the last build step (hash-locked in CANON.json as `hudPolish`). Presentation only: Thai page title/header/boss banners, compact Thai Elite tags (star + name, HP bar only once damaged, stacked instead of overlapping, faded over the player), dashed "+" empty skill slots, movement hint fades after the first move, stronger EXP bar and a compact phone HUD with the boss banner below it. Enemy stat names, combat, pacing, art and saves are unchanged. Skill names and the manual test menu remain English. Verify with `tests/hud-polish.test.mjs` and `tests/hud-polish-browser.mjs` (Chromium + WebKit).
+
 # Current correction — monster clarity (2026-09-21)
 
 The user requested clearer monster sprites, especially Elites and the Panda mini-boss. Apply the shared bounded, alpha-aware detail filter at BUILD TIME to monster fragment shaders only. Preserve all approved atlas bytes, world sizes, pivots, animation and combat. Both Elite Frog renderers use identical strength. Sample offsets are clamped inside each atlas frame and alpha is unchanged. Do not sharpen the scene, EXP animals or effects. Panda uses slightly stronger detail recovery. This is rendering refinement, not new source detail or an AI upscale. Verify Chromium/WebKit and compare actual game pose captures before merge; preserve the full production hash audit.
