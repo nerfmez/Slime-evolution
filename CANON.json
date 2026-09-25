@@ -28,5 +28,8 @@
   },
   "openingRandom": {
     "moduleSHA256": "bda3d011ba5d3dc8d275d622b2bfce0e42210a35eabf2d09af164f269c2c0154"
+  },
+  "audioDefault": {
+    "moduleSHA256": "c7dbf556e55b57a969486c24d643fc4774c3882f0fb85f59d50b17779104f13a"
   }
 }
