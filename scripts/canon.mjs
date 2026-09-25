@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url';
 import { assemble } from '../pacing/assemble.mjs';
 import {applySpriteClarity} from '../species/sprite-clarity.mjs';
 import { applySpeciesBundle, applySpeciesHtml, SPECIES_VERSION } from '../species/assemble.mjs';
+import { applyRestoredSkillVfx, VFX_RESTORE_VERSION } from '../vfx/restore-godot-style.mjs';
 
 const root = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const digest = (b, algo = 'sha256') => createHash(algo).update(b).digest('hex');
@@ -51,7 +52,8 @@ export async function build() {
   if(digest(pacingOutput.bundle)!==c.pacing.bundleSHA256 || digest(pacingOutput.html)!==c.pacing.htmlSHA256) throw new Error('Generated pacing hooks differ from reviewed lock');
   const speciesAssembler=await readFile(join(root,'species/assemble.mjs'));
   if(digest(speciesAssembler)!==c.species.assemblerSHA256 || await treeHash(join(root,'species'))!==c.species.tree) throw new Error('Species/elite source differs from reviewed lock');
-  const output={bundle:applySpeciesBundle(pacingOutput.bundle),html:applySpeciesHtml(pacingOutput.html)};
+  const speciesBundle=applySpeciesBundle(pacingOutput.bundle);
+  const output={bundle:applyRestoredSkillVfx(speciesBundle),html:applySpeciesHtml(pacingOutput.html)};
   await rm(dist,{recursive:true,force:true});
   await cp(game,dist,{recursive:true});
   if(await treeHash(dist)!==hash) throw new Error('Baseline copy changed source bytes');
@@ -82,10 +84,10 @@ export async function build() {
   }
   let commit = process.env.GITHUB_SHA;
   if (!commit) commit = execFileSync('git',['rev-parse','HEAD'],{cwd:root,encoding:'utf8'}).trim();
-  await writeFile(join(dist,'release.json'),JSON.stringify({canonicalCommit:c.commit,canonicalTree:c.tree,repositoryCommit:commit,runtimeTree:runtimeHash,pacingVersion:'cozy-10min-v2',speciesVersion:SPECIES_VERSION,runSeconds:600,files:manifest.length},null,2)+'\n');
+  await writeFile(join(dist,'release.json'),JSON.stringify({canonicalCommit:c.commit,canonicalTree:c.tree,repositoryCommit:commit,runtimeTree:runtimeHash,pacingVersion:'cozy-10min-v2',speciesVersion:SPECIES_VERSION,vfxVersion:VFX_RESTORE_VERSION,runSeconds:600,files:manifest.length},null,2)+'\n');
   await writeFile(join(dist,'asset-manifest.json'),JSON.stringify(manifest,null,2)+'\n');
   await mkdir(join(root,'test-results'),{recursive:true});
-  await writeFile(join(root,'test-results/integrity.json'),JSON.stringify({canonicalTree:hash,repositoryCommit:commit,files:manifest.length,bytes:manifest.reduce((s,f)=>s+f.bytes,0),runtimeTree:runtimeHash,baselineSourceUnchanged:true,changedRuntimeFiles:['index.html','assets/main-critter-v4.js','assets/encounter-director.js','assets/species/**']},null,2));
+  await writeFile(join(root,'test-results/integrity.json'),JSON.stringify({canonicalTree:hash,repositoryCommit:commit,files:manifest.length,bytes:manifest.reduce((s,f)=>s+f.bytes,0),runtimeTree:runtimeHash,baselineSourceUnchanged:true,changedRuntimeFiles:['index.html','assets/main-critter-v4.js','assets/encounter-director.js','assets/species/**'],vfxVersion:VFX_RESTORE_VERSION},null,2));
   console.log(`CANON VERIFIED: tree=${hash}, ${manifest.length} files, source preserved; runtime=${runtimeHash} hash-locked`);
 }
 export function serve(dir = join(root,'dist'), port = 4173) {
