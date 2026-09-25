@@ -34,7 +34,7 @@ async function run(){
   for(const name of await readdir(resolve(root,'tests'))){if(!name.endsWith('.mjs'))continue;const source=await readFile(resolve(root,'tests',name),'utf8');await writeFile(resolve(scratch,name),name==='pacing-browser.mjs'?source:adaptBrowserSource(name,source));}
   const production=process.argv[2]==='production';
   const tests=production?['spark-browser.mjs','turtle-browser.mjs']:['frog-canon.mjs','water-browser.mjs','roster-browser.mjs','spark-browser.mjs','turtle-browser.mjs'];
-  tests.push('pacing-browser.mjs');
+  tests.push('pacing-browser.mjs','vfx-browser.mjs');
   for(const name of tests){console.log('COZY REGRESSION',name);const r=spawnSync(process.execPath,[resolve(scratch,name)],{cwd:root,env:process.env,stdio:'inherit'});if(r.status!==0)throw Error(`${name} failed: ${r.status} ${r.error||''}`);}
  }finally{await rm(scratch,{recursive:true,force:true});}
 }
