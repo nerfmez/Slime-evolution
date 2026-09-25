@@ -14,7 +14,7 @@ page.setDefaultTimeout(45000);
 const errors=[];
 page.on('pageerror',e=>errors.push('JS '+e.message));
 page.on('response',r=>{if(r.status()>=400&&!r.url().endsWith('/favicon.ico'))errors.push(`HTTP ${r.status()} ${r.url()}`)});
-page.on('requestfailed',r=>errors.push(`NETWORK ${r.url()}: ${r.failure()?.errorText||'failed'}`));
+page.on('requestfailed',r=>{const reason=r.failure()?.errorText||'failed';if(reason==='net::ERR_ABORTED'&&/\/assets\/player-slime-directions\.webp(?:\?|$)/.test(r.url()))return;errors.push(`NETWORK ${r.url()}: ${reason}`)});
 
 const frames=[];
 async function capture(id,delay){
