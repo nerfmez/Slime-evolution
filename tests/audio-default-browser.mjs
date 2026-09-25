@@ -13,6 +13,7 @@ try{
   await saved.addInitScript(()=>localStorage.setItem('slime.audio.v1',JSON.stringify({enabled:true,volume:.22})));
   assert.ok((await saved.goto(base,{waitUntil:'domcontentloaded',timeout:60000}))?.ok());
   await saved.waitForSelector('#audio-volume',{state:'attached',timeout:30000});
+  await saved.waitForFunction(()=>document.getElementById('audio-volume')?.value==='22',null,{timeout:120000});
   const savedState=await saved.evaluate(()=>({value:document.getElementById('audio-volume').value,label:document.getElementById('audio-level').value||document.getElementById('audio-level').textContent}));
   assert.deepEqual(savedState,{value:'22',label:'22%'});
   console.log('AUDIO DEFAULT VERIFIED',JSON.stringify({fresh:freshState,saved:savedState}));
