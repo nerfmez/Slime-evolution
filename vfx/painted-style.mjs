@@ -56,6 +56,145 @@ export function applyPaintedVfx(bundle, html) {
   b = replaceOne(b, FIRE_OLD, FIRE_NEW, 'old fire switch');
   // Owner request (2026-09-26): the Sunfall sun takes 1 s to fall (was .5 s), so it is clearly seen sinking. Its damage lands when it does.
   b = replaceOne(b, 'fall:.5,burst:.72,smoke:1.18', 'fall:1,burst:.72,smoke:1.18', 'Sunfall fall time');
+  // Owner request (2026-09-26), water evolutions:
+  // - AQUA RAILGUN is a giant ball of water flying down the line: the shot lives .8 s, the ball travels the line in the first
+  //   60% of it (about 25 units/s) and each foe is hit once, when the ball reaches it (the renderer draws the ball at the same spot).
+  // - PRESSURE JET cuts like a laser: each jet lasts until the next cast (cooldown + .06 s), so the stream never stops. The damage
+  //   per cast is unchanged (it is split over more ticks), so damage per second stays the same.
+  // - TIDAL SURGE lasts 1.1 s (was .8 s) so the wave can be seen rising, rushing and crashing; it still hits each foe once.
+  b = replaceOne(b, 'length:12.2+.58*s.flow,life:.3,damage:L(o.ref*1.15)', 'length:12.2+.58*s.flow,life:.8,damage:L(o.ref*1.15)', 'railgun life');
+  b = replaceOne(b, 'c>-t.radius&&c<i.length+t.radius&&l<i.r+t.radius', 'c>-t.radius&&c<(i.kind===`beam`?i.length*Math.min(1,i.age/(i.life*.6)):i.length)+t.radius&&l<i.r+t.radius', 'railgun ball reach');
+  b = replaceOne(b, 'c===`burst`){let n=(.56+.05*s.burst)*o.D,', 'c===`burst`){let n=Math.max((.56+.05*s.burst)*o.D,o.cooldown+.06),', 'continuous jet');
+  b = replaceOne(b, 'speed:5+.25*s.flow,life:.8,damage:L(o.ref*1.02)', 'speed:5+.25*s.flow,life:1.1,damage:L(o.ref*1.02)', 'tidal surge life');
+  // Owner request (2026-09-26, round 2): each evolution has its own job. Railgun reaches far (above). Tidal Surge is WIDE and
+  // SHORT: 1.7x the width, and it travels 2.6 units/s (was 5), so it sweeps about 3 units in front of the slime. Pressure Jet is
+  // single-target: it hits one foe at a time, locks onto the foe it was cast at (or the nearest one in reach), and its nozzle
+  // follows the slime every frame, so the stream stays on that foe while the slime moves.
+  b = replaceOne(b, 'r:(1.55+.23*s.flow)*o.A,speed:5+.25*s.flow', 'r:(1.55+.23*s.flow)*o.A*1.7,speed:2.6+.15*s.flow', 'tidal surge wide and short');
+  b = replaceOne(b, 'maxTargets:1+o.pierce,push:.32', 'maxTargets:1,push:.32,follow:1,lock:i,range:8.4+.45*s.flow', 'pressure jet single target');
+  // Owner report (2026-09-26): the wave "blinks". It lived 1.1 s but was recast every ~.9 s, so a new wave popped up while the
+  // last one was still crashing. Tidal Surge now waits 1.5x its cooldown and hits 1.5x as hard (same damage per second), so each
+  // wave finishes before the next rises. The skill lab repeats it at the same pace.
+  b = replaceOne(b, 'speed:2.6+.15*s.flow,life:1.1,damage:L(o.ref*1.02)', 'speed:2.6+.15*s.flow,life:1.1,damage:L(o.ref*1.02*1.5)', 'tidal surge damage per wave');
+  b = replaceOne(b, 'seen:new Set})}return o.cooldown}function jt(', 'seen:new Set})}return t===`water`&&c===`flow`?o.cooldown*1.5:o.cooldown}function jt(', 'tidal surge cooldown');
+  b = replaceOne(b, 'castInterval(){let e=z[this.preset].family;return e?Ct(e,this.combat.skills[e],this.combat.mods).cooldown||4.8', 'castInterval(){let e=z[this.preset].family;return e?Ct(e,this.combat.skills[e],this.combat.mods).cooldown*(e===`water`&&this.combat.skills[e].evo===`flow`?1.5:1)||4.8', 'lab tidal surge pace');
+  // Owner request (2026-09-26): CRYSTAL CHAINBURST is bigger and wider: both burst radii are 1.4x.
+  b = replaceOne(b, 'r:(1.18+.08*s.shatter)*o.A,secondaryRadius:(.82+.06*s.shatter)*o.A', 'r:(1.18+.08*s.shatter)*o.A*1.4,secondaryRadius:(.82+.06*s.shatter)*o.A*1.4', 'crystal chainburst size');
+  // Owner request (2026-09-26, round 2): CRYSTAL CHAINBURST is a thicket of ice spikes that stab up out of the ground ONE AT A
+  // TIME, far enough apart in time to tell apart (9 spikes, .16 s apart, positions jumping round the patch). Each spike hits and
+  // chills the foes right round it when it erupts (radius .42x the patch, .55x the old burst damage), instead of one instant
+  // burst that chained to new bursts. Positions come from the cast point, so later RNG stays deterministic.
+  b = replaceOne(b, 'r:(1.18+.08*s.shatter)*o.A*1.4,secondaryRadius:(.82+.06*s.shatter)*o.A*1.4,life:.3,damage:o.ref*1.55,generation:0,seen:new Set',
+    'r:(1.18+.08*s.shatter)*o.A*1.4,secondaryRadius:(.82+.06*s.shatter)*o.A*1.4,life:9*.16+.55,damage:o.ref*1.55*.55,generation:0,seen:new Set,spikes:9,every:.16,done:0,sr:(1.18+.08*s.shatter)*o.A*1.4*.42,seed:Math.abs(i.x*1.7+i.z*2.3)%6.2832', 'ice spike thicket');
+  b = replaceOne(b, 'if([`ring`,`resonance`,`dome`,`vacuum`,`chainburst`].includes(i.kind)){',
+    'if(i.kind===`chainburst`&&i.spikes){for(let k=Math.min(i.spikes,Math.floor(i.age/i.every)+1);i.done<k;i.done++){let j=i.done*5%i.spikes,f=j?Math.sqrt(j/(i.spikes-1)):0,g=j*2.39996+i.seed,x=i.x+Math.cos(g)*i.r*.8*f,z=i.z+Math.sin(g)*i.r*.8*f;for(let t of n.enemies)t.hp>0&&Math.hypot(t.x-x,t.z-z)<i.sr+t.radius&&(e.elementalHit(`frost`,t,i.damage,x,z),Et(e,n,t,i.s))}}else if([`ring`,`resonance`,`dome`,`vacuum`,`chainburst`].includes(i.kind)){', 'ice spikes erupt one at a time');
+  // Owner report (2026-09-26): orbit orbs sometimes looked like they hit but did no damage. The hit area was smaller than the
+  // drawn orb (.17 vs .24 for a core, 1.15x for Gravity Mace). The hit area now matches what is drawn.
+  b = replaceOne(b, 'r:s===`power`?.62*a.scale*(1+(a.count-1)*.06):.17*a.scale', 'r:s===`power`?.62*a.scale*(1+(a.count-1)*.06)*1.15:.24*a.scale', 'orbit hit area matches the drawn orb');
+  // Owner request (2026-09-26): damage numbers take the colour of the skill that dealt them (fire keeps the original cream).
+  b = replaceOne(b, 'this.numbers.length<48&&this.numbers.push({x:e.x,z:e.z,value:t,age:0})', 'this.numbers.length<48&&this.numbers.push({x:e.x,z:e.z,value:t,age:0,family:this.damageSource||`fire`})', 'damage number family');
+  b = replaceOne(b, 'r.strokeStyle=`#5b301c`,r.fillStyle=`#fff0b9`', '(k=>(r.strokeStyle=k[1],r.fillStyle=k[0]))(({water:[`#cdeeff`,`#1e5f99`],tide:[`#ecdcff`,`#5b3b9e`],toxin:[`#dff7a6`,`#3d6b1d`],frost:[`#f2fdff`,`#2f8fb5`],chain:[`#fff6a3`,`#6e5a0c`],orbit:[`#ffd8f4`,`#7b2e6e`]})[e.family]||[`#fff0b9`,`#5b301c`])', 'damage number colours');
+  // Owner request (2026-09-26): CORROSIVE MIASMA sows poison seeds behind the slime as it walks. While it is active (the old
+  // 2.65 s + duration mods) the slime drops a seed whenever it has moved about one patch-width (radius .75x the old cloud), or
+  // every .7 s when standing still; each seed sprouts into a poison flower that releases poison pollen, lives 3 s and, once
+  // sprouted (.4 s), poisons foes within its patch on the old .25 s tick. The skill is cast at the slime and no longer chases.
+  b = replaceOne(b, 'c===`corrosion`&&R(e,t,`miasma`,i.x,i.z,{s:{...o,damage:o.damage*.58,slow:Math.min(.45,o.slow+.14),vulnerable:Math.min(.35,o.vulnerable+.12)},r:(1.45+.12*s.contagion)*o.A,life:2.65+.18*e.mods.duration,speed:1.6+.08*s.contagion,interval:.25})',
+    'c===`corrosion`&&R(e,t,`miasma`,l,u,{s:{...o,damage:o.damage*.58,slow:Math.min(.45,o.slow+.14),vulnerable:Math.min(.35,o.vulnerable+.12)},r:(1.45+.12*s.contagion)*o.A*.75,emit:2.65+.18*e.mods.duration,life:2.65+.18*e.mods.duration+3*(1+.1*e.mods.duration),speed:0,interval:.25,fart:1,puffs:[]})', 'poison seed trail');
+  b = replaceOne(b, 'if([`pool`,`bloom`,`miasma`].includes(i.kind)){if(i.kind===`miasma`){let r=e.target(n,[i.x,0,i.z]);',
+    'if(i.kind===`miasma`&&i.fart&&r){i.x=r[0],i.z=r[2];let q=i.puffs[i.puffs.length-1];i.age<i.emit&&(!q||Math.hypot(q.x-r[0],q.z-r[2])>i.r*.9||i.age-q.t>.7)&&i.puffs.push({x:r[0],z:r[2],t:i.age}),i.puffs=i.puffs.filter(p=>i.age-p.t<3)}if([`pool`,`bloom`,`miasma`].includes(i.kind)){if(i.kind===`miasma`&&!i.fart){let r=e.target(n,[i.x,0,i.z]);', 'seeds drop behind the slime');
+  b = replaceOne(b, 'if(r.hp>0&&I(r,i)<i.r+r.radius){if(i.targets&&t++>=i.targets)break;Dt(r,i.s,i.kind===`pool`',
+    'if(r.hp>0&&(i.fart?i.puffs.some(p=>i.age-p.t>.4&&Math.hypot(r.x-p.x,r.z-p.z)<i.r+r.radius):I(r,i)<i.r+r.radius)){if(i.targets&&t++>=i.targets)break;Dt(r,i.s,i.kind===`pool`', 'sprouted flowers poison foes round them');
+  // Owner request (2026-09-26): the slime can walk in the skill lab (keyboard or the on-screen joystick), so moving skills
+  // (poison seeds, the pressure jet, orbit) can be tried as in play. Skills are cast from where the slime stands.
+  b = replaceOne(b, 'a=Z.active?0:Math.hypot(r,i)', 'a=Math.hypot(r,i)', 'lab walking input');
+  b = replaceOne(b, 'Z.active?Z.sync():(J.playerRadius=_r()', 'Z.active?(Z.lab.player[0]=W.player[0],Z.lab.player[2]=W.player[2],Z.sync()):(J.playerRadius=_r()', 'lab follows the slime');
+  b = replaceOne(b, 'V.addEventListener(`pointerdown`,e=>{Z.active||e.clientX>innerWidth*.55', 'V.addEventListener(`pointerdown`,e=>{e.clientX>innerWidth*.55', 'lab joystick');
+  // Owner request (2026-09-26): every toxin skill withers the grass and flowers it touches. Toxin stamps the game's own burnt-
+  // grass map only up to its first, lightest layer (brown dead grass, shorter blades, a khaki-brown ground), never deep enough
+  // to char or remove the grass the way fire does. It is refreshed while the poison lasts and grows back about a second after.
+  b = replaceOne(b, 'for(let e of s.projectiles)c(e.x,e.z,e.ember?.16:.3,e.ember?.18:1)}',
+    'for(let e of s.projectiles)c(e.x,e.z,e.ember?.16:.3,e.ember?.18:1);for(let e of s.abilities||[])if(e.family===`toxin`&&!(e.delay>0)){let k=e.kind;k===`pool`||k===`infection`?c(e.x,e.z,e.r||.8,.2):k===`bloom`?c(e.x,e.z,e.r*.9,.2):k===`burst`&&e.age<.2?c(e.x,e.z,e.r*1.3,.2):k===`miasma`&&e.puffs&&e.puffs.forEach(p=>e.age-p.t>.4&&c(p.x,p.z,e.r*.8,.2))}}', 'toxin withers the grass');
+  // Owner request (2026-09-26): every skill takes the chosen mods. Power and Haste already reach every skill through its stats;
+  // these places ignored Area or Duration and now use them like the rest: Neurotoxin's burst size (Area), Plague Bloom's life
+  // (Duration), each poison flower's life (Duration), Lightning Network's life (Duration), Glacial Borer's size (Area) and
+  // Whiteout Breath's reach (Area).
+  b = replaceOne(b, 'R(e,t,`infection`,r.x,r.z,{target:r.id,s:o,r:.72+.16*s.contagion,life:2.45', 'R(e,t,`infection`,r.x,r.z,{target:r.id,s:o,r:(.72+.16*s.contagion)*o.A,life:2.45', 'neurotoxin area mod');
+  b = replaceOne(b, 'R(e,t,`bloom`,i.x,i.z,{s:o,r:(2.7+.28*s.contagion)*o.A,life:2.55,', 'R(e,t,`bloom`,i.x,i.z,{s:o,r:(2.7+.28*s.contagion)*o.A,life:2.55*o.D,', 'plague bloom duration mod');
+  b = replaceOne(b, 'speed:0,interval:.25,fart:1,puffs:[]}', 'speed:0,interval:.25,fart:1,puffs:[],plife:3*o.D}', 'poison flower duration mod');
+  b = replaceOne(b, 'i.puffs=i.puffs.filter(p=>i.age-p.t<3)}', 'i.puffs=i.puffs.filter(p=>i.age-p.t<i.plife)}', 'poison flowers live plife');
+  b = replaceOne(b, ',life:1.3,interval:.26,r:9.5,count:4+s.relay}', ',life:1.3*o.D,interval:.26,r:9.5,count:4+s.relay}', 'lightning network duration mod');
+  b = replaceOne(b, 'R(e,t,`borer`,l,u,{...m,s:o,r:.58+.06*s.drill,', 'R(e,t,`borer`,l,u,{...m,s:o,r:(.58+.06*s.drill)*o.A,', 'glacial borer area mod');
+  b = replaceOne(b, 'length:4.4+.18*s.drill,angle:', 'length:(4.4+.18*s.drill)*o.A,angle:', 'whiteout breath area mod');
+  b = replaceOne(b, 'if([`beam`,`jet`,`wave`,`borer`,`cone`].includes(i.kind)){i.speed',
+    'if(i.kind===`jet`&&i.follow&&r){i.x=r[0];i.z=r[2];let T=i.lock&&i.lock.hp>0&&Math.hypot(i.lock.x-r[0],i.lock.z-r[2])<i.range+i.lock.radius?i.lock:n.enemies.filter(e=>e.hp>0&&Math.hypot(e.x-r[0],e.z-r[2])<i.range+e.radius).sort((e,t)=>Math.hypot(e.x-r[0],e.z-r[2])-Math.hypot(t.x-r[0],t.z-r[2]))[0];if(T){i.lock=T;let o=T.x-r[0],s=T.z-r[2],c=Math.hypot(o,s)||1;i.dx=o/c;i.dz=s/c;i.length=Math.max(.8,c)}else i.length=i.range}if([`beam`,`jet`,`wave`,`borer`,`cone`].includes(i.kind)){i.speed',
+    'pressure jet follows the slime');
+  // Owner request (2026-09-26): Tide is a force field around the slime, so every Tide cast (the rings, Repulsion Dome,
+  // Vacuum Collapse and Resonance Chain) moves with the slime instead of staying where it was cast. Waiting echo rings
+  // follow too, so each one starts on the slime. Resonance's secondary rings on struck foes and the Nova pickup ring stay put.
+  for (const k of ['ring`,l,u,{r:o.r*(n?', 'dome`,l,u,{', 'vacuum`,l,u,{', 'resonance`,l,u,{'])
+    b = replaceOne(b, 'R(e,t,`' + k, 'R(e,t,`' + k.replace('{', '{follow:1,'), 'tide follows the slime: ' + k.split('`')[0]);
+  b = replaceOne(b, 'for(let i of[...e.abilities]){if(i.delay>0){i.delay-=t;continue}',
+    'for(let i of[...e.abilities]){if(i.family===`tide`&&i.follow&&r){i.x=r[0];i.z=r[2]}if(i.delay>0){i.delay-=t;continue}',
+    'tide field moves with the slime');
+  // Owner request (2026-09-26): the close-range skills felt weak next to the ranged ones, since they only hit what is
+  // already beside the slime. Tide (every ring, Dome, Vacuum and Resonance, all scaled from this base) deals 1.5x, and
+  // Tesla Field, the lightning field round the slime, deals 1.4x per tick.
+  b = replaceOne(b, 'let e=L((7+1.85*r)*(1+.2*i.impact)*a*(i.impact===4?1.25:1))', 'let e=L((7+1.85*r)*(1+.2*i.impact)*a*(i.impact===4?1.25:1)*1.5)', 'close range: tide damage');
+  b = replaceOne(b, 'damage:o.damage*.2,interval:.22', 'damage:o.damage*.2*1.4,interval:.22', 'close range: tesla damage');
+  // Owner request (2026-09-26): base Orbit (before evolving) was hard to land early on, waiting for one small orb to swing
+  // round onto a foe while both move. Base Orbit now always has at least two orbs, they circle 1.3x faster and each orb's
+  // hit area is 1.3x wider (drawn to match). The evolutions keep their own counts, speeds and sizes.
+  b = replaceOne(b, 'c=s===`power`?1:s?Math.max(3,a.count):a.count,', 'c=s===`power`?1:s?Math.max(3,a.count):Math.max(2,a.count),', 'base orbit: two orbs');
+  b = replaceOne(b, 'u=a.speed*(s===`power`?.72:s===`pulse`?.88:1)', 'u=a.speed*(s===`power`?.72:s===`pulse`?.88:s?1:1.3)', 'base orbit: faster');
+  b = replaceOne(b, ':.24*a.scale,angle:p', ':.24*a.scale*(s?1:1.3),angle:p', 'base orbit: wider hit');
+  // Owner request (2026-09-26): base Orbit circles farther from the slime (1.35x radius). Every Orbit form deals its damage
+  // each time an orb touches a foe, instead of at most once per .4 s per foe: a foe is struck when it comes into contact and
+  // again after it has left and been touched anew; a foe the orb stays on is struck again every .4 s, as before. The Haste mod spins the orbs faster (+10% per level, was +2.9%).
+  b = replaceOne(b, 'l=a.r*(s===`power`?1.2:s===`pulse`?1.08:1)', 'l=a.r*(s===`power`?1.2:s===`pulse`?1.08:s?1:1.35)', 'base orbit: wider circle');
+  b = replaceOne(b, '(f.hitTimes.get(t.id)||0)<=e.clock&&(f.hitTimes.set(t.id,e.clock+.4),', '((f._k=f.hitTimes.get(t.id))&&e.clock-f._k[1]<.4?(f._k[0]=e.clock,0):(f.hitTimes.set(t.id,[e.clock,e.clock]),1))&&(', 'orbit hits on contact');
+  b = replaceOne(b, 'for(let[t,n]of f.hitTimes)n<e.clock-1&&f.hitTimes.delete(t)', 'for(let[t,n]of f.hitTimes)n[0]<e.clock&&f.hitTimes.delete(t);if(s===`power`){f.moonT=e.clock;f.moonN=Math.max(0,Math.min(4,a.count-1));f.moonHits||(f.moonHits=[new Map,new Map,new Map,new Map]);for(let k=0;k<f.moonN;k++){let tl=[.45,-.6,.9,-.25][k],A=e.clock*[1.5,-1.1,.8,-1.3][k]+k*2.1+1.85,rad=f.r*(1.3+.18*k),ex=Math.cos(k*1.3),ez=Math.sin(k*1.3),X=m+(ex*Math.cos(A)-ez*Math.cos(tl)*Math.sin(A))*rad,Y=h+(ez*Math.cos(A)+ex*Math.cos(tl)*Math.sin(A))*rad,mr=f.r*[.3,.24,.19,.22][k],H=f.moonHits[k];for(let q of n.enemies)q.hp>0&&Math.hypot(q.x-X,q.z-Y)<mr+q.radius&&((f._k=H.get(q.id))&&e.clock-f._k[1]<.4?(f._k[0]=e.clock,0):(H.set(q.id,[e.clock,e.clock]),1))&&e.elementalHit(`orbit`,q,a.damage,X,Y);for(let[q,v]of H)v[0]<e.clock&&H.delete(q)}}', 'orbit contact ends');
+  // Owner request (2026-09-26): an evolution keeps what the base skill was upgraded into. Gravity Mace merges the orbs into
+  // one star, so the extra orbs stay on as its moons: one moon per orb beyond the first (up to four), each striking a foe it
+  // touches for the base orb damage (again every .4 s while it stays on). The painted moons are drawn where the game places them.
+  b = replaceOne(b, 'speed:(3.2+.1*i.multi)*(1+.045*n.haste*.65)', 'speed:(3.2+.1*i.multi)*(1+.1*n.haste)', 'haste spins orbit');
+  // Owner rule (2026-09-26): whatever a base skill was upgraded into keeps showing, the same way, after it evolves. The
+  // evolution may transform its own branch, but the other branches must not be folded into bonus damage (that made the
+  // branch choices meaningless and felt like lost progress). Totals stay close to before; the upgrades are now visible.
+  // Sunfall Core: Scatter's embers burst from the sun's blast, instead of +3.5% damage and radius per Scatter level.
+  b = replaceOne(b, 'damage:Math.round(n.damage*1.42*(1+this.branches.scatter*.035)),radius:n.radius*(1.25+this.branches.scatter*.015)', 'damage:Math.round(n.damage*1.42),radius:n.radius*1.25', 'evo keeps upgrades: sunfall damage');
+  b = replaceOne(b, 'this.explode(t,n.x,n.z,n.s,!1,n.type)', 'this.explode(t,n.x,n.z,n.s,n.type===`sun`,n.type)', 'evo keeps upgrades: sunfall embers');
+  // Flame Cyclone: Scatter's embers burst out when the cyclone dies.
+  b = replaceOne(b, 'n.tick<=0&&(n.tick=.25)}this.cyclones=this.cyclones.filter(e=>e.life>0)',
+    'n.tick<=0&&(n.tick=.25)}for(let n of this.cyclones)if(n.life<=0&&!n.burst){n.burst=1;for(let q=0;q<n.s.embers;q++){let g=q*Math.PI*2/n.s.embers;this.projectiles.push({x:n.x,z:n.z,y:.16,vx:Math.cos(g)*5.8,vz:Math.sin(g)*5.8,life:1.1,ember:!0,s:n.s,hitIds:new Set,left:1+n.s.pierce})}}this.cyclones=this.cyclones.filter(e=>e.life>0)',
+    'evo keeps upgrades: cyclone embers');
+  // Aqua Railgun: Burst's volley fires that many water balls in a row (the card: "Burst adds pulses"), sharing the damage.
+  b = replaceOne(b, 'R(e,t,`beam`,l,u,{...m,r:(.52+.06*s.power)*o.A,length:12.2+.58*s.flow,life:.8,damage:L(o.ref*1.15),push:1.05})',
+    '(()=>{for(let q=0;q<o.count;q++)R(e,t,`beam`,l,u,{...m,delay:q*.14,r:(.52+.06*s.power)*o.A,length:12.2+.58*s.flow,life:.8,damage:L(o.ref*1.15/o.count),push:1.05})})()',
+    'evo keeps upgrades: railgun volley');
+  // Pressure Jet: Flow's pierce carries on, the stream running on through that many foes behind the one it locks.
+  b = replaceOne(b, 'maxTargets:1,push:.32,follow:1,lock:i,range:8.4+.45*s.flow', 'maxTargets:1+o.pierce,pierce:o.pierce,push:.32,follow:1,lock:i,range:8.4+.45*s.flow', 'evo keeps upgrades: jet pierce');
+  b = replaceOne(b, 'i.length=Math.max(.8,c)}else i.length=i.range', 'i.length=Math.min(i.range,Math.max(.8,c)+(i.pierce||0)*1.2)}else i.length=i.range', 'evo keeps upgrades: jet reaches past');
+  // Tidal Surge: Burst's volley sends that many waves one after another, sharing the damage.
+  b = replaceOne(b, 'c===`flow`&&R(e,t,`wave`,l,u,{...m,r:(1.55+.23*s.flow)*o.A*1.7,speed:2.6+.15*s.flow,life:1.1,damage:L(o.ref*1.02*1.5),push:1.35+.2*s.power})',
+    'c===`flow`&&(()=>{for(let q=0;q<o.count;q++)R(e,t,`wave`,l,u,{...m,delay:q*.45,r:(1.55+.23*s.flow)*o.A*1.7,speed:2.6+.15*s.flow,life:1.1,damage:L(o.ref*1.02*1.5/o.count),push:1.35+.2*s.power})})()',
+    'evo keeps upgrades: surge waves');
+  // Repulsion Dome and Vacuum Collapse: Echo repeats the evolved field itself (owner: not plain Tide rings). After the
+  // field, one echo per Echo ring follows on the slime, back to back: a smaller (.88x, like the base echo rings), shorter
+  // (.75x) copy of the dome or vacuum dealing the echo damage. The first field deals the base ring damage.
+  b = replaceOne(b, 'R(e,t,`dome`,l,u,{follow:1,r:o.r*1.08,life:1.1+.06*e.mods.duration,damage:L(o.ref*.96/3)', 'R(e,t,`dome`,l,u,{follow:1,r:o.r*1.08,life:1.1+.06*e.mods.duration,damage:L(o.damage*.96/3)', 'evo keeps upgrades: dome base damage');
+  b = replaceOne(b, 'R(e,t,`vacuum`,l,u,{follow:1,r:o.r*1.34,life:1+.04*e.mods.duration,damage:L(o.ref*.96)', 'R(e,t,`vacuum`,l,u,{follow:1,r:o.r*1.34,life:1+.04*e.mods.duration,damage:L(o.damage*.96)', 'evo keeps upgrades: vacuum base damage');
+  b = replaceOne(b, ',c===`echo`&&R(e,t,`resonance`,l,u,{',
+    ',(c===`impact`||c===`radius`)&&(()=>{let F=c===`impact`?1.1+.06*e.mods.duration:1+.04*e.mods.duration,k=.88+Math.min(.08,.01*s.echo);for(let q=1;q<=o.count;q++)c===`impact`?R(e,t,`dome`,l,u,{follow:1,echo:q,delay:F+(q-1)*F*.75,r:o.r*1.08*k,life:F*.75,damage:L(o.echo*.96/3),push:o.push*1.18,interval:.5}):R(e,t,`vacuum`,l,u,{follow:1,echo:q,delay:F+(q-1)*F*.75,r:o.r*1.34*k,life:F*.75,damage:L(o.echo*.96),pull:.95+.12*s.impact})})(),c===`echo`&&R(e,t,`resonance`,l,u,{',
+    'evo keeps upgrades: tide echoes');
+  // Neurotoxin Injection: Contagion's extra pools splash out round the burst, as they do round the base lob.
+  b = replaceOne(b, 'R(e,`toxin`,`burst`,i.x,i.z,{r:i.r,life:.5})', 'R(e,`toxin`,`burst`,i.x,i.z,{r:i.r,life:.5});for(let q=1;q<=i.s.extra;q++){let g=q*2.399,d=i.s.r*.85;R(e,`toxin`,`pool`,i.x+Math.cos(g)*d,i.z+Math.sin(g)*d,{s:i.s,r:i.s.r,life:i.s.life,interval:.25})}', 'evo keeps upgrades: neurotoxin pools');
+  // Judgment Bolt: Relay's chain length carries on; each strike's arc chains through as many foes as the base chain would.
+  b = replaceOne(b, 'arcs:1+Math.floor(s.relay/2)', 'arcs:Math.max(1+Math.floor(s.relay/2),o.count-1)', 'evo keeps upgrades: bolt chain');
+  // Whiteout Breath: Drill's extra crystals still fly out inside the breath.
+  b = replaceOne(b, 'c===`freeze`&&R(e,t,`cone`,l,u,{', 'c===`freeze`&&(()=>{for(let n=1;n<o.count;n++){let r=Math.atan2(m.dx,m.dz)+(n-o.count/2)*(.15+Math.min(.035,.004*s.drill));R(e,t,`crystal`,l,u,{dx:Math.sin(r),dz:Math.cos(r),s:o,r:.14,life:1.3,speed:o.speed,damage:o.damage,pierce:0})}})(),c===`freeze`&&R(e,t,`cone`,l,u,{', 'evo keeps upgrades: breath crystals');
+  // Crystal Chainburst: Drill's extra crystals become extra spikes (two per crystal); each extra crystal adds 15% to the
+  // thicket's total damage, shared across its spikes.
+  b = replaceOne(b, 'life:9*.16+.55,damage:o.ref*1.55*.55,generation:0,seen:new Set,spikes:9,every:.16', 'life:(7+2*o.count)*.16+.55,damage:o.ref*7.65*(1+.15*(o.count-1))/(7+2*o.count),generation:0,seen:new Set,spikes:7+2*o.count,every:.16', 'evo keeps upgrades: thicket spikes');
   // Owner request (2026-09-26): the game's own burnt-grass map marks the ground under fire, so the painted effects draw no
   // crater of their own. The burn is stamped deepest at the centre and the ground shows it in stepped layers (light
   // scorch, burnt, charred), with the grass shortest where it burnt deepest; the layers shrink toward the centre as it heals.
@@ -65,7 +204,7 @@ export function applyPaintedVfx(bundle, html) {
   b = replaceOne(b, 'p.y*=1.-bend.b*h*.85;p.y*=bend.a;', 'p.y*=1.-bend.b*h*.85;p.y*=clamp(1.-(1.-bend.a)*3.,0.,1.);', 'burnt grass height');
   b = replaceOne(b, '&&vBurn>.98)discard;', '&&vBurn*3.>.98)discard;', 'burnt grass removal');
   b = replaceOne(b, 'c=mix(c,vec3(.24,.20,.13),vBurn*.7);', 'c=mix(c,vec3(.24,.20,.13),min(1.,vBurn*3.)*.7);', 'burnt grass tint');
-  b = replaceOne(b, 'c=mix(c,vec3(.19,.15,.115),burned*.78);', 'burned+=sin(vWorld.x*3.1+vWorld.z*1.3)*sin(vWorld.z*2.7-vWorld.x*.9)*.035;c=mix(c,vec3(.45,.38,.25),smoothstep(.06,.1,burned)*.55);c=mix(c,vec3(.27,.21,.145),smoothstep(.36,.4,burned)*.8);c=mix(c,vec3(.15,.11,.085),smoothstep(.7,.74,burned)*.9);', 'layered burnt ground');
+  b = replaceOne(b, 'c=mix(c,vec3(.19,.15,.115),burned*.78);', 'burned+=sin(vWorld.x*3.1+vWorld.z*1.3)*sin(vWorld.z*2.7-vWorld.x*.9)*.035;c=mix(c,vec3(.45,.38,.25),smoothstep(.02,.16,burned)*.55);c=mix(c,vec3(.27,.21,.145),smoothstep(.28,.48,burned)*.8);c=mix(c,vec3(.15,.11,.085),smoothstep(.62,.82,burned)*.9);', 'layered burnt ground');
   const h = replaceOne(replaceOne(html, '<h3>สกิลและภาพเอฟเฟกต์</h3>', '<h3>สกิลและภาพเอฟเฟกต์</h3>' + CONTROLS, 'style controls'),
     '</body></html>', STATE_SCRIPT + LAB_LINK_SCRIPT + '</body></html>', 'style state');
   return {bundle: b, html: h};

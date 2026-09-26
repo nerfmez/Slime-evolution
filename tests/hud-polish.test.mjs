@@ -36,7 +36,10 @@ test('HUD polish is presentation-only and applies to the exact assembled runtime
   // Combat/stat data untouched: only the listed UI segments differ.
   for(const keep of ['xp:28,scale:1.6','{thorn:1,spark:2,turtle:3,water:4,panda:8}','name:`Ancient Bloom Colossus`'])assert.ok(after.bundle.includes(keep),keep);
   assert.equal(after.bundle.length-before.bundle.length>0,true);
-  assert.equal(HUD_POLISH_VERSION,'hud-polish-v1');
+  // Round clock and stage line (v2): #status keeps its full text, the clock shows the time.
+  for(const marker of ['id="clock"','id="stage-line"'])assert.ok(after.html.includes(marker),marker);
+  assert.ok(after.bundle.includes('B(`clock`).firstChild.textContent=t'));
+  assert.equal(HUD_POLISH_VERSION,'hud-polish-v3');
 });
 
 test('HUD polish module matches the reviewed lock',async()=>{

@@ -14,9 +14,10 @@ try{
     assert.deepEqual(menu,{title:'Slime Evolution',visible:true,top:true});
     await page.locator('#start-howto summary').click();
     assert.equal(await page.locator('#start-howto').evaluate(e=>e.open),true);
-    await page.locator('#start-play').click();
-    await page.waitForFunction(()=>!document.getElementById('start-menu'),null,{timeout:10000});
-    await page.locator('.skill-card').first().click();
+    // Under software GL (CI, xvfb) the game renders ~4 fps behind the blurred menu, so closing it can take 5-15 s on main too.
+    await page.locator('#start-play').click({timeout:60000});
+    await page.waitForFunction(()=>!document.getElementById('start-menu'),null,{timeout:60000});
+    await page.locator('.skill-card').first().click({timeout:60000});
     await page.waitForFunction(()=>__slimeGameQA.world.time>0,null,{timeout:60000});
     assert.deepEqual(errors,[]);
     console.log('START MENU VERIFIED',engine);
