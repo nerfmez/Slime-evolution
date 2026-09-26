@@ -183,7 +183,7 @@ Owner rule: whatever the base skill was upgraded into must keep showing, the sam
 | Aqua Railgun | Burst's volley folded into damage | fires one water ball per volley shot (.14 s apart), sharing the damage |
 | Pressure Jet | Flow's pierce | the stream runs on through that many foes behind its target |
 | Tidal Surge | Burst's volley folded into damage | sends one wave per volley shot (.45 s apart), sharing the damage |
-| Repulsion Dome, Vacuum Collapse | Echo folded into damage | Echo's rings ring out from the slime after the field; the field deals the base ring damage |
+| Repulsion Dome, Vacuum Collapse | Echo folded into damage | Echo repeats the evolved field (owner: never plain Tide rings): after the field, one echo per Echo ring follows on the slime, back to back, a smaller (.88x) and shorter (.75x) dome or vacuum dealing the echo damage; the first field deals the base ring damage |
 | Neurotoxin Injection | Contagion's extra pools | the burst splashes the extra pools round it |
 | Judgment Bolt | Relay's chain length (only 1 + Relay/2 arcs) | each strike chains through as many foes as the base chain |
 | Whiteout Breath | Drill's extra crystals | the extra crystals still fly out inside the breath |

@@ -178,12 +178,13 @@ export function applyPaintedVfx(bundle, html) {
   b = replaceOne(b, 'c===`flow`&&R(e,t,`wave`,l,u,{...m,r:(1.55+.23*s.flow)*o.A*1.7,speed:2.6+.15*s.flow,life:1.1,damage:L(o.ref*1.02*1.5),push:1.35+.2*s.power})',
     'c===`flow`&&(()=>{for(let q=0;q<o.count;q++)R(e,t,`wave`,l,u,{...m,delay:q*.45,r:(1.55+.23*s.flow)*o.A*1.7,speed:2.6+.15*s.flow,life:1.1,damage:L(o.ref*1.02*1.5/o.count),push:1.35+.2*s.power})})()',
     'evo keeps upgrades: surge waves');
-  // Repulsion Dome and Vacuum Collapse: Echo's rings still ring out from the slime after the field, with the echo damage,
-  // so the field itself deals the base ring damage instead of the echo-inclusive total.
+  // Repulsion Dome and Vacuum Collapse: Echo repeats the evolved field itself (owner: not plain Tide rings). After the
+  // field, one echo per Echo ring follows on the slime, back to back: a smaller (.88x, like the base echo rings), shorter
+  // (.75x) copy of the dome or vacuum dealing the echo damage. The first field deals the base ring damage.
   b = replaceOne(b, 'R(e,t,`dome`,l,u,{follow:1,r:o.r*1.08,life:1.1+.06*e.mods.duration,damage:L(o.ref*.96/3)', 'R(e,t,`dome`,l,u,{follow:1,r:o.r*1.08,life:1.1+.06*e.mods.duration,damage:L(o.damage*.96/3)', 'evo keeps upgrades: dome base damage');
   b = replaceOne(b, 'R(e,t,`vacuum`,l,u,{follow:1,r:o.r*1.34,life:1+.04*e.mods.duration,damage:L(o.ref*.96)', 'R(e,t,`vacuum`,l,u,{follow:1,r:o.r*1.34,life:1+.04*e.mods.duration,damage:L(o.damage*.96)', 'evo keeps upgrades: vacuum base damage');
   b = replaceOne(b, ',c===`echo`&&R(e,t,`resonance`,l,u,{',
-    ',(c===`impact`||c===`radius`)&&(()=>{for(let q=1;q<=o.count;q++)R(e,t,`ring`,l,u,{follow:1,r:o.r*(.88+Math.min(.08,.01*s.echo)),delay:(c===`impact`?1.1+.06*e.mods.duration:1+.04*e.mods.duration)+(q-1)*o.interval,life:.46,damage:o.echo,push:o.push})})(),c===`echo`&&R(e,t,`resonance`,l,u,{',
+    ',(c===`impact`||c===`radius`)&&(()=>{let F=c===`impact`?1.1+.06*e.mods.duration:1+.04*e.mods.duration,k=.88+Math.min(.08,.01*s.echo);for(let q=1;q<=o.count;q++)c===`impact`?R(e,t,`dome`,l,u,{follow:1,echo:q,delay:F+(q-1)*F*.75,r:o.r*1.08*k,life:F*.75,damage:L(o.echo*.96/3),push:o.push*1.18,interval:.5}):R(e,t,`vacuum`,l,u,{follow:1,echo:q,delay:F+(q-1)*F*.75,r:o.r*1.34*k,life:F*.75,damage:L(o.echo*.96),pull:.95+.12*s.impact})})(),c===`echo`&&R(e,t,`resonance`,l,u,{',
     'evo keeps upgrades: tide echoes');
   // Neurotoxin Injection: Contagion's extra pools splash out round the burst, as they do round the base lob.
   b = replaceOne(b, 'R(e,`toxin`,`burst`,i.x,i.z,{r:i.r,life:.5})', 'R(e,`toxin`,`burst`,i.x,i.z,{r:i.r,life:.5});for(let q=1;q<=i.s.extra;q++){let g=q*2.399,d=i.s.r*.85;R(e,`toxin`,`pool`,i.x+Math.cos(g)*d,i.z+Math.sin(g)*d,{s:i.s,r:i.s.r,life:i.s.life,interval:.25})}', 'evo keeps upgrades: neurotoxin pools');
