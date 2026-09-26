@@ -63,7 +63,7 @@ Source of truth: `pacing/encounter-director.js`; details in `docs/COZY-PACING.md
   - Elite, mini-boss and boss names stay **English** (owner decision). Other UI text is Thai.
   - Compact Elite tags: star + English roster name, HP bar only once damaged, stacked instead of overlapping, faded over the player.
   - Empty skill slots shown as "+", movement hint fades after the first move, compact phone HUD.
-  - A round clock sits in the top row left of the buttons (under them on phones), so the boss banner keeps the top centre; the panel shows a stage line without the time, while `#status` keeps its full text (tests read it). HP bar with a heart, round skill chips with icons.
+  - A round clock sits first in the header's button group (under the buttons on phones) and the FPS box hangs below the buttons, so nothing overlaps and the boss banner keeps the top centre. Fullscreen re-shows an open settings dialog on top, so closing it resumes play; the panel shows a stage line without the time, while `#status` keeps its full text (tests read it). HP bar with a heart, round skill chips with icons.
   - Skill names and the test menu stay English. The boss banner sits in the top row on screens 960px and wider.
 - **Scope:** do not add absorption skills or Mod sockets unless asked.
 

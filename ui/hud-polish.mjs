@@ -1,5 +1,5 @@
 // Build-time HUD polish. Presentation only: no combat, pacing, art or save data changes.
-export const HUD_POLISH_VERSION='hud-polish-v2';
+export const HUD_POLISH_VERSION='hud-polish-v3';
 
 const ELITE_OLD='for(let e of J.enemies){if(!e.elite||e.hp<=0)continue;let a=({thorn:1.95,spark:1.08,turtle:1.25,water:1.38}[e.type]||1.15)*(e.scale||1),[o,s]=proj(e.x,a,e.z),c=Math.max(66,Math.min(104,74*(e.scale||1))),l=7,u=s-16,d=Math.max(0,Math.min(1,e.hp/Math.max(1,e.maxHP||e.hp)));r.font=`700 12px system-ui`,r.lineWidth=3,r.strokeStyle=`rgba(54,37,26,.9)`,r.fillStyle=`#fff4d7`,r.strokeText(pt(e).name,o,u-5),r.fillText(pt(e).name,o,u-5),r.fillStyle=`rgba(45,31,25,.88)`,r.fillRect(o-c/2-2,u-2,c+4,l+4),r.fillStyle=`#f1dfbb`,r.fillRect(o-c/2,u,c,l),r.fillStyle=d>.35?`#e74e47`:`#d43d3d`,r.fillRect(o-c/2,u,c*d,l),r.strokeStyle=`rgba(86,50,32,.9)`,r.lineWidth=1,r.strokeRect(o-c/2,u,c,l)}';
 // Compact paper tags sized from measured text (fonts differ per OS; left-aligned from m.width because WebKit reports ink left/right differently under center alignment): star + roster name, HP only once damaged, stacked instead of overlapping, faded over the player.
@@ -10,6 +10,11 @@ const BUNDLE_EDITS=[
   // The movement hint retires once the player has actually moved. The round clock (top centre) and the stage line (the status
   // without the time, which moves to the clock) update with it; #status keeps its full text for tools and screen readers.
   ['hint retire','B(`retry`).hidden=J.hp>0&&!J.finished,','W.moving&&B(`hint`)?.classList.add(`hint-done`),B(`stage-line`)&&(B(`stage-line`).textContent=B(`status`).textContent.replace(/ · \\d\\d:\\d\\d \\/ \\d\\d:\\d\\d/,``)),B(`clock`)&&(B(`clock`).hidden=J.hp<=0||J.finished||J.bossSpawned,B(`clock`).firstChild.textContent=t,B(`clock`).style.setProperty(`--p`,String(e/(J.mode===`auto`?600:300)))),B(`retry`).hidden=J.hp>0&&!J.finished,'],
+  // Fullscreen (owner report): the settings dialog sat under the fullscreen page, so it vanished while still open and the game
+  // stayed paused until Settings was tapped. The dialog is re-shown on top after every fullscreen change, so it stays visible and
+  // closing it resumes play. iPad Safari's prefixed fullscreen API is used when the standard one is missing.
+  ['fullscreen keeps the menu','B(`fullscreen`).onclick=async()=>{try{document.fullscreenElement?await document.exitFullscreen():await document.documentElement.requestFullscreen()}catch{B(`status`).textContent=`อุปกรณ์นี้ไม่รองรับเต็มจอ`}},',
+    'B(`fullscreen`).onclick=async()=>{let d=document,h=d.documentElement;try{d.fullscreenElement||d.webkitFullscreenElement?await(d.exitFullscreen||d.webkitExitFullscreen).call(d):await(h.requestFullscreen||h.webkitRequestFullscreen).call(h)}catch{B(`status`).textContent=`อุปกรณ์นี้ไม่รองรับเต็มจอ`}},[`fullscreenchange`,`webkitfullscreenchange`].forEach(e=>document.addEventListener(e,()=>{ei.open&&(ei.show(!1),ei.show(!0))})),'],
   ['lab hides clock','if(Z.active){B(`boss-health`).hidden=!0,','if(Z.active){B(`boss-health`).hidden=!0,B(`clock`)&&(B(`clock`).hidden=!0),B(`stage-line`)&&(B(`stage-line`).textContent=`ห้องทดสอบสกิล`),'],
   ['empty skill slot','}else i.textContent=`ช่องสกิลว่าง`;t.append(i)','}else i.classList.add(`empty`),i.title=`ช่องสกิลว่าง`,i.setAttribute(`aria-label`,`ช่องสกิลว่าง`),i.textContent=`+`;t.append(i)'],
 ];
@@ -19,11 +24,13 @@ const STYLE='<style id="hud-polish">'+
   '#level-text{color:#2f6f78}.title small{letter-spacing:.04em}'+
   '#hint{transition:opacity .8s ease}#hint.hint-done{opacity:0}'+
   '.equipped-skill.empty{box-sizing:border-box;border:1.5px dashed #b3a988;border-radius:50%;display:inline-grid;place-items:center;color:#a39a78;font-size:16px;line-height:1}'+
-  // Round clock in the top row, left of the buttons, so the boss banner keeps the centre (the time used to hide inside the status line), a stage line in the panel, clearer HP and EXP
+  // Round clock in the header's top row, first in the button group, so nothing can overlap it and the boss banner keeps the centre (the time used to hide inside the status line), a stage line in the panel, clearer HP and EXP
   // bars, and larger skill chips with round icons.
   '#status{position:absolute!important;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}'+
   '#stage-line{font-size:12px;color:#4f6452;line-height:1.3}'+
-  '#clock{position:fixed;z-index:5;top:max(14px,env(safe-area-inset-top));right:calc(max(16px,env(safe-area-inset-right)) + 172px);padding:6px 18px 8px;display:grid;justify-items:center;gap:5px;min-width:118px;pointer-events:none}'+
+  '#clock{padding:6px 16px 8px;display:grid;justify-items:center;gap:5px;min-width:112px;pointer-events:none}#clock[hidden]{display:none}'+
+  // The FPS box hangs under the buttons, so the top row never grows into the boss banner.
+  'header .right{position:relative}#stats{position:absolute;top:calc(100% + 8px);right:0}'+
   '#clock b{font:800 26px/1 ui-rounded,system-ui,sans-serif;letter-spacing:.05em;color:#233c36;font-variant-numeric:tabular-nums}'+
   '#clock i{display:block;width:100%;height:5px;border-radius:3px;background:#d8cfae;overflow:hidden}'+
   '#clock s{display:block;height:100%;width:calc(var(--p,0) * 100%);border-radius:3px;background:linear-gradient(90deg,#3f9aa6,#d98a2b 70%,#bd551c);text-decoration:none}'+
@@ -60,8 +67,8 @@ const STYLE='<style id="hud-polish">'+
   '#status{font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}#health-text,#level-text{font-size:10.5px}'+
   '#health{height:8px}#experience{height:6px}progress{margin:3px 0}'+
   '#fire-slot{flex-wrap:nowrap;align-items:center}'+
-  '#boss-health{top:calc(max(10px,env(safe-area-inset-top)) + 134px)}'+
-  '#clock{top:calc(max(10px,env(safe-area-inset-top)) + 108px);right:12px;min-width:78px;padding:4px 10px 6px}#clock b{font-size:18px}'+
+  '#boss-health{top:calc(max(10px,env(safe-area-inset-top)) + 134px);left:max(10px,env(safe-area-inset-left));transform:none;width:calc(100vw - 132px)}'+ // under the panel, clear of the button column (buttons, clock, FPS)
+  '#clock{order:3;min-width:78px;padding:4px 10px 6px}#clock b{font-size:18px}'+
   '.equipped-skill{font-size:11px;padding-right:8px;white-space:nowrap}.equipped-skill img{width:26px;height:26px}.equipped-skill.empty{width:30px;height:30px}'+
   '}</style>';
 
@@ -92,7 +99,7 @@ const MENU_SCRIPT='<script>(()=>{const m=document.getElementById("start-menu");i
 const HTML_EDITS=[
   ['page title','<title>Slime — ฉากทดลองเว็บ</title>','<title>Slime Evolution</title>'],
   ['header title','<small>SLIME · FIRE & SOULS</small><strong>ทุ่งหญ้า Slime</strong>','<small>ทุ่งหญ้า</small><strong>Slime Evolution</strong><span id="stage-line"></span>'],
-  ['round clock','<div class="right">','<div id="clock" class="paper" hidden aria-label="เวลาในรอบ"><b>00:00</b><i><s></s></i></div><div class="right">'],
+  ['round clock','<div class="right">','<div class="right"><div id="clock" class="paper" hidden aria-label="เวลาในรอบ"><b>00:00</b><i><s></s></i></div>'],
   ['hud style','</head>',STYLE+'</head>'],
   ['start menu','<body>','<body>'+MENU],
   ['start menu script','<div id="error" class="paper" hidden></div></body>','<div id="error" class="paper" hidden></div>'+MENU_SCRIPT+'</body>'],

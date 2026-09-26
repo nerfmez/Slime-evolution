@@ -39,7 +39,7 @@ test('HUD polish is presentation-only and applies to the exact assembled runtime
   // Round clock and stage line (v2): #status keeps its full text, the clock shows the time.
   for(const marker of ['id="clock"','id="stage-line"'])assert.ok(after.html.includes(marker),marker);
   assert.ok(after.bundle.includes('B(`clock`).firstChild.textContent=t'));
-  assert.equal(HUD_POLISH_VERSION,'hud-polish-v2');
+  assert.equal(HUD_POLISH_VERSION,'hud-polish-v3');
 });
 
 test('HUD polish module matches the reviewed lock',async()=>{
