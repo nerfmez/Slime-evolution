@@ -99,7 +99,7 @@ export function applyPaintedVfx(bundle, html) {
   // every .7 s when standing still; each seed sprouts into a poison flower that releases poison pollen, lives 3 s and, once
   // sprouted (.4 s), poisons foes within its patch on the old .25 s tick. The skill is cast at the slime and no longer chases.
   b = replaceOne(b, 'c===`corrosion`&&R(e,t,`miasma`,i.x,i.z,{s:{...o,damage:o.damage*.58,slow:Math.min(.45,o.slow+.14),vulnerable:Math.min(.35,o.vulnerable+.12)},r:(1.45+.12*s.contagion)*o.A,life:2.65+.18*e.mods.duration,speed:1.6+.08*s.contagion,interval:.25})',
-    'c===`corrosion`&&R(e,t,`miasma`,l,u,{s:{...o,damage:o.damage*.58,slow:Math.min(.45,o.slow+.14),vulnerable:Math.min(.35,o.vulnerable+.12)},r:(1.45+.12*s.contagion)*o.A*.75,emit:2.65+.18*e.mods.duration,life:2.65+.18*e.mods.duration+3,speed:0,interval:.25,fart:1,puffs:[]})', 'poison seed trail');
+    'c===`corrosion`&&R(e,t,`miasma`,l,u,{s:{...o,damage:o.damage*.58,slow:Math.min(.45,o.slow+.14),vulnerable:Math.min(.35,o.vulnerable+.12)},r:(1.45+.12*s.contagion)*o.A*.75,emit:2.65+.18*e.mods.duration,life:2.65+.18*e.mods.duration+3*(1+.1*e.mods.duration),speed:0,interval:.25,fart:1,puffs:[]})', 'poison seed trail');
   b = replaceOne(b, 'if([`pool`,`bloom`,`miasma`].includes(i.kind)){if(i.kind===`miasma`){let r=e.target(n,[i.x,0,i.z]);',
     'if(i.kind===`miasma`&&i.fart&&r){i.x=r[0],i.z=r[2];let q=i.puffs[i.puffs.length-1];i.age<i.emit&&(!q||Math.hypot(q.x-r[0],q.z-r[2])>i.r*.9||i.age-q.t>.7)&&i.puffs.push({x:r[0],z:r[2],t:i.age}),i.puffs=i.puffs.filter(p=>i.age-p.t<3)}if([`pool`,`bloom`,`miasma`].includes(i.kind)){if(i.kind===`miasma`&&!i.fart){let r=e.target(n,[i.x,0,i.z]);', 'seeds drop behind the slime');
   b = replaceOne(b, 'if(r.hp>0&&I(r,i)<i.r+r.radius){if(i.targets&&t++>=i.targets)break;Dt(r,i.s,i.kind===`pool`',
@@ -114,6 +114,17 @@ export function applyPaintedVfx(bundle, html) {
   // to char or remove the grass the way fire does. It is refreshed while the poison lasts and grows back about a second after.
   b = replaceOne(b, 'for(let e of s.projectiles)c(e.x,e.z,e.ember?.16:.3,e.ember?.18:1)}',
     'for(let e of s.projectiles)c(e.x,e.z,e.ember?.16:.3,e.ember?.18:1);for(let e of s.abilities||[])if(e.family===`toxin`&&!(e.delay>0)){let k=e.kind;k===`pool`||k===`infection`?c(e.x,e.z,e.r||.8,.2):k===`bloom`?c(e.x,e.z,e.r*.9,.2):k===`burst`&&e.age<.2?c(e.x,e.z,e.r*1.3,.2):k===`miasma`&&e.puffs&&e.puffs.forEach(p=>e.age-p.t>.4&&c(p.x,p.z,e.r*.8,.2))}}', 'toxin withers the grass');
+  // Owner request (2026-09-26): every skill takes the chosen mods. Power and Haste already reach every skill through its stats;
+  // these places ignored Area or Duration and now use them like the rest: Neurotoxin's burst size (Area), Plague Bloom's life
+  // (Duration), each poison flower's life (Duration), Lightning Network's life (Duration), Glacial Borer's size (Area) and
+  // Whiteout Breath's reach (Area).
+  b = replaceOne(b, 'R(e,t,`infection`,r.x,r.z,{target:r.id,s:o,r:.72+.16*s.contagion,life:2.45', 'R(e,t,`infection`,r.x,r.z,{target:r.id,s:o,r:(.72+.16*s.contagion)*o.A,life:2.45', 'neurotoxin area mod');
+  b = replaceOne(b, 'R(e,t,`bloom`,i.x,i.z,{s:o,r:(2.7+.28*s.contagion)*o.A,life:2.55,', 'R(e,t,`bloom`,i.x,i.z,{s:o,r:(2.7+.28*s.contagion)*o.A,life:2.55*o.D,', 'plague bloom duration mod');
+  b = replaceOne(b, 'speed:0,interval:.25,fart:1,puffs:[]}', 'speed:0,interval:.25,fart:1,puffs:[],plife:3*o.D}', 'poison flower duration mod');
+  b = replaceOne(b, 'i.puffs=i.puffs.filter(p=>i.age-p.t<3)}', 'i.puffs=i.puffs.filter(p=>i.age-p.t<i.plife)}', 'poison flowers live plife');
+  b = replaceOne(b, ',life:1.3,interval:.26,r:9.5,count:4+s.relay}', ',life:1.3*o.D,interval:.26,r:9.5,count:4+s.relay}', 'lightning network duration mod');
+  b = replaceOne(b, 'R(e,t,`borer`,l,u,{...m,s:o,r:.58+.06*s.drill,', 'R(e,t,`borer`,l,u,{...m,s:o,r:(.58+.06*s.drill)*o.A,', 'glacial borer area mod');
+  b = replaceOne(b, 'length:4.4+.18*s.drill,angle:', 'length:(4.4+.18*s.drill)*o.A,angle:', 'whiteout breath area mod');
   b = replaceOne(b, 'if([`beam`,`jet`,`wave`,`borer`,`cone`].includes(i.kind)){i.speed',
     'if(i.kind===`jet`&&i.follow&&r){i.x=r[0];i.z=r[2];let T=i.lock&&i.lock.hp>0&&Math.hypot(i.lock.x-r[0],i.lock.z-r[2])<i.range+i.lock.radius?i.lock:n.enemies.filter(e=>e.hp>0&&Math.hypot(e.x-r[0],e.z-r[2])<i.range+e.radius).sort((e,t)=>Math.hypot(e.x-r[0],e.z-r[2])-Math.hypot(t.x-r[0],t.z-r[2]))[0];if(T){i.lock=T;let o=T.x-r[0],s=T.z-r[2],c=Math.hypot(o,s)||1;i.dx=o/c;i.dz=s/c;i.length=Math.max(.8,c)}else i.length=i.range}if([`beam`,`jet`,`wave`,`borer`,`cone`].includes(i.kind)){i.speed',
     'pressure jet follows the slime');

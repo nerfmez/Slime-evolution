@@ -145,3 +145,8 @@ The owner corrected round 6: tide is an energy field, not water, and Vacuum Coll
 - Repulsion Dome: a translucent purple dome of force with a bright rim and rings of light round it like a cage; each push it flares, a ring of force runs out over the ground and force lines shoot outward.
 - Vacuum Collapse: a ring of force swells, then contracts as the field winds inward, dragging force lines and motes to a purple gravity core that grows at the centre; it implodes in a flash and bursts outward.
 - Resonance Chain: layered rings of force that tremble like a struck bell, bright points racing round them.
+
+## Mods reach every skill (owner check, 2026-09-26)
+
+Power and Haste reach every skill through its stats (damage and cooldown). Area and Duration were missing in six places, now patched in `vfx/painted-style.mjs`: Neurotoxin's burst size (Area), Plague Bloom's life (Duration), each poison flower's life (Duration, `plife`), Lightning Network's life (Duration), Glacial Borer's size (Area) and Whiteout Breath's reach (Area). Checked in the skill lab at mods 0 and 5.
+

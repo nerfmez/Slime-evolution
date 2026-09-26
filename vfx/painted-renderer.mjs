@@ -427,7 +427,7 @@ export function createPaintedSkillRenderer(gl) {
   function toxinMiasma(t) { // CORROSIVE MIASMA as a trail of poison flowers (owner request): the slime sows seeds as it walks; each seed drops and bounces, sprouts, opens into a small venom flower that puffs glowing poison pollen, then wilts
     const puffs = t.puffs || [{x: t.x, z: t.z, t: 0}], r = t.r;
     puffs.forEach((q, i) => {
-      const a = t.age - q.t; if (a < 0 || a >= 3) return; const sd = hash(q.x * 3.1 + q.z * 1.7 + i), wilt = smooth(2.5, 3, a), A = 1 - wilt;
+      const L = t.plife || 3, a = t.age - q.t; if (a < 0 || a >= L) return; const sd = hash(q.x * 3.1 + q.z * 1.7 + i), wilt = smooth(L - .5, L, a), A = 1 - wilt;
       if (a < .3) { const k = a / .3, h = .55 * (1 - k * k) + .06 * Math.abs(Math.sin(k * Math.PI * 2)) * (1 - k), c = [q.x, .04 + h, q.z]; at(c); shadow(q.x, q.z, .08, .3); mote(c, .06, P.toxinDeep, 1, {p: [1, .3, 0, 0], seed: sd, bias: .01}); return; } // the seed drops and bounces
       const grow = 1 - Math.pow(1 - smooth(.3, .7, a), 2), open = 1 - Math.pow(1 - smooth(.55, 1, a), 3), beat = Math.exp(-((a - .9) % .55 + .55) % .55 * 6);
       if (a < .55) { const k = (a - .3) / .25; disc(RING, q.x, q.z, .1 + .35 * k, P.dust, {alpha: (1 - k) * .6, p: [.84, .1, .6, 0], layer: 2, seed: sd, soft: .4}); } // soil breaking as it sprouts
