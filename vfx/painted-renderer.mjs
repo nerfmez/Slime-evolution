@@ -482,7 +482,7 @@ export function createPaintedSkillRenderer(gl) {
     for (const o of combat.orbs || []) {
       if (!Number.isFinite(o.x + o.z + o.r) || !cfg.visible(o.x, o.z, o.r + 1)) continue; note('orbit:orb');
       const big = style === 'power', R = big ? o.r * 1.15 : Math.max(.22, o.r * 1.4), y = (big ? .7 : .55) + .05 * Math.sin(now * 5.4 + (o.angle || 0)), c = [o.x, y, o.z];
-      const pal = big ? P.orbitDeep : P.orbit, trail = pathBehind(track(o, c), big ? .28 : .32, 12), seed = hash(o.angle || 0);
+      const pal = big ? P.orbitDeep : P.orbit, trail = pathBehind(track(o, c), big ? .28 : .32, 12), seed = big ? .37 : hash(o.angle || 0); // the mace keeps one seed: seeding from its orbit angle re-rolled its surface and moons every frame (it looked like it spun fast)
       at(c); shadow(o.x, o.z, R * .85, .2);
       if (!big && trail.length > 2) ribbon(GLOW_R, trail, trail.map((_, i) => R * .8 * Math.pow(1 - i / (trail.length - 1), .8) + .005), pal, {alpha: .8, seed, soft: .35, edge: .2, bias: -.02});
       if (!big) glow(c, R * 1.9, pal, .4, {bias: -.03});
