@@ -484,14 +484,14 @@ export function createPaintedSkillRenderer(gl) {
   }
   function fireBlast(e) { // Inferno burst: a white-hot dome swells on the ground, turns to fire and dissolves; the blast throws spinning balls of smoke outward and dust rolls along the ground
     const t = e.age, r = e.r || 1, seed = hash(e.x * .9 + e.z * 1.7), sq = Math.abs(cam.u[1]) > .05 ? Math.abs(cam.f[1]) : .62;
-    disc(CRATER, e.x, e.z, r * 1.1 * (.6 + .4 * smooth(0, .15, t)), P.scorch, {alpha: .7 * smooth(0, .06, t) * (1 - smooth(1.2, 1.65, t)), p: [4, 1, 0, 0], layer: 0, seed, dissolve: smooth(1.2, 1.65, t), edge: .6});
+    disc(CRATER, e.x, e.z, r * 1.1 * (.6 + .4 * smooth(0, .15, t)), P.scorch, {alpha: .7 * smooth(0, .06, t) * (1 - smooth(1.2, 1.65, t)), p: [4, 0, 0, 0], layer: 0, seed, dissolve: smooth(1.2, 1.65, t), edge: .6});
     glowDecal(e.x, e.z, r * 1.8, P.fire, .8 * (1 - smooth(.08, .6, t)));
     const hz = 1 - smooth(.1, .7, t); if (hz > 0) { const g = [e.x, r * .45, e.z]; at(g); glow(g, r * 2.4, P.ember, .45 * hz, {lift: .2, bias: -.2}); } // red-hot haze
     const R = r * (.25 + .8 * (1 - Math.pow(1 - clamp(t / .14), 3)) + .1 * smooth(.14, .6, t)), fl = smooth(.06, .22, t), heat = 1 - smooth(.08, .45, t), ero = smooth(.32, .85, t);
     if (ero < 1) { const c = [e.x, .02, e.z]; at([e.x, R * .4, e.z]); bb(DOME_FIRE, c, R * 1.35 / .9, R * 1.35 / .9, P.blaze, {p: [fl, heat, sq, ero], seed, lift: R * 2.2, edge: .7}); }
     for (let j = 0; j < 3; j++) { const k = clamp((t - .05 - j * .03) / .22); if (k > 0 && k < 1) { const q = [e.x, r * (.15 + .25 * j), e.z]; at(q); bb(GLOW, q, r * (1 + 1.6 * k), r * .06 * (1 - k), P.hot, {alpha: 1 - k, edge: 0, soft: .6, lift: r * 1.5, bias: .5}); } } // shock streaks
-    for (let j = 0; j < 10; j++) { // smoke thrown out by the blast: round balls flung from the dome, slowed by the air, each spinning as a whole while it dissolves
-      const a = (j / 10 + hash(j * 3.1 + seed) * .06) * TAU, u = hash(j * 1.7 + seed), el = .1 + .8 * u, born = .15 + .05 * hash(j * 4.4 + seed), sp = r * (3.5 + 2 * hash(j * 9.1 + seed));
+    for (let j = 0; j < 5; j++) { // smoke thrown out by the blast: round balls flung from the dome, slowed by the air, each spinning as a whole while it dissolves
+      const a = (j / 5 + hash(j * 3.1 + seed) * .08) * TAU, u = hash(j * 1.7 + seed), el = .1 + .8 * u, born = .15 + .05 * hash(j * 4.4 + seed), sp = r * (3.5 + 2 * hash(j * 9.1 + seed));
       const dir = [Math.cos(a) * Math.cos(el), Math.sin(el), Math.sin(a) * Math.cos(el) * .8], p0 = [e.x + dir[0] * r * 1.05, .15 + dir[1] * r, e.z + dir[2] * r * 1.05];
       puff(p0, [dir[0] * sp, dir[1] * sp * .8, dir[2] * sp], t - born, .8 + .3 * hash(j * 6.7 + seed), r * .2, r * .42, P.smoke, 0,
         {drag: 5, rise: .2, seed: j * 7 + seed * 11, erode: 0, smoke: 1, spin: -(dir[0] * cam.r[0] + dir[2] * cam.r[2]) * .9, edge: .5, bias: -.02});
