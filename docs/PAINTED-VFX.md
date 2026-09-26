@@ -113,3 +113,9 @@ The owner rejected a filter over the old effects ("it only adjusts the old skill
 - Damage numbers take the colour of the skill that dealt them: water blue, tide lilac, toxin green, frost icy white on cyan, chain yellow, orbit pink. Fire (and anything without a skill) keeps the original cream on brown. Patched in `vfx/painted-style.mjs`; the number records the game's own `damageSource`.
 - Orbit orbs hit exactly where they are drawn: a core's hit radius is .24 (was .17 while drawn at .24) and Gravity Mace's is 1.15x wider (it was drawn 1.15x larger than its hit area). The moons round Gravity Mace are decoration only.
 
+## Lightning, redone in yellow (owner request, 2026-09-26)
+
+- Every lightning bolt is a jagged path that re-strikes many times a second: a white-hot stroke with yellow edges (new `SPARK_R` ribbon, no tail fade) inside a soft golden glow, with forks splitting off. Kinks are strongest mid-way so both ends stay on their targets.
+- Chain Spark: the bolt jumps between foes; a flash and a spray of yellow sparks where it lands. Judgment Bolt: a thick forked bolt from the sky, a white flash, a shock ring, arcs crawling over the ground and a burst of sparks. Tesla Domain: arcs crawl along the curve of its rim and jump in from the middle. Lightning Network: little arcs hum round the caster.
+- Stunned foes (the game reuses the frozen timer for the lightning stun) crackle with yellow arcs; the ice block is only drawn for foes that are frozen and chilled by frost.
+

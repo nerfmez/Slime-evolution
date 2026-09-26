@@ -21,7 +21,7 @@ export function createPaintedSkillRenderer(gl) {
   const BLOB = 0, RING = 1, DROP = 2, SHARD = 4, SPIRAL = 9, BOLT = 11, FAN = 12, FLOWER = 13, RIBBON = 17, DOME = 18,
     DRILL = 19, COLUMN = 20, LIQUID = 26, SURF = 29,
     WATER_R = 30, FIRE_R = 31, GLOW_R = 32, GOO_R = 33, FOG = 35, FIRELINE = 37, GLOW = 38, ROCK = 39,
-    FLAMEBALL = 40, SUN = 41, EXPLODE = 42, TORNADO = 43, PUFF = 44, DOME_FIRE = 45, CRATER = 46, WATERBALL = 48, SHEET = 34, ICE = 49, CRYSTAL = 50, STAR = 51;
+    FLAMEBALL = 40, SUN = 41, EXPLODE = 42, TORNADO = 43, PUFF = 44, DOME_FIRE = 45, CRATER = 46, WATERBALL = 48, SHEET = 34, ICE = 49, CRYSTAL = 50, STAR = 51, SPARK_R = 36;
   // Palettes: light / mid / dark wash. The pigment edge is derived from the dark wash.
   const P = {
     shadow: tones('#6f8a4c', '#5f7a40', '#4c6533'),
@@ -32,7 +32,7 @@ export function createPaintedSkillRenderer(gl) {
     toxin: tones('#eef8a2', '#b9d64c', '#6d9a26'), toxinDeep: tones('#cfe274', '#8aae34', '#4a6e1d'), toxinShade: tones('#ecdcf6', '#be9fdc', '#7c58a8'),
     petal: tones('#f3daf7', '#cc93e2', '#8a4fae'), spore: tones('#fdfbe0', '#eef3a4', '#b3c455'),
     frost: tones('#f6fdff', '#c2ecf8', '#72c3e3'), frostDeep: tones('#e2f7fd', '#8fd6ef', '#3f9ccb'), ice: tones('#fbfeff', '#cdeff9', '#7fc9e6'),
-    chain: tones('#ffffff', '#e8e2fc', '#aa9de6'), chainBlue: tones('#e5ecff', '#a8baf6', '#627ad8'),
+    chain: tones('#fffef4', '#ffe35c', '#e8a51c'), chainGlow: tones('#fff8cf', '#ffd84a', '#e39a17'),
     orbit: tones('#f2fbff', '#a6dff8', '#58b0e6'), orbitDeep: tones('#c8e9fb', '#70bbea', '#3c84c8'), star: tones('#ffffff', '#9fd8f5', '#4ea8e0'),
   };
   const Z4 = [0, 0, 0, 0], NO_RIBBON = [0, 0, 0, 0, 0, 0, 0, 0];
@@ -436,45 +436,66 @@ export function createPaintedSkillRenderer(gl) {
     for (let j = 0; j < 4; j++) { const an = j * TAU / 4 + seed * 3, s = [t.x + Math.cos(an) * r * (.1 + q * .6), .15 + Math.sin(p * Math.PI) * .45, t.z + Math.sin(an) * r * (.1 + q * .6)]; at(s); aim(SHARD, s, [Math.cos(an), .3, Math.sin(an)], .14, .06, j % 2 ? P.frost : P.frostDeep, {alpha: A, p: [.4, 1, 0, 0], seed: j, lift: .3}); }
   }
   // ---------------------------------------------------------------- Chain: painted lightning with a soft glow
-  function bolt(a, b, wide, alpha, seed, rate = 24, branch = 1, lift = 0) {
-    span(BOLT, a, b, wide * 3, P.chainBlue, {alpha: alpha * .5, p: [.5, .5, branch, rate], seed, lift, soft: .8, edge: 0});
-    span(BOLT, a, b, wide * .6, P.chain, {alpha, p: [.5, .5, branch, rate], seed, lift, bias: .01});
+  // A lightning bolt from a to b: a jagged path that re-strikes rate times a second, drawn as a white-hot stroke with yellow edges
+  // inside a soft golden glow, with forks splitting off it. Kinks are strongest mid-way, so both ends stay pinned.
+  function bolt(a, b, wide, alpha, seed, rate = 24, fork = 1, lift = 0) {
+    const v = [b[0] - a[0], b[1] - a[1], b[2] - a[2]], L = Math.hypot(v[0], v[1], v[2]); if (L < .02 || alpha <= 0) return;
+    const d = [v[0] / L, v[1] / L, v[2] / L], side = norm(cross3(d, cam.f)) || cam.u, key = Math.floor(now * rate), n = Math.max(5, Math.min(14, Math.round(L * 3.2)));
+    const pts = [], ws = [];
+    for (let i = 0; i <= n; i++) { const f = i / n, k = i && i < n ? (hash(key * 7.13 + i * 3.31 + seed) - .5) * 2 * Math.min(L * .12, .5) * Math.sqrt(Math.sin(f * Math.PI)) : 0; pts.push(addv(addv(a, d, L * f), side, k)); ws.push(wide * (.55 + .45 * Math.sin(f * Math.PI)) + .004); }
+    ribbon(GLOW_R, pts, ws.map(x => x * 4), P.chainGlow, {alpha: alpha * .4, seed, soft: .85, edge: 0, lift, bias: -.01});
+    ribbon(SPARK_R, pts, ws, P.chain, {alpha, seed, soft: .15, edge: 0, lift});
+    for (let j = 0; j < fork; j++) { // forks split off and die out
+      const i0 = 1 + Math.floor(hash(key * 1.7 + j * 9 + seed) * (n - 2)), s0 = hash(key * 3.9 + j + seed) > .5 ? 1 : -1, fl = L * (.18 + .14 * hash(key + j * 5 + seed)), fp = [pts[i0]], fw = [ws[i0] * .6];
+      const fd = norm(addv(d, side, s0 * .9)) || d;
+      for (let m = 1; m <= 3; m++) { fp.push(addv(addv(pts[i0], fd, fl * m / 3), side, (hash(key * 5.3 + m + j * 7 + seed) - .5) * fl * .5)); fw.push(ws[i0] * .6 * (1 - m / 3.4)); }
+      ribbon(SPARK_R, fp, fw, P.chain, {alpha: alpha * .9, seed: seed + j, soft: .15, edge: 0, lift});
+    }
   }
-  function chainArc(t) { // Chain Spark: a jagged bolt hopping between foes, a flash where it lands
+  function sparks(c, n, speed, t, alpha, seed, lift = .3) { // yellow sparks flung out from a strike, slowing as they fly
+    for (let j = 0; j < n; j++) { const an = j * TAU / n + seed * 5, up = .4 + hash(j * 3 + seed), sp = speed * (.6 + .6 * hash(j + seed)), k = 2.8, s = (1 - Math.exp(-k * t)) / k;
+      const q = [c[0] + Math.cos(an) * sp * s, c[1] + up * sp * s - 3 * t * t, c[2] + Math.sin(an) * sp * s]; if (q[1] < .02) continue; at(q);
+      mote(q, .035 + .02 * hash(j * 7 + seed), P.chain, alpha * (1 - smooth(.2, .45, t)), {lift, bias: .02}); }
+  }
+  function chainArc(t) { // Chain Spark: a jagged bolt jumping between foes, a flash and a spray of sparks where it lands
     const p = clamp(t.age / t.life), A = 1 - smooth(.55, 1, p), a = [t.x, .6, t.z], b = [t.tx, .6, t.tz], seed = hash(t.x * 3 + t.tz); if (Math.hypot(b[0] - a[0], b[2] - a[2]) < .05) return;
     at([(a[0] + b[0]) / 2, .6, (a[2] + b[2]) / 2]);
-    const w = (t.r || .07) >= .06 ? .26 : .17; bolt(a, b, w, A, seed, 26, 1, .5);
-    at(b); glow(b, .5, P.chainBlue, .7 * A, {lift: .6});
-    glowDecal(t.tx, t.tz, .5, P.chainBlue, .5 * A);
+    const w = (t.r || .07) >= .06 ? .1 : .075; bolt(a, b, w, A, seed, 26, 1, .5);
+    at(b); glow(b, .55, P.chainGlow, .8 * A, {lift: .6}); sparks(b, 6, 3.2, t.age, A, seed, .5);
+    glowDecal(t.tx, t.tz, .55, P.chainGlow, .5 * A);
   }
-  function chainStrike(t) { // JUDGMENT BOLT: lightning from the sky onto the strongest foe
-    const p = clamp(t.age / t.life), A = 1 - smooth(.55, 1, p), seed = hash(t.x + t.z * 9), top = [t.x + .25, 5.4, t.z - .35], bot = [t.x, .12, t.z];
-    glowDecal(t.x, t.z, 1.3, P.chainBlue, .7 * A);
-    disc(RING, t.x, t.z, .5 + p * .9, P.chainBlue, {alpha: A * (1 - p), p: [.86, .07, .5, .04], layer: 2, seed, soft: .3});
-    at([t.x, 1.5, t.z]); bolt(top, bot, .36, A, seed, 30, 1, .5);
-    at(bot); glow([t.x, .45, t.z], .9 + p * .5, P.chain, .8 * A, {lift: .7});
+  function chainStrike(t) { // JUDGMENT BOLT: a thick bolt from the sky with forks, a white flash, a shock ring, arcs crawling over the ground and a burst of sparks
+    const p = clamp(t.age / t.life), A = 1 - smooth(.55, 1, p), seed = hash(t.x + t.z * 9), top = [t.x + .3, 6, t.z - .4], bot = [t.x, .1, t.z];
+    glowDecal(t.x, t.z, 1.5, P.chainGlow, .8 * A);
+    disc(RING, t.x, t.z, .4 + p * 1.6, P.chainGlow, {alpha: A * (1 - p), p: [.86, .07, .5, .04], layer: 2, seed, soft: .3});
+    at([t.x, 1.5, t.z]); bolt(top, bot, .12, A, seed, 30, 3, .5);
+    for (let j = 0; j < 4; j++) { const an = j * TAU / 4 + seed * 3 + Math.floor(now * 20) * .7, e = [t.x + Math.cos(an) * (.7 + .5 * p), .06, t.z + Math.sin(an) * (.7 + .5 * p)]; at(e); bolt([t.x, .08, t.z], e, .04, A * .9, seed + j * 3, 30, 0, .3); } // arcs crawling over the ground
+    if (t.age < .08) { const g = [t.x, .6, t.z]; at(g); glow(g, 1.6, P.chain, 1 - t.age / .08, {lift: 1, bias: 1}); }
+    at(bot); glow([t.x, .45, t.z], .9 + p * .5, P.chain, .8 * A, {lift: .7}); sparks([t.x, .3, t.z], 10, 4, t.age, A, seed, .6);
   }
-  function chainNetwork(t) { // LIGHTNING NETWORK: the caster glows as the first node of the web
-    const p = clamp(t.age / t.life), A = smooth(0, .08, p) * (1 - smooth(.8, 1, p));
-    glowDecal(t.x, t.z, 1.2, P.chainBlue, .5 * A);
-    glow([t.x, .5, t.z], .7 + .1 * Math.sin(now * 20), P.chainBlue, .45 * A, {lift: .3});
+  function chainNetwork(t) { // LIGHTNING NETWORK: the caster is the first node of the web, humming with little arcs
+    const p = clamp(t.age / t.life), A = smooth(0, .08, p) * (1 - smooth(.8, 1, p)), seed = hash(t.x + t.z * 2);
+    glowDecal(t.x, t.z, 1.2, P.chainGlow, .5 * A);
+    glow([t.x, .5, t.z], .7 + .1 * Math.sin(now * 20), P.chainGlow, .45 * A, {lift: .3});
+    const key = Math.floor(now * 14); for (let j = 0; j < 2; j++) { const an = hash(key * 2.3 + j * 7) * TAU, e = [t.x + Math.cos(an) * .7, .5, t.z + Math.sin(an) * .7]; at(e); bolt([t.x, .5, t.z], e, .03, A * .8, key + j * 5 + seed, 30, 0, .3); }
   }
-  function chainTesla(t) { // TESLA DOMAIN: an electric field round the slime, crackling at its rim
+  function chainTesla(t) { // TESLA DOMAIN: an electric field round the slime; arcs crawl round its rim and jump in from the middle
     const p = clamp(t.age / t.life), r = t.r, A = smooth(0, .1, p) * (1 - smooth(.85, 1, p)), seed = hash(t.x + t.z);
-    glowDecal(t.x, t.z, r, P.chain, .35 * A);
-    disc(RING, t.x, t.z, r, P.chainBlue, {alpha: .8 * A, p: [.92, .03, .4, .04], layer: 1, seed, rag: .6, soft: .3});
+    glowDecal(t.x, t.z, r, P.chainGlow, .3 * A);
+    disc(RING, t.x, t.z, r, P.chainGlow, {alpha: .8 * A, p: [.92, .03, .4, .04], layer: 1, seed, rag: .6, soft: .3});
     const key = Math.floor(now * 12);
-    for (let j = 0; j < 4; j++) {
-      const a0 = hash(key * 3.1 + j * 1.7) * TAU, a1 = a0 + .45 + hash(key + j) * .4, rr = r * .95;
-      const a = [t.x + Math.cos(a0) * rr, .25, t.z + Math.sin(a0) * rr], b = [t.x + Math.cos(a1) * rr, .35, t.z + Math.sin(a1) * rr]; at(a);
-      bolt(a, b, .15, A * .95, key + j, 30, 0, .2);
+    for (let j = 0; j < 4; j++) { // arcs following the curve of the rim
+      const a0 = hash(key * 3.1 + j * 1.7) * TAU, len = .5 + hash(key + j) * .5, rr = r * .96, pts = [];
+      for (let m = 0; m <= 3; m++) { const an = a0 + len * m / 3; pts.push([t.x + Math.cos(an) * rr, .25, t.z + Math.sin(an) * rr]); }
+      at(pts[1]); for (let m = 0; m < 3; m++) bolt(pts[m], pts[m + 1], .045, A * .95, key * 7 + j * 3 + m, 30, 0, .2);
     }
-    for (let j = 0; j < 2; j++) { const an = hash(key * 1.3 + j * 5) * TAU, b = [t.x + Math.cos(an) * r * .9, .3, t.z + Math.sin(an) * r * .9]; at(b); bolt([t.x, .5, t.z], b, .13, A * .8, key * 2 + j, 30, 0, .2); }
+    for (let j = 0; j < 2; j++) { const an = hash(key * 1.3 + j * 5) * TAU, e = [t.x + Math.cos(an) * r * .9, .3, t.z + Math.sin(an) * r * .9]; at(e); bolt([t.x, .5, t.z], e, .05, A * .85, key * 2 + j, 30, 1, .2); sparks(e, 4, 2, (now * 12) % 1 / 12 * 3, A, key + j, .3); }
   }
-  function chainRing(t) { // stun crackle round a foe
+  function chainRing(t) { // stun: little arcs crackling round the foe and a ring of static
     const p = clamp(t.age / t.life), A = 1 - smooth(.5, 1, p), seed = hash(t.x * 4 + t.z), R = (t.r || 1) * (.6 + .4 * smooth(0, .4, p));
-    glowDecal(t.x, t.z, R, P.chainBlue, .45 * A);
-    disc(RING, t.x, t.z, R, P.chainBlue, {alpha: .85 * A, p: [.85, .06, .5, .06], layer: 2, seed, rag: .6, soft: .2});
+    glowDecal(t.x, t.z, R, P.chainGlow, .45 * A);
+    disc(RING, t.x, t.z, R, P.chainGlow, {alpha: .85 * A, p: [.85, .06, .5, .06], layer: 2, seed, rag: .6, soft: .2});
+    const key = Math.floor(now * 16); for (let j = 0; j < 3; j++) { const an = hash(key * 1.9 + j * 4 + seed) * TAU, a = [t.x + Math.cos(an) * R * .7, .3 + .4 * hash(key + j), t.z + Math.sin(an) * R * .7], e = [t.x + Math.cos(an + .9) * R * .7, .35 + .4 * hash(key * 2 + j), t.z + Math.sin(an + .9) * R * .7]; at(a); bolt(a, e, .03, A, key * 3 + j + seed, 30, 0, .4); }
   }
   // ---------------------------------------------------------------- Orbit: glossy cores whose tails follow the path they fly
   function orbitOrbs(combat) {
@@ -678,7 +699,11 @@ export function createPaintedSkillRenderer(gl) {
         note('status:poison'); glowDecal(e.x, e.z, rad * 1.1, P.toxin, .4);
         for (let j = 0; j < 2; j++) { const k = (now * .9 + j * .5 + hash(e.id || 0)) % 1; mote([e.x + (j - .5) * rad * .8, .35 + k * .7, e.z], .05 + .02 * j, P.toxin, (1 - smooth(.7, 1, k)) * smooth(0, .15, k), {p: [.7, .35, .5, 0], lift: .5, seed: j}); }
       }
-      if (e.chill > 0 || e.frozen > 0) {
+      if (e.frozen > 0 && !(e.chill > 0)) { // stunned by lightning (the game uses the same frozen timer): yellow arcs crackle over it
+        note('status:stun'); const key = Math.floor(now * 16), h = rad * 2.2;
+        glowDecal(e.x, e.z, rad * 1.1, P.chainGlow, .5);
+        for (let j = 0; j < 3; j++) { const an = hash(key * 1.7 + j * 5 + (e.id || 0)) * TAU, a = [e.x + Math.cos(an) * rad * .8, h * (.25 + .6 * hash(key + j * 3)), e.z + Math.sin(an) * rad * .5], b = [e.x + Math.cos(an + 1.3) * rad * .8, h * (.25 + .6 * hash(key * 2 + j)), e.z + Math.sin(an + 1.3) * rad * .5]; at(a); bolt(a, b, .03, .95, key * 3 + j, 30, 0, rad * 1.4); }
+      } else if (e.chill > 0 || e.frozen > 0) {
         note('status:frost'); const fr = e.frozen > 0;
         let st = freezeStates.get(e); if (fr && (!st || now < st.seen - 1e-6 || now - st.seen > .25)) { st = {since: now}; freezeStates.set(e, st); } if (st) st.seen = now;
         if (fr) { // frozen solid: frost spreads over the ground and a block of ice grows up around the foe
@@ -773,6 +798,9 @@ void main(){
    float F=(1.-a)*(1.-u*.8)+(n-.5)*.35*(.3+u);
    if(P.x>0.)F*=smoothstep(0.,P.x,ul); // optional soft start (P.x world units), so a beam never shows a flat end
    d=(.1-F)*.5;tone=clamp(.35+F*.7,0.,1.);
+  }else if(k==36){ // an electric stroke: an even line, white-hot down its middle and yellow toward its edges, flickering along its length (no tail fade)
+   float n=vn(vec2(ul*7.-t*40.,seed*3.));
+   d=(a-(.8+.2*n))*.5;tone=clamp(1.08-a*.95,0.,1.);
   }else if(k==34){ // a sheet of water built from rows (a wave's body): tone runs from P.x to P.y across the row, and the noise is shared with the neighbouring rows so they read as one body (P.z row position, P.w signed row span)
    float row=P.z+v*P.w,n=fbm(vec2(ul*.35-t*.5,row*.8)),n2=fbm(vec2(ul*1.8+t*.5,row*2.6-t*.8));
    d=(a-1.)*.5;tone=clamp(mix(P.x,P.y,clamp(v*sign(P.w)+.5,0.,1.))+(n-.5)*.2,0.,1.);
