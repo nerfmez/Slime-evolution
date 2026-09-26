@@ -48,7 +48,10 @@ try{
     assert.match(info,/LV 1\/10/);assert.match(info,/DPS/);
     const paused=await page.evaluate(async()=>{const a=__slimeGameQA.world.time;await new Promise(r=>setTimeout(r,700));return __slimeGameQA.world.time===a});
     assert.ok(paused,`${label}: the round pauses while skill details are open`);
-    await page.locator('#skill-info .si-close').click();
+    // Pressed from the page: under CI's software GL a synthetic mouse click on the modal can stall for the full timeout.
+    await page.evaluate(()=>document.querySelector('#skill-info .si-close').click());
+    await page.waitForFunction(()=>!document.getElementById('skill-info').open,null,{timeout:10000});
+    await page.waitForFunction(t=>__slimeGameQA.world.time>t,await page.evaluate(()=>__slimeGameQA.world.time),{timeout:30000});
     const slots=await page.evaluate(()=>[...document.querySelectorAll('#fire-slot .equipped-skill.empty')].map(e=>[e.textContent,e.getAttribute('aria-label')]));
     assert.deepEqual(slots,[['+','ช่องสกิลว่าง'],['+','ช่องสกิลว่าง']]);
     await page.evaluate(()=>{const q=__slimeGameQA,w=q.world,p=q.state.player;w.enemies.length=0;w.spawnClock=w.nextElite=1e6;w.spawn(p,'panda',false)});
