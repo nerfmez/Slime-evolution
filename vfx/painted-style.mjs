@@ -63,6 +63,8 @@ export function applyPaintedVfx(bundle, html) {
   b = replaceOne(b, 'Math.round(Math.max(0,1-e[i/4]/3)*255)', 'Math.round(Math.max(0,1-e[i/4]/9)*255)', 'burn depth range');
   // The grass keeps its old response: it is burnt away (height 0) wherever the burn reaches a third of full, as before the layers.
   b = replaceOne(b, 'p.y*=1.-bend.b*h*.85;p.y*=bend.a;', 'p.y*=1.-bend.b*h*.85;p.y*=clamp(1.-(1.-bend.a)*3.,0.,1.);', 'burnt grass height');
+  b = replaceOne(b, '&&vBurn>.98)discard;', '&&vBurn*3.>.98)discard;', 'burnt grass removal');
+  b = replaceOne(b, 'c=mix(c,vec3(.24,.20,.13),vBurn*.7);', 'c=mix(c,vec3(.24,.20,.13),min(1.,vBurn*3.)*.7);', 'burnt grass tint');
   b = replaceOne(b, 'c=mix(c,vec3(.19,.15,.115),burned*.78);', 'burned+=sin(vWorld.x*3.1+vWorld.z*1.3)*sin(vWorld.z*2.7-vWorld.x*.9)*.035;c=mix(c,vec3(.45,.38,.25),smoothstep(.06,.1,burned)*.55);c=mix(c,vec3(.27,.21,.145),smoothstep(.36,.4,burned)*.8);c=mix(c,vec3(.15,.11,.085),smoothstep(.7,.74,burned)*.9);', 'layered burnt ground');
   const h = replaceOne(replaceOne(html, '<h3>สกิลและภาพเอฟเฟกต์</h3>', '<h3>สกิลและภาพเอฟเฟกต์</h3>' + CONTROLS, 'style controls'),
     '</body></html>', STATE_SCRIPT + LAB_LINK_SCRIPT + '</body></html>', 'style state');
