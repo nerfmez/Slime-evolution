@@ -21,11 +21,11 @@ export function createPaintedSkillRenderer(gl) {
   const BLOB = 0, RING = 1, DROP = 2, SHARD = 4, SPIRAL = 9, BOLT = 11, FAN = 12, FLOWER = 13, RIBBON = 17, DOME = 18,
     DRILL = 19, COLUMN = 20, LIQUID = 26, SURF = 29,
     WATER_R = 30, FIRE_R = 31, GLOW_R = 32, GOO_R = 33, FOG = 35, FIRELINE = 37, GLOW = 38, ROCK = 39,
-    FLAMEBALL = 40, SUN = 41, EXPLODE = 42, TORNADO = 43, PUFF = 44, DOME_FIRE = 45, CRATER = 46;
+    FLAMEBALL = 40, SUN = 41, EXPLODE = 42, TORNADO = 43, PUFF = 44, DOME_FIRE = 45, CRATER = 46, WATERBALL = 48, SHEET = 34;
   // Palettes: light / mid / dark wash. The pigment edge is derived from the dark wash.
   const P = {
     shadow: tones('#6f8a4c', '#5f7a40', '#4c6533'),
-    water: tones('#f1fbff', '#a9ddf4', '#5aa6da'), waterDeep: tones('#c4e8f8', '#74c0e8', '#3d88c6'), foam: tones('#ffffff', '#eaf7fd', '#b2dbef'),
+    water: tones('#f1fbff', '#a9ddf4', '#5aa6da'), waterDeep: tones('#c4e8f8', '#74c0e8', '#3d88c6'), foam: tones('#ffffff', '#eaf7fd', '#b2dbef'), jet: tones('#ffffff', '#d3f0fd', '#94cdef'),
     tide: tones('#f5eeff', '#d2baf5', '#9f7bdb'), tideDeep: tones('#e0cdf9', '#ae8ee8', '#7753c2'),
     fire: tones('#ffdc7a', '#ff9838', '#e4502a'), flame: tones('#ffcd6a', '#f7853a', '#d4422a'), ember: tones('#ffa45c', '#b93a2b', '#5e1d1a'),
     hot: tones('#fffbe6', '#fff0b0', '#ffc860'), dust: tones('#eadfce', '#bfa98f', '#86705c'), stone: tones('#d8c6ad', '#a68e74', '#76604c'), dustLight: tones('#f6efe4', '#dccbb4', '#ad977e'), blaze: tones('#fff3b8', '#ffb22e', '#f0561e'), smoke: tones('#f7f1e8', '#ddd1c3', '#b4a292'), scorch: tones('#cda57e', '#9d6c4d', '#6d4433'),
@@ -180,15 +180,18 @@ export function createPaintedSkillRenderer(gl) {
   function waterImpacts(combat, time, visible) { // a drop landing: rings on the ground and a few drops thrown up
     const clock = combat.clock ?? time; let st = impactStates.get(combat);
     if (!st || clock < st.clock) { st = {clock, prev: new Map(), events: []}; impactStates.set(combat, st); }
-    for (const [t, n] of st.prev) if ((t.hit?.size || 0) > n && t.kind === 'bolt') st.events.push({x: t.x, z: t.z, dx: t.dx, dz: t.dz, born: clock, seed: hash(t.x * 7 + t.z)});
-    st.prev = new Map((combat.abilities || []).filter(t => t.family === 'water' && t.kind === 'bolt').map(t => [t, t.hit?.size || 0]));
+    for (const [t, n] of st.prev) if ((t.hit?.size || 0) > n) { // a railgun hit lands where its ball is now
+      const q = t.kind === 'beam' ? Math.max(.45, t.length * clamp(t.age / t.life / .6)) : 0;
+      st.events.push({x: t.x + t.dx * q, z: t.z + t.dz * q, dx: t.dx, dz: t.dz, born: clock, seed: hash(t.x * 7 + t.z + q), s: t.kind === 'beam' ? 2.6 : 1});
+    }
+    st.prev = new Map((combat.abilities || []).filter(t => t.family === 'water' && (t.kind === 'bolt' || t.kind === 'beam')).map(t => [t, t.hit?.size || 0]));
     st.events = st.events.filter(e => clock - e.born < .45).slice(-48); st.clock = clock;
     for (const e of st.events) {
       if (!visible(e.x, e.z, .8)) continue; note('water:impact');
-      const age = clock - e.born, p = clamp(age / .45), A = 1 - smooth(.5, 1, p);
-      disc(RING, e.x, e.z, .22 + smooth(0, 1, p) * .6, P.water, {alpha: A, p: [.85, .07, .6, .02], layer: 2, seed: e.seed, soft: .3});
-      disc(LIQUID, e.x, e.z, .28, P.water, {alpha: .55 * A, p: [.5, 2.2, 0, 0], layer: 1, seed: e.seed, dissolve: smooth(.4, 1, p), edge: .5});
-      for (let j = 0; j < 5; j++) { const an = j * TAU / 5 + e.seed * 6, sp = .9 + .6 * hash(j + e.seed); thrown([e.x, .28, e.z], [Math.cos(an) * sp + e.dx * .6, 2.2 + hash(j * 3 + e.seed), Math.sin(an) * sp + e.dz * .6], age, P.water, .045, WATER_R, {alpha: A, seed: j, g: 10, tail: .07, lift: .3, rp: [0, .9, 0, 0]}); }
+      const age = clock - e.born, p = clamp(age / .45), A = 1 - smooth(.5, 1, p), S = e.s || 1;
+      disc(RING, e.x, e.z, (.22 + smooth(0, 1, p) * .6) * S, P.water, {alpha: A, p: [.85, .07, .6, .02], layer: 2, seed: e.seed, soft: .3});
+      disc(LIQUID, e.x, e.z, .28 * S, P.water, {alpha: .55 * A, p: [.5, 2.2, 0, 0], layer: 1, seed: e.seed, dissolve: smooth(.4, 1, p), edge: .5});
+      for (let j = 0; j < (S > 1 ? 9 : 5); j++) { const an = j * TAU / (S > 1 ? 9 : 5) + e.seed * 6, sp = (.9 + .6 * hash(j + e.seed)) * Math.sqrt(S); thrown([e.x, .28, e.z], [Math.cos(an) * sp + e.dx * .6 * S, 2.2 + hash(j * 3 + e.seed) + (S - 1) * .6, Math.sin(an) * sp + e.dz * .6 * S], age, P.water, .045 * Math.sqrt(S), WATER_R, {alpha: A, seed: j, g: 10, tail: .07, lift: .3, rp: [0, .9, 0, 0]}); }
     }
   }
   function beamLine(t, from, to, w, pulse, sd) { // points and widths along a stream, gently wavering
@@ -200,58 +203,78 @@ export function createPaintedSkillRenderer(gl) {
     }
     return {pts, ws};
   }
-  function waterBeam(t) { // AQUA RAILGUN: a giant ball of water fired down the line, leaving a spray-laden wake, bursting where the line ends
-    const p = clamp(t.age / t.life), d = [t.dx, 0, t.dz], w = t.r, sd = hash(t.x + t.z * 3), R = w * 1.45, fly = clamp(p / .62), ease = 1 - Math.pow(1 - fly, 2.2);
-    const a = [t.x + d[0] * .35, .55, t.z + d[2] * .35], L = t.length, dist = .35 + (L - .35) * ease, pos = [t.x + d[0] * dist, .55 + R * .35 * Math.sin(fly * Math.PI) * .3, t.z + d[2] * dist];
-    const A = 1 - smooth(.85, 1, p);
-    if (fly < 1) { // the ball and its wake
-      shadow(pos[0], pos[2], R * 1.1, .28);
-      const tail = Math.min(dist - .2, R * 7), pts = [], ws = [];
-      for (let i = 0; i <= 10; i++) { const u = i / 10, q = dist - tail * u; pts.push([t.x + d[0] * q, .55 - .1 * u, t.z + d[2] * q]); ws.push(R * .82 * Math.pow(1 - u, .7) + .01); }
-      at(pos); ribbon(GLOW_R, pts, ws.map(x => x * 1.6), P.foam, {alpha: .45 * A, seed: sd + 2, lift: .3, soft: .6, edge: 0});
-      ribbon(WATER_R, pts, ws, P.water, {alpha: .95 * A, seed: sd, lift: .3, p: [2.4, .75, 0, 0]});
-      glow(pos, R * 1.8, P.foam, .45, {lift: .35, bias: -.02});
-      const sq = 1 + .18 * Math.sin(now * 30 + sd * 5);
-      aim(BLOB, pos, d, R * 1.15 * sq, R / sq, P.water, {p: [1, .32, .1, 0], seed: sd, lift: .35, bias: .02, wobble: .06});
-      for (let j = 0; j < 6; j++) { const k = (now * 3 + j / 6) % 1, an = j * 2.1 + sd * 7; mote(addv([t.x + d[0] * (dist - R * (1 + 2.5 * k)), .55 + R * .8 * Math.sin(an) * (1 - k) + k * .3, t.z + d[2] * (dist - R * (1 + 2.5 * k))], [-d[2], 0, d[0]], Math.cos(an) * R * (1 + k)), R * .14 * (1 - k), P.foam, .9 * (1 - k), {lift: .3}); }
-    } else { // the ball bursts at the end of the line
-      const k = clamp((p - .62) / .38), b = [t.x + d[0] * L, .5, t.z + d[2] * L];
-      disc(LIQUID, b[0], b[2], R * (1.4 + 1.4 * k), P.water, {alpha: .8 * (1 - k), p: [.6, 2.4, 0, 0], layer: 1, seed: sd, shine: .5, dissolve: smooth(.5, 1, k)});
-      for (let j = 0; j < 2; j++) disc(RING, b[0], b[2], R * (1 + 2.6 * k + j * .6), P.water, {alpha: (1 - k) * .9, p: [.85, .07, .6, .02], layer: 2 + j, seed: sd + j, soft: .3});
-      for (let j = 0; j < 10; j++) { const an = j * TAU / 10 + sd * 5, sp = 2.2 + 1.6 * hash(j + sd); thrown([b[0], .5, b[2]], [Math.cos(an) * sp + d[0] * 2.5, 3 + 1.5 * hash(j + sd * 3), Math.sin(an) * sp + d[2] * 2.5], k * .45, P.water, .08, WATER_R, {alpha: 1 - k, seed: j, g: 11, tail: .08, lift: .3, rp: [0, .9, 0, 0]}); }
-      if (k < .4) { at(b); glow(b, R * 3, P.foam, .8 * (1 - k / .4), {lift: .5}); }
-    }
-  }
-  function waterJet(t) { // PRESSURE JET: a steady, high-pressure cutting stream: a white-hot core in a racing water sheath, shock rings at the nozzle, a fan of spray where it hits
-    const p = clamp(t.age / t.life), d = [t.dx, 0, t.dz], side = [-t.dz, 0, t.dx], w = t.r, A = smooth(0, .06, p) * (1 - smooth(.94, 1, p)), sd = hash(t.x * 2 + t.z);
-    const a = [t.x + d[0] * .3, .46, t.z + d[2] * .3], b = [t.x + d[0] * t.length, .46, t.z + d[2] * t.length];
-    decal(RIBBON, (a[0] + b[0]) / 2, (a[2] + b[2]) / 2, d[0], d[2], t.length / 2, w * 2, P.water, {alpha: .3 * A, p: [.88, 3, 0, .12], layer: 1, seed: sd, soft: .6, edge: .3});
-    at([(a[0] + b[0]) / 2, .46, (a[2] + b[2]) / 2]);
-    const sheath = beamLine(t, a, b, w * 1.05, .08, sd), core = beamLine(t, a, b, w * .38, 0, sd), mist = beamLine(t, a, b, w * 2.2, 0, sd + 1);
-    ribbon(GLOW_R, mist.pts, mist.ws, P.foam, {alpha: .28 * A, seed: sd + 2, lift: .45, bias: -.02, soft: .6, edge: 0});
-    ribbon(WATER_R, sheath.pts, sheath.ws, P.waterDeep, {alpha: A, seed: sd, lift: .45, p: [4.5, 1.2, 0, 0]});
-    ribbon(GLOW_R, core.pts, core.ws, P.foam, {alpha: A, seed: sd + 3, lift: .46, bias: .01, soft: .15, edge: 0});
-    for (let j = 0; j < 3; j++) { const k = (now * 4 + j / 3) % 1, q = addv(a, d, .2 + k * 1.4); at(q); aim(RING, q, side, w * (1.3 + 1.2 * k), w * (1.3 + 1.2 * k), P.foam, {alpha: A * (1 - k) * .8, p: [.8, .1, .7, 0], seed: sd + j, lift: .45, soft: .3, edge: .2}); } // shock rings racing out of the nozzle
-    for (let j = 0; j < 8; j++) { const k = (now * 5 + j / 8) % 1, q = addv(a, d, k * t.length); at(q); mote(addv(q, side, Math.sin(j * 2.3 + now * 9) * w * .3), w * .22 * (1 - k * .5), P.foam, A * .8, {lift: .47}); } // pressure pulses racing down the stream
-    disc(RING, b[0], b[2], w * (1.5 + 1.2 * ((now * 5) % 1)), P.water, {alpha: A * (1 - (now * 5) % 1), p: [.85, .07, .6, .02], layer: 2, seed: sd, soft: .3});
-    at(b); glow(b, w * 3, P.foam, .5 * A, {lift: .5});
-    for (let j = 0; j < 10; j++) { const an = (j / 10 - .5) * 2.6, dir = [d[0] * Math.cos(an) - d[2] * Math.sin(an), 0, d[2] * Math.cos(an) + d[0] * Math.sin(an)], tt = (now * 2.4 + j / 10) % .35, sp = 3 + 2 * hash(j + sd); thrown([b[0], .45, b[2]], [-dir[0] * sp * .6 + side[0] * (j % 2 ? 1 : -1) * sp * .5, 2.2 + hash(j * 3 + sd) * 1.5, -dir[2] * sp * .6 + side[2] * (j % 2 ? 1 : -1) * sp * .5], tt, P.water, .045, WATER_R, {alpha: A * (1 - tt / .35), seed: j, g: 10, tail: .06, lift: .4, rp: [0, .9, 0, 0]}); } // a fan of spray thrown back off the target
-  }
-  function waterWave(t) { // TIDAL SURGE: a giant wave: water swells up out of the ground, stands into a tall wall with a foaming crest, rushes forward, then crashes down in foam
-    const p = clamp(t.age / t.life), d = [t.dx, 0, t.dz], side = [-t.dz, 0, t.dx], w = t.r, seed = hash(t.x * .3 + t.z * .7);
-    const rise = smooth(0, .3, p), crash = smooth(.72, 1, p), H = w * 1.25 * (rise * (1 - .75 * crash)), A = 1 - smooth(.9, 1, p);
-    const base = [t.x - d[0] * .3, 0, t.z - d[2] * .3];
-    decal(SURF, base[0] - d[0] * .7, base[2] - d[2] * .7, side[0], side[2], w * 1.1, 1.1 + .6 * rise, P.water, {alpha: .9 * A, p: [1, 0, 0, 0], layer: 2, seed, dissolve: smooth(.8, 1, p), edge: .6});
-    if (H > .05) { // the wall: a row of water columns rising from the ground, each leaning its top forward into the crest, so it reads from any camera angle
-      for (let j = 0; j < 18; j++) {
-        const u = (j / 17 - .5) * 2, h = H * (1 - .55 * u ** 4) * (.9 + .1 * Math.sin(now * 5 + j * 1.7)), pts = [], ws = [];
-        const o = [base[0] + side[0] * w * 1.05 * u, 0, base[2] + side[2] * w * 1.05 * u];
-        for (let i = 0; i <= 7; i++) { const f = i / 7, lean = Math.pow(Math.sin(f * Math.PI / 2), 3) * h * (.45 - .3 * crash); pts.push([o[0] + d[0] * lean, .02 + h * f * (1 - .15 * f * f), o[2] + d[2] * lean]); ws.push(w * (.26 - .1 * f) * (1 - .4 * u * u) + .01); }
-        ribbon(WATER_R, pts.slice().reverse(), ws.slice().reverse(), j % 3 ? P.water : P.waterDeep, {alpha: A, seed: seed + j, lift: .1, p: [2.2, 1, 0, 0], dissolve: smooth(.85, 1, p), edge: .35});
-        const top = pts[7]; at(top); if (j % 2 === 0) mote(top, w * (.15 + .04 * Math.sin(now * 7 + j)), P.foam, A, {lift: .15, bias: .01}); // foam on the crest
+  function waterBeam(t) { // AQUA RAILGUN: a giant, glassy ball of water blasted down the line (it flies in the first 60% of the shot; the game hits each foe as the ball reaches it): a splash at the muzzle, spray thrown aside like a bow wave, a wet track behind it, a big burst where the line ends
+    const p = clamp(t.age / t.life), d = [t.dx, 0, t.dz], side = [-t.dz, 0, t.dx], w = t.r, sd = hash(t.x + t.z * 3), R = w * 1.5, L = t.length, fly = clamp(p / .6);
+    const dist = Math.max(.45, L * fly), pos = [t.x + d[0] * dist, R * .9 + .08, t.z + d[2] * dist], A = 1 - smooth(.85, 1, p);
+    { const k = clamp(p / .35); if (k < 1) { // the kick at the muzzle
+      disc(RING, t.x + d[0] * .5, t.z + d[2] * .5, R * (.7 + 1.8 * k), P.water, {alpha: (1 - k) * .9, p: [.85, .07, .6, .02], layer: 2, seed: sd, soft: .3});
+      for (let j = 0; j < 6; j++) { const an = (j / 5 - .5) * 2.4, sp = 2 + hash(j + sd) * 1.5; thrown([t.x + d[0] * .5, .3, t.z + d[2] * .5], [(-d[0] * .4 + side[0] * Math.sin(an)) * sp, 2.4 + hash(j * 5 + sd), (-d[2] * .4 + side[2] * Math.sin(an)) * sp], k * .35, P.water, .05, WATER_R, {alpha: 1 - k, seed: j, g: 11, tail: .07, lift: .3, rp: [0, .9, 0, 0]}); }
+    } }
+    const trail = Math.max(.01, dist - .45); // a wet, churned track left on the ground
+    decal(RIBBON, t.x + d[0] * (.45 + trail / 2), t.z + d[2] * (.45 + trail / 2), d[0], d[2], trail / 2, R * .6, P.water, {alpha: .35 * (1 - smooth(.45, 1, p)), p: [.88, 3, 0, .12], layer: 1, seed: sd, soft: .6, edge: .2});
+    if (fly < 1) { // the ball in flight
+      at(pos); shadow(pos[0], pos[2], R * 1.05, .3);
+      for (let j = 0; j < 16; j++) { const s = j % 2 ? 1 : -1, k = (now * 5 + j / 16 + hash(j + sd) * .1) % 1, q = Math.max(.45, dist - R * (.4 + 3.2 * k)); // spray thrown out to both sides as it plows along
+        const pt = [t.x + d[0] * q + side[0] * s * R * (.55 + 1.3 * k), .08 + R * 1.6 * k * (1.2 - k), t.z + d[2] * q + side[2] * s * R * (.55 + 1.3 * k)]; at(pt); mote(pt, R * .13 * (1 - .6 * k), P.foam, A * (1 - k) * .95, {lift: .2}); }
+      const tl = Math.min(trail, R * 5), fp = [], fw = [];
+      for (let i = 0; i <= 10; i++) { const u = i / 10; fp.push(addv(pos, d, -tl * u)); fw.push(R * .5 * Math.pow(1 - u, 1.2) + .01); }
+      at(pos); ribbon(GLOW_R, fp, fw, P.foam, {alpha: .4 * A, seed: sd + 2, soft: .7, edge: 0, bias: -.03});
+      for (let j = 0; j < 2; j++) { const hp = [], hw = []; // two currents twisting round its path
+        for (let i = 0; i <= 12; i++) { const u = i / 12, an = u * 7 - now * 30 + j * Math.PI, rr = R * .78 * (1 - .45 * u); hp.push([pos[0] - d[0] * tl * .8 * u + side[0] * Math.cos(an) * rr, pos[1] + Math.sin(an) * rr - R * .3 * u, pos[2] - d[2] * tl * .8 * u + side[2] * Math.cos(an) * rr]); hw.push(R * .16 * (1 - u) + .006); }
+        ribbon(GLOW_R, hp, hw, P.foam, {alpha: .8 * A, seed: sd + j, soft: .4, edge: 0, bias: Math.sin(-now * 30 + j * Math.PI) > 0 ? .03 : -.03});
       }
+      at(pos); glow(pos, R * 1.8, P.foam, .4, {bias: -.02});
+      const sq = 1 + .07 * Math.sin(now * 26 + sd * 5);
+      bb(WATERBALL, pos, R * sq, R / sq, P.waterDeep, {p: [5, 0, 0, 0], seed: sd, edge: .3, bias: .01});
+    } else { // the ball bursts at the end of the line
+      const k = clamp((p - .6) / .4), b = [t.x + d[0] * L, .5, t.z + d[2] * L];
+      disc(LIQUID, b[0], b[2], R * (1.4 + 1.6 * k), P.water, {alpha: .8 * (1 - k), p: [.6, 2.4, 0, 0], layer: 1, seed: sd, shine: .5, dissolve: smooth(.4, 1, k)});
+      for (let j = 0; j < 2; j++) disc(RING, b[0], b[2], R * (1 + 2.8 * k + j * .6), P.water, {alpha: (1 - k) * .9, p: [.85, .07, .6, .02], layer: 2 + j, seed: sd + j, soft: .3});
+      for (let j = 0; j < 14; j++) { const an = j * TAU / 14 + sd * 5, sp = 2.2 + 1.8 * hash(j + sd); thrown([b[0], .6, b[2]], [Math.cos(an) * sp + d[0] * 2.5, 3.2 + 1.8 * hash(j + sd * 3), Math.sin(an) * sp + d[2] * 2.5], k * .5, P.water, .09, WATER_R, {alpha: 1 - k, seed: j, g: 11, tail: .08, lift: .3, rp: [0, .9, 0, 0]}); }
+      if (k < .35) { at(b); glow(b, R * 3, P.foam, .8 * (1 - k / .35), {lift: .5}); }
     }
-    if (crash > 0) for (let j = 0; j < 8; j++) { const u = (j / 7 - .5) * 1.8, q0 = [base[0] + side[0] * w * u + d[0] * .4, .3, base[2] + side[2] * w * u + d[2] * .4]; puff(q0, [d[0] * 2.5, .6, d[2] * 2.5], (p - .72) * t.life, .45, w * .2, w * .38, P.foam, 0, {drag: 4, seed: seed * 9 + j, erode: .2, lift: .2}); } // it crashes down in foam
+  }
+  function waterJet(t) { // PRESSURE JET: a tight, white-hot core at the nozzle that flares into a roaring stream and a widening fan of mist; streaks race down it, shock rings kick out of the nozzle, spray blows back off the target
+    const p = clamp(t.age / t.life), d = [t.dx, 0, t.dz], side = [-t.dz, 0, t.dx], w = t.r, A = smooth(0, .06, p) * (1 - smooth(.94, 1, p)), sd = hash(t.x * 2 + t.z), L = t.length;
+    const a = [t.x + d[0] * .3, .46, t.z + d[2] * .3], b = [t.x + d[0] * L, .46, t.z + d[2] * L], flare = (ws, k0, k1) => ws.map((x, i) => x * mix(k0, k1, Math.pow(i / (ws.length - 1), .8)));
+    decal(RIBBON, (a[0] + b[0]) / 2, (a[2] + b[2]) / 2, d[0], d[2], L / 2, w * 2.4, P.water, {alpha: .3 * A, p: [.88, 3, 0, .12], layer: 1, seed: sd, soft: .7, edge: .2});
+    at([(a[0] + b[0]) / 2, .46, (a[2] + b[2]) / 2]);
+    const sheath = beamLine(t, a, b, w, .05, sd), core = beamLine(t, a, b, w * .5, 0, sd), mist = beamLine(t, a, b, w, 0, sd + 1);
+    ribbon(GLOW_R, mist.pts, flare(mist.ws, 1.6, 4.2), P.foam, {alpha: .55 * A, seed: sd + 2, lift: .45, bias: -.02, soft: .7, edge: 0});
+    ribbon(WATER_R, sheath.pts, flare(sheath.ws, .75, 1.8), P.jet, {alpha: A, seed: sd, lift: .45, p: [6, 1.2, 0, 0], edge: .1});
+    ribbon(GLOW_R, core.pts, flare(core.ws, 1, .5), P.foam, {alpha: A, seed: sd + 3, lift: .46, bias: .01, soft: .2, edge: 0});
+    for (let j = 0; j < 9; j++) { const k = (now * 2.6 + j / 9) % 1, s0 = k * L, s1 = Math.min(L, s0 + 1.1 + .6 * hash(j + sd)), off = (hash(j * 3 + sd) - .5) * w * (.5 + 1.4 * k), pts = [], ws = []; // white streaks racing down the stream
+      for (let i = 0; i <= 4; i++) { const q = mix(s1, s0, i / 4); pts.push([t.x + d[0] * q + side[0] * off, .47, t.z + d[2] * q + side[2] * off]); ws.push(w * .09 * Math.sin((i / 4) * Math.PI) + .004); }
+      ribbon(GLOW_R, pts, ws, P.foam, {alpha: A * .95, seed: sd + j, lift: .47, bias: .015, soft: .2, edge: 0});
+    }
+    at(a); glow(a, w * 2.2, P.foam, .7 * A, {lift: .5});
+    for (let j = 0; j < 3; j++) { const k = (now * 5 + j / 3) % 1, q = addv(a, d, .15 + k * 1.2); at(q); aim(RING, q, side, w * (1.1 + 1.6 * k), w * (1.1 + 1.6 * k), P.foam, {alpha: A * (1 - k) * .85, p: [.8, .1, .7, 0], seed: sd + j, lift: .45, soft: .3, edge: .2}); } // shock rings kicking out of the nozzle
+    disc(RING, b[0], b[2], w * (1.8 + 1.6 * ((now * 5) % 1)), P.water, {alpha: A * (1 - (now * 5) % 1), p: [.85, .07, .6, .02], layer: 2, seed: sd, soft: .3});
+    at(b); glow(b, w * 4, P.foam, .6 * A, {lift: .5});
+    for (let j = 0; j < 14; j++) { const an = (j / 14 - .5) * 2.8, dir = [d[0] * Math.cos(an) - d[2] * Math.sin(an), 0, d[2] * Math.cos(an) + d[0] * Math.sin(an)], tt = (now * 2.4 + j / 14) % .35, sp = 3 + 2.5 * hash(j + sd); thrown([b[0], .45, b[2]], [-dir[0] * sp * .6 + side[0] * (j % 2 ? 1 : -1) * sp * .5, 2.4 + hash(j * 3 + sd) * 1.8, -dir[2] * sp * .6 + side[2] * (j % 2 ? 1 : -1) * sp * .5], tt, P.water, .05, WATER_R, {alpha: A * (1 - tt / .35), seed: j, g: 10, tail: .06, lift: .4, rp: [0, .9, 0, 0]}); } // spray blown back off the target
+  }
+  function waterWave(t) { // TIDAL SURGE: water gathers and swells out of the ground, curls into a giant wave with a rolling foam lip, rushes forward, then the lip crashes down in a flood of foam.
+    // The wave is its cross-section (back slope, crest, curling lip) swept along the crest line as a stack of ribbons, so it keeps its true 3D shape from any camera angle.
+    const p = clamp(t.age / t.life), d = [t.dx, 0, t.dz], side = [-t.dz, 0, t.dx], w = t.r, seed = hash(t.x * .3 + t.z * .7);
+    const rise = smooth(0, .3, p), curl = smooth(.12, .42, p), crash = smooth(.7, 1, p), H = w * .95 * (.12 + .88 * rise) * (1 - .55 * crash), A = smooth(0, .05, p) * (1 - smooth(.93, 1, p)), base = [t.x, 0, t.z];
+    for (let j = 0; j < 3; j++) { const q = clamp((p - j * .07) / .26); if (q > 0 && q < 1) decal(RING, base[0] + d[0] * .2, base[2] + d[2] * .2, side[0], side[2], w * mix(1.8, 1, q), w * mix(1, .35, q), P.water, {alpha: .8 * Math.sin(q * Math.PI), p: [.85, .06, .6, .02], layer: 2, seed: seed + j, soft: .35, asp: 1}); } // ripples drawn in as the water gathers
+    if (crash > 0) decal(SURF, base[0] + d[0] * (.3 + 1.2 * crash), base[2] + d[2] * (.3 + 1.2 * crash), side[0], side[2], w * 1.15, .6 + 1.3 * crash, P.foam, {alpha: .9 * A, p: [1.4, 0, 0, 0], layer: 3, seed: seed + 3, dissolve: smooth(.82, 1, p), edge: .2, soft: .2}); // the flood of foam it throws forward
+    // the cross-section in (forward, up) units of H: a short back slope, the crest, and a lip that curls over and, when it crashes, reaches the ground
+    const lipF = .15 + .45 * curl + .5 * crash, lipY = mix(1, .55, curl) * (1 - .9 * crash);
+    const prof = [[-.75, .02], [-.5, .36], [-.25, .68], [-.05, .9], [.12, 1], [.12 + lipF * .55, mix(1, .98, curl)], [.12 + lipF * .9, mix(.9, .82, curl) * (1 - .5 * crash)], [.12 + lipF, lipY]];
+    const tones = [.08, .3, .5, .66, .8], n = 13, rows = prof.length;
+    const at3 = (i, u) => { const e = 1 - Math.pow(Math.abs(u), 2.6), [f, y] = prof[i]; const g = f * H * .8 * (.3 + .7 * e); return [base[0] + side[0] * w * 1.08 * u + d[0] * g, .02 + y * H * e, base[2] + side[2] * w * 1.08 * u + d[2] * g]; };
+    const row = (i0, i1, style, pal, o) => { // one strip of the surface between two points of the cross-section
+      const pts = [], ws = [], a0 = at3(i0, 0), a1 = at3(i1, 0), s = cross3(cam.f, side), dir = Math.sign((a1[0] - a0[0]) * s[0] + (a1[1] - a0[1]) * s[1] + (a1[2] - a0[2]) * s[2]) || 1;
+      for (let m = 0; m < n; m++) { const u = (m / (n - 1) - .5) * 2, q0 = at3(i0, u), q1 = at3(i1, u); pts.push([(q0[0] + q1[0]) / 2, (q0[1] + q1[1]) / 2, (q0[2] + q1[2]) / 2]); ws.push(Math.hypot(q1[0] - q0[0], q1[1] - q0[1], q1[2] - q0[2]) * (o.wide ?? .75) + .02); }
+      at(pts[n >> 1]); ribbon(style, pts, ws, pal, {...o, p: o.p || [tones[i0], tones[i1], i0 + .5, dir]});
+    };
+    for (let i = 0; i < 4; i++) row(i, i + 1, SHEET, P.waterDeep, {alpha: A * (1 - smooth(.8, 1, p)), seed, edge: 0, soft: .5, wide: 1, bias: i * .004}); // the body
+    for (let i = 4; i < rows - 1; i++) row(i, i + 1, GLOW_R, P.foam, {alpha: A * (.6 + .4 * curl) * (1 - smooth(.8, 1, p)), seed: seed + i, edge: 0, soft: .35, p: [0, 1, 0, 0], bias: .02 + i * .004}); // the curling lip of foam
+    for (let m = 0; m < 9; m++) { const u = (m / 8 - .5) * 1.9 + .06 * Math.sin(now * 3 + m), q = at3(rows - 2, u); at(q); mote(q, H * (.13 + .05 * Math.sin(now * 6 + m * 2.3)), P.foam, A * curl, {bias: .03}); } // foam boiling along the lip
+    for (let j = 0; j < 12; j++) { const k = (now * 1.7 + j / 12) % 1, u = (hash(j + seed) - .5) * 1.8, c0 = at3(4, u); // spray blown back off the crest
+      const q = [c0[0] - d[0] * k * .9, c0[1] + k * .6 - k * k * .5, c0[2] - d[2] * k * .9]; at(q); mote(q, w * .08 * (1 - .5 * k), P.foam, A * rise * (1 - k), {bias: .02}); }
+    if (crash > 0) for (let j = 0; j < 8; j++) { const u = (j / 7 - .5) * 1.9, q0 = at3(rows - 1, u); puff(q0, [d[0] * 3, -.5, d[2] * 3], (p - .7) * t.life, .5, w * .2, w * .4, P.foam, 0, {drag: 4, seed: seed * 9 + j, erode: .2, lift: .1}); } // the lip crashes down in foam
   }
   // ---------------------------------------------------------------- Tide: lilac ripples, a bubble dome, a whirlpool
   function tideRing(t) { // Tide Ring: two soft ripples spreading over the ground
@@ -726,6 +749,11 @@ void main(){
    float F=(1.-a)*(1.-u*.8)+(n-.5)*.35*(.3+u);
    if(P.x>0.)F*=smoothstep(0.,P.x,ul); // optional soft start (P.x world units), so a beam never shows a flat end
    d=(.1-F)*.5;tone=clamp(.35+F*.7,0.,1.);
+  }else if(k==34){ // a sheet of water built from rows (a wave's body): tone runs from P.x to P.y across the row, and the noise is shared with the neighbouring rows so they read as one body (P.z row position, P.w signed row span)
+   float row=P.z+v*P.w,n=fbm(vec2(ul*.35-t*.5,row*.8)),n2=fbm(vec2(ul*1.8+t*.5,row*2.6-t*.8));
+   d=(a-1.)*.5;tone=clamp(mix(P.x,P.y,clamp(v*sign(P.w)+.5,0.,1.))+(n-.5)*.2,0.,1.);
+   fill=smoothstep(.05,.9,row+(fbm(vec2(ul*1.3,t*.7))-.5)*.5); // the foot melts into the ground
+   hd=(abs(n2-.5)-.025)*1.4+(1.-smoothstep(.5,.75,tone))*.5; // thin light currents running over its lighter parts
   }else{ // goo: a sticky strand that thins and beads toward the tail
    float bead=.2*sin(ul*9.-t*4.)*u;
    d=(a-(1.-u*.45)*(1.+bead))*.5;tone=clamp(.62-a*.4,0.,1.);hd=abs(v+.35)-.12*(1.-u);fill=1.-smoothstep(.75,1.,u);
@@ -882,6 +910,12 @@ void main(){
   d=w-.92;float bands=floor(w*P.x)/P.x;
   tone=clamp(.05+bands*.85+(fbm(q*2.4+seed*3.)-.5)*.15,0.,1.);
   hd=P.y>0.?abs(w-.86)-.035*P.y:9.;
+ }else if(k==48){ // a giant ball of water: a glassy sphere, deep at the rim, bright inside, currents swirling through it (P.x swirl speed)
+  float rr=r+(vn(dir*2.+seed+T*3.)-.5)*.05;d=rr-.9;
+  vec3 n=vec3(q/.9,sqrt(max(0.,1.-rr*rr/.81)));
+  float lt=clamp(dot(n,normalize(vec3(-.4,.55,.73))),0.,1.),cur=fbm(vec2(an*1.6+rr*2.5-T*P.x*.5,rr*3.-T*P.x));
+  tone=clamp(.12+.45*n.z+.3*lt+(cur-.5)*.6,0.,1.);
+  hd=min(length((q-vec2(-.3,.36))/vec2(1.35,.8))-.17,abs(rr-.74)-.022+(1.-smoothstep(.25,.6,dot(dir,vec2(-.6,.8))))*.6);
  }else if(k==38){ // soft glow: light without edges
   float lr=length(vQ);d=lr-.98;tone=clamp(1.-lr*1.15,0.,1.);fill=pow(clamp(1.-lr,0.,1.),1.5);
  }else if(k==39){ // meteor rock: a lumpy stone with glowing cracks

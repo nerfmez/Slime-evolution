@@ -57,11 +57,13 @@ export function applyPaintedVfx(bundle, html) {
   // Owner request (2026-09-26): the Sunfall sun takes 1 s to fall (was .5 s), so it is clearly seen sinking. Its damage lands when it does.
   b = replaceOne(b, 'fall:.5,burst:.72,smoke:1.18', 'fall:1,burst:.72,smoke:1.18', 'Sunfall fall time');
   // Owner request (2026-09-26), water evolutions:
-  // - AQUA RAILGUN is drawn as a giant ball of water flying down the line; the line still hits once, the effect just lives .5 s.
+  // - AQUA RAILGUN is a giant ball of water flying down the line: the shot lives .8 s, the ball travels the line in the first
+  //   60% of it (about 25 units/s) and each foe is hit once, when the ball reaches it (the renderer draws the ball at the same spot).
   // - PRESSURE JET cuts like a laser: each jet lasts until the next cast (cooldown + .06 s), so the stream never stops. The damage
   //   per cast is unchanged (it is split over more ticks), so damage per second stays the same.
   // - TIDAL SURGE lasts 1.1 s (was .8 s) so the wave can be seen rising, rushing and crashing; it still hits each foe once.
-  b = replaceOne(b, 'length:12.2+.58*s.flow,life:.3,damage:L(o.ref*1.15)', 'length:12.2+.58*s.flow,life:.5,damage:L(o.ref*1.15)', 'railgun life');
+  b = replaceOne(b, 'length:12.2+.58*s.flow,life:.3,damage:L(o.ref*1.15)', 'length:12.2+.58*s.flow,life:.8,damage:L(o.ref*1.15)', 'railgun life');
+  b = replaceOne(b, 'c>-t.radius&&c<i.length+t.radius&&l<i.r+t.radius', 'c>-t.radius&&c<(i.kind===`beam`?i.length*Math.min(1,i.age/(i.life*.6)):i.length)+t.radius&&l<i.r+t.radius', 'railgun ball reach');
   b = replaceOne(b, 'c===`burst`){let n=(.56+.05*s.burst)*o.D,', 'c===`burst`){let n=Math.max((.56+.05*s.burst)*o.D,o.cooldown+.06),', 'continuous jet');
   b = replaceOne(b, 'speed:5+.25*s.flow,life:.8,damage:L(o.ref*1.02)', 'speed:5+.25*s.flow,life:1.1,damage:L(o.ref*1.02)', 'tidal surge life');
   // Owner request (2026-09-26): the game's own burnt-grass map marks the ground under fire, so the painted effects draw no
