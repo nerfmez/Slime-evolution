@@ -56,6 +56,14 @@ export function applyPaintedVfx(bundle, html) {
   b = replaceOne(b, FIRE_OLD, FIRE_NEW, 'old fire switch');
   // Owner request (2026-09-26): the Sunfall sun takes 1 s to fall (was .5 s), so it is clearly seen sinking. Its damage lands when it does.
   b = replaceOne(b, 'fall:.5,burst:.72,smoke:1.18', 'fall:1,burst:.72,smoke:1.18', 'Sunfall fall time');
+  // Owner request (2026-09-26), water evolutions:
+  // - AQUA RAILGUN is drawn as a giant ball of water flying down the line; the line still hits once, the effect just lives .5 s.
+  // - PRESSURE JET cuts like a laser: each jet lasts until the next cast (cooldown + .06 s), so the stream never stops. The damage
+  //   per cast is unchanged (it is split over more ticks), so damage per second stays the same.
+  // - TIDAL SURGE lasts 1.1 s (was .8 s) so the wave can be seen rising, rushing and crashing; it still hits each foe once.
+  b = replaceOne(b, 'length:12.2+.58*s.flow,life:.3,damage:L(o.ref*1.15)', 'length:12.2+.58*s.flow,life:.5,damage:L(o.ref*1.15)', 'railgun life');
+  b = replaceOne(b, 'c===`burst`){let n=(.56+.05*s.burst)*o.D,', 'c===`burst`){let n=Math.max((.56+.05*s.burst)*o.D,o.cooldown+.06),', 'continuous jet');
+  b = replaceOne(b, 'speed:5+.25*s.flow,life:.8,damage:L(o.ref*1.02)', 'speed:5+.25*s.flow,life:1.1,damage:L(o.ref*1.02)', 'tidal surge life');
   // Owner request (2026-09-26): the game's own burnt-grass map marks the ground under fire, so the painted effects draw no
   // crater of their own. The burn is stamped deepest at the centre and the ground shows it in stepped layers (light
   // scorch, burnt, charred), with the grass shortest where it burnt deepest; the layers shrink toward the centre as it heals.
@@ -65,7 +73,7 @@ export function applyPaintedVfx(bundle, html) {
   b = replaceOne(b, 'p.y*=1.-bend.b*h*.85;p.y*=bend.a;', 'p.y*=1.-bend.b*h*.85;p.y*=clamp(1.-(1.-bend.a)*3.,0.,1.);', 'burnt grass height');
   b = replaceOne(b, '&&vBurn>.98)discard;', '&&vBurn*3.>.98)discard;', 'burnt grass removal');
   b = replaceOne(b, 'c=mix(c,vec3(.24,.20,.13),vBurn*.7);', 'c=mix(c,vec3(.24,.20,.13),min(1.,vBurn*3.)*.7);', 'burnt grass tint');
-  b = replaceOne(b, 'c=mix(c,vec3(.19,.15,.115),burned*.78);', 'burned+=sin(vWorld.x*3.1+vWorld.z*1.3)*sin(vWorld.z*2.7-vWorld.x*.9)*.035;c=mix(c,vec3(.45,.38,.25),smoothstep(.06,.1,burned)*.55);c=mix(c,vec3(.27,.21,.145),smoothstep(.36,.4,burned)*.8);c=mix(c,vec3(.15,.11,.085),smoothstep(.7,.74,burned)*.9);', 'layered burnt ground');
+  b = replaceOne(b, 'c=mix(c,vec3(.19,.15,.115),burned*.78);', 'burned+=sin(vWorld.x*3.1+vWorld.z*1.3)*sin(vWorld.z*2.7-vWorld.x*.9)*.035;c=mix(c,vec3(.45,.38,.25),smoothstep(.02,.16,burned)*.55);c=mix(c,vec3(.27,.21,.145),smoothstep(.28,.48,burned)*.8);c=mix(c,vec3(.15,.11,.085),smoothstep(.62,.82,burned)*.9);', 'layered burnt ground');
   const h = replaceOne(replaceOne(html, '<h3>สกิลและภาพเอฟเฟกต์</h3>', '<h3>สกิลและภาพเอฟเฟกต์</h3>' + CONTROLS, 'style controls'),
     '</body></html>', STATE_SCRIPT + LAB_LINK_SCRIPT + '</body></html>', 'style state');
   return {bundle: b, html: h};

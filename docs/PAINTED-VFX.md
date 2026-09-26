@@ -58,9 +58,9 @@ The owner rejected a filter over the old effects ("it only adjusts the old skill
 | Skill | Concept | Painted design |
 | --- | --- | --- |
 | Water Shot | water droplet shot | Glossy droplet pulling a smooth, fluttering water tail. On hit: rings on the ground and a few drops thrown up on real arcs. |
-| AQUA RAILGUN | pierce a whole line | One smooth, gently wavering stream with a flowing highlight inside a soft mist. Rings and splash drops at the ends. |
-| PRESSURE JET | continuous high-pressure stream | A thinner stream that throbs with pressure pulses, with a ring and drops where it lands. |
-| TIDAL SURGE | wide wave wall sweeping forward | One sheet of water rushing forward: deep blue under the front, one scalloped foam lip, lighter water behind. |
+| AQUA RAILGUN | pierce a whole line | A giant ball of water fired down the line with a spray-laden wake, bursting where the line ends (rings, splash, thrown drops). |
+| PRESSURE JET | continuous high-pressure stream | A steady cutting stream like a laser: a white core in a racing water sheath, shock rings at the nozzle, pulses racing down it, a fan of spray off the target. It never stops between casts. |
+| TIDAL SURGE | wide wave wall sweeping forward | A giant wave: water swells out of the ground and stands into a tall wall (a row of water columns leaning into a foaming crest, so it reads from any camera angle), rushes forward, then crashes down in foam. |
 | Tide Ring | ripple ring | Two soft lilac ripples spreading over a faint glow. |
 | REPULSION DOME | temporary push dome | Lilac soap-bubble dome, a rim on the ground and push pulses. |
 | VACUUM COLLAPSE | expand, collapse inward, explode | Whirlpool spiral with soft bubbles sucked inward, then a glow and ring burst. |
@@ -101,6 +101,7 @@ The owner rejected a filter over the old effects ("it only adjusts the old skill
 - **Draw order.** Ground decals draw first, by layer. Billboards and ribbon segments are sorted back to front. Depth test is on and depth write is off. `lift` pulls effects on a foe slightly toward the camera.
 - **Inputs are read-only.** Hit areas, sizes, timing and damage are unchanged. Fire timings come from the live fire settings.
 - **Derivatives.** All screen derivatives are taken before any `discard`, which is required for iPad/Metal.
+- **Water evolution timing** (owner request, 2026-09-26; patched in `vfx/painted-style.mjs`): Aqua Railgun lives .5 s (was .3 s; it still hits the line once), Pressure Jet lasts until the next cast so it never stops (same damage per second), Tidal Surge lasts 1.1 s (was .8 s; each foe is still hit once).
 - **Sunfall fall time.** Owner request (2026-09-26): the sun takes 1 s to fall (default `fall` in the fire settings, was .5 s); `vfx/painted-style.mjs` patches the default. Its damage lands when it does.
 - **Burnt ground.** The game already burns the grass under fire (a 96x96 burn map sampled by the ground and grass shaders). The painted effects draw no crater of their own; `vfx/painted-style.mjs` stamps the burn deepest at the centre and shows it in stepped layers (light scorch, burnt, charred), with the grass shortest where it burnt deepest. The layers shrink toward the centre as the ground heals. This applies in both effect styles.
 - **Old style switch.** The old style stays behind Settings > Test > "สีน้ำวาดมือแบบใหม่ (ปิด = เอฟเฟกต์เดิม)", saved as `slime.vfxStyle.v2`, until the owner approves.
