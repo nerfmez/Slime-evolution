@@ -5,7 +5,7 @@ Current rules only; history lives in Git (this file was consolidated on 2026-09-
 ## How the game is built
 
 - `game/` is the locked engine and art input: a **minified** bundle (`game/assets/main-critter-v4.js`) plus assets. Never edit it. Never import an older release, the obsolete Vite root, a published directory or the abandoned elephant build.
-- All changes are **build-time patches** applied in order by `scripts/canon.mjs build`: `pacing/assemble.mjs` → `species/assemble.mjs` → `vfx/restore-godot-style.mjs` → `gameplay/opening-random.mjs` → `audio/default-volume.mjs` → `ui/hud-polish.mjs`, then `species/sprite-clarity.mjs` on monster shaders.
+- All changes are **build-time patches** applied in order by `scripts/canon.mjs build`: `pacing/assemble.mjs` → `species/assemble.mjs` → `vfx/restore-godot-style.mjs` → `gameplay/opening-random.mjs` → `audio/default-volume.mjs` → `ui/hud-polish.mjs` → `vfx/painted-style.mjs`, then `species/sprite-clarity.mjs` on monster shaders.
 - Patches replace exact minified snippets and must fail loudly if the snippet is not found exactly once. No runtime patching, eval or remote wrappers.
 - `CANON.json` hash-locks the `game/` tree, every patch module, the `species/` tree and the assembled runtime tree. When you intentionally change a patch, update its hash and `runtimeTree` in the same commit, and review why the hash changed. Never accept a new hash silently.
 - Deploy `dist/` (from `npm run build`), never `game/` directly.
@@ -40,6 +40,20 @@ Source of truth: `pacing/encounter-director.js`; details in `docs/COZY-PACING.md
 - **Turtle:** size 2.42, approved eight poses, walk palette, guard and shell death. See `docs/POND-TURTLE.md` and `docs/TURTLE-SIZE-8FRAME.md`.
 - **Spark / Water:** preserve sizes, Spark charge/dash and Water Alpha art. See `docs/SPARK-HEDGEHOG.md` and `docs/ENEMY-SIZE.md`.
 - **EXP:** every creature drops its matching EXP animal. See `docs/SPECIES-EXP-ELITES.md`.
+- **Skill effects (prototype, owner request):**
+  - Every skill, fire and its evolutions included, is redrawn from its original concept and card art by `vfx/painted-renderer.mjs`, wired in by `vfx/painted-style.mjs`. A filter over the old effects was rejected.
+  - Look: stepped cel tones, a soft darker same-hue edge (NO black outlines), white paper highlights, paper grain and a watercolour dissolve.
+  - Owner rules (rounds 1–3, see `docs/PAINTED-VFX.md`):
+    - Effects must look natural, never like sculpted geometry. Small particles are soft dots with no outline; no star stickers, speckles or chips.
+    - Tails are never stiff: they are ribbons along the real path.
+    - Fire takes a different form in every branch and never uses flame sticks.
+    - Water is one smooth body. Tidal Surge is one clean layer with no smoke or spray bits.
+    - Fog and smoke are wispy, never lumps.
+    - Use card art for mood only (no faces on orbs).
+    - Review with the target monsters hidden, and look at animated sequences.
+  - The renderer reads combat objects only. Shapes follow the gameplay hit areas; sizes, timing and damage are unchanged.
+  - The old effects stay behind Settings > Test > "สีน้ำวาดมือแบบใหม่" (`slime.vfxStyle.v2`) until the owner approves.
+  - See `docs/PAINTED-VFX.md`.
 - **Sprite clarity:** a bounded, alpha-aware detail filter on monster shaders only. Panda is slightly stronger. Never apply it to the scene, EXP animals or effects.
 - **Opening cards:** the first three skill choices use fresh browser randomness. All later RNG stays deterministic.
 - **Audio:** default 50%, master gain up to 3× with a peak limiter. Saved volume always wins.
@@ -56,6 +70,7 @@ Source of truth: `pacing/encounter-director.js`; details in `docs/COZY-PACING.md
 
 1. `npm test` (all unit/provenance tests) and `npm run build` (must print `CANON VERIFIED`).
 2. Browser suites in **Chromium and WebKit**: `node tests/cozy-regressions.mjs local`, plus the feature's own `*-browser.mjs`. CI (`.github/workflows/`) runs both engines.
+   - Skill effects: `tests/painted-vfx-browser.mjs` (new look) and `tests/vfx-browser.mjs` (old look behind the switch).
    - Cloud containers have no GPU, so a few time-bound suites (`frog-canon`, `water-browser`) can time out locally on both old and new builds. Compare against the base commit before blaming a change, and rely on CI for the final result.
 3. For art or animation changes, review actual in-game captures (animated sequences for attacks). A passing code test does not prove the artwork is correct.
 4. CI is not a physical iPad/Android FPS test. The owner plays on an iPad (Safari/WebKit).
