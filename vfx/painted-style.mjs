@@ -104,6 +104,11 @@ export function applyPaintedVfx(bundle, html) {
     'if(i.kind===`miasma`&&i.fart&&r){i.x=r[0],i.z=r[2];let q=i.puffs[i.puffs.length-1];i.age<i.emit&&(!q||Math.hypot(q.x-r[0],q.z-r[2])>i.r*.9||i.age-q.t>.7)&&i.puffs.push({x:r[0],z:r[2],t:i.age}),i.puffs=i.puffs.filter(p=>i.age-p.t<3)}if([`pool`,`bloom`,`miasma`].includes(i.kind)){if(i.kind===`miasma`&&!i.fart){let r=e.target(n,[i.x,0,i.z]);', 'seeds drop behind the slime');
   b = replaceOne(b, 'if(r.hp>0&&I(r,i)<i.r+r.radius){if(i.targets&&t++>=i.targets)break;Dt(r,i.s,i.kind===`pool`',
     'if(r.hp>0&&(i.fart?i.puffs.some(p=>i.age-p.t>.4&&Math.hypot(r.x-p.x,r.z-p.z)<i.r+r.radius):I(r,i)<i.r+r.radius)){if(i.targets&&t++>=i.targets)break;Dt(r,i.s,i.kind===`pool`', 'sprouted flowers poison foes round them');
+  // Owner request (2026-09-26): the slime can walk in the skill lab (keyboard or the on-screen joystick), so moving skills
+  // (poison seeds, the pressure jet, orbit) can be tried as in play. Skills are cast from where the slime stands.
+  b = replaceOne(b, 'a=Z.active?0:Math.hypot(r,i)', 'a=Math.hypot(r,i)', 'lab walking input');
+  b = replaceOne(b, 'Z.active?Z.sync():(J.playerRadius=_r()', 'Z.active?(Z.lab.player[0]=W.player[0],Z.lab.player[2]=W.player[2],Z.sync()):(J.playerRadius=_r()', 'lab follows the slime');
+  b = replaceOne(b, 'V.addEventListener(`pointerdown`,e=>{Z.active||e.clientX>innerWidth*.55', 'V.addEventListener(`pointerdown`,e=>{e.clientX>innerWidth*.55', 'lab joystick');
   b = replaceOne(b, 'if([`beam`,`jet`,`wave`,`borer`,`cone`].includes(i.kind)){i.speed',
     'if(i.kind===`jet`&&i.follow&&r){i.x=r[0];i.z=r[2];let T=i.lock&&i.lock.hp>0&&Math.hypot(i.lock.x-r[0],i.lock.z-r[2])<i.range+i.lock.radius?i.lock:n.enemies.filter(e=>e.hp>0&&Math.hypot(e.x-r[0],e.z-r[2])<i.range+e.radius).sort((e,t)=>Math.hypot(e.x-r[0],e.z-r[2])-Math.hypot(t.x-r[0],t.z-r[2]))[0];if(T){i.lock=T;let o=T.x-r[0],s=T.z-r[2],c=Math.hypot(o,s)||1;i.dx=o/c;i.dz=s/c;i.length=Math.max(.8,c)}else i.length=i.range}if([`beam`,`jet`,`wave`,`borer`,`cone`].includes(i.kind)){i.speed',
     'pressure jet follows the slime');
