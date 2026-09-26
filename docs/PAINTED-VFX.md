@@ -128,3 +128,10 @@ The owner liked toxin least: the lime goo vanished into the green grass. Toxin i
 - Corrosive Miasma: a creeping cloud of wispy purple venom fog with an acid glow inside and acid bubbles on the ground.
 - Poisoned foes glow acid green with venom and acid bubbles rising off them.
 
+## Toxin round 5 (owner request, 2026-09-26)
+
+- The base skill was redesigned: Toxin Spit is a cluster of venom droplets tumbling round each other as they arc over, shedding drips. On landing a crown of venom splashes up, then the poison soaks into the ground like wet watercolour (a translucent halo, a darker drying rim, no hard edge, no gloss; the owner found the old pool solid and plastic), breathing out thin acid vapour and the odd bubble.
+- Neurotoxin Injection keeps its venom mark; at the end the drop plunges onto the foe, stretching as it falls, and the burst is a flash, a tall crown of venom splashing up and falling back, a shock ring and a turning column of acid vapour over a soaking stain.
+- Plague Bloom is unchanged (the owner's favourite).
+- Corrosive Miasma is now a trail of poison farts in olive drab left behind the slime as it walks (gameplay in `vfx/painted-style.mjs`: clouds are dropped every cloud-width walked, or every .7 s standing still, while the skill is active; each stays 2.2 s and poisons foes inside it on the old .25 s tick). Each cloud puffs out, then hangs as round billows of gas that turn, rise a little and thin away.
+

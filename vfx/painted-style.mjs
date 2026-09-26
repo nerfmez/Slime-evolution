@@ -94,6 +94,16 @@ export function applyPaintedVfx(bundle, html) {
   // Owner request (2026-09-26): damage numbers take the colour of the skill that dealt them (fire keeps the original cream).
   b = replaceOne(b, 'this.numbers.length<48&&this.numbers.push({x:e.x,z:e.z,value:t,age:0})', 'this.numbers.length<48&&this.numbers.push({x:e.x,z:e.z,value:t,age:0,family:this.damageSource||`fire`})', 'damage number family');
   b = replaceOne(b, 'r.strokeStyle=`#5b301c`,r.fillStyle=`#fff0b9`', '(k=>(r.strokeStyle=k[1],r.fillStyle=k[0]))(({water:[`#cdeeff`,`#1e5f99`],tide:[`#ecdcff`,`#5b3b9e`],toxin:[`#dff7a6`,`#3d6b1d`],frost:[`#f2fdff`,`#2f8fb5`],chain:[`#fff6a3`,`#6e5a0c`],orbit:[`#ffd8f4`,`#7b2e6e`]})[e.family]||[`#fff0b9`,`#5b301c`])', 'damage number colours');
+  // Owner request (2026-09-26): CORROSIVE MIASMA becomes a trail of poison farts left behind the slime as it walks. While it is
+  // active (the old 2.65 s + duration mods) the slime drops a cloud (radius .75x the old cloud) whenever it has moved about one
+  // cloud-width, or every .7 s when standing still; each cloud stays where it was dropped for 2.2 s and poisons foes inside it
+  // on the old .25 s tick. The skill is cast at the slime instead of at a foe and no longer chases the pack.
+  b = replaceOne(b, 'c===`corrosion`&&R(e,t,`miasma`,i.x,i.z,{s:{...o,damage:o.damage*.58,slow:Math.min(.45,o.slow+.14),vulnerable:Math.min(.35,o.vulnerable+.12)},r:(1.45+.12*s.contagion)*o.A,life:2.65+.18*e.mods.duration,speed:1.6+.08*s.contagion,interval:.25})',
+    'c===`corrosion`&&R(e,t,`miasma`,l,u,{s:{...o,damage:o.damage*.58,slow:Math.min(.45,o.slow+.14),vulnerable:Math.min(.35,o.vulnerable+.12)},r:(1.45+.12*s.contagion)*o.A*.75,emit:2.65+.18*e.mods.duration,life:2.65+.18*e.mods.duration+2.2,speed:0,interval:.25,fart:1,puffs:[]})', 'poison fart trail');
+  b = replaceOne(b, 'if([`pool`,`bloom`,`miasma`].includes(i.kind)){if(i.kind===`miasma`){let r=e.target(n,[i.x,0,i.z]);',
+    'if(i.kind===`miasma`&&i.fart&&r){i.x=r[0],i.z=r[2];let q=i.puffs[i.puffs.length-1];i.age<i.emit&&(!q||Math.hypot(q.x-r[0],q.z-r[2])>i.r*.9||i.age-q.t>.7)&&i.puffs.push({x:r[0],z:r[2],t:i.age}),i.puffs=i.puffs.filter(p=>i.age-p.t<2.2)}if([`pool`,`bloom`,`miasma`].includes(i.kind)){if(i.kind===`miasma`&&!i.fart){let r=e.target(n,[i.x,0,i.z]);', 'fart clouds drop behind the slime');
+  b = replaceOne(b, 'if(r.hp>0&&I(r,i)<i.r+r.radius){if(i.targets&&t++>=i.targets)break;Dt(r,i.s,i.kind===`pool`',
+    'if(r.hp>0&&(i.fart?i.puffs.some(p=>Math.hypot(r.x-p.x,r.z-p.z)<i.r+r.radius):I(r,i)<i.r+r.radius)){if(i.targets&&t++>=i.targets)break;Dt(r,i.s,i.kind===`pool`', 'fart clouds poison foes inside them');
   b = replaceOne(b, 'if([`beam`,`jet`,`wave`,`borer`,`cone`].includes(i.kind)){i.speed',
     'if(i.kind===`jet`&&i.follow&&r){i.x=r[0];i.z=r[2];let T=i.lock&&i.lock.hp>0&&Math.hypot(i.lock.x-r[0],i.lock.z-r[2])<i.range+i.lock.radius?i.lock:n.enemies.filter(e=>e.hp>0&&Math.hypot(e.x-r[0],e.z-r[2])<i.range+e.radius).sort((e,t)=>Math.hypot(e.x-r[0],e.z-r[2])-Math.hypot(t.x-r[0],t.z-r[2]))[0];if(T){i.lock=T;let o=T.x-r[0],s=T.z-r[2],c=Math.hypot(o,s)||1;i.dx=o/c;i.dz=s/c;i.length=Math.max(.8,c)}else i.length=i.range}if([`beam`,`jet`,`wave`,`borer`,`cone`].includes(i.kind)){i.speed',
     'pressure jet follows the slime');
