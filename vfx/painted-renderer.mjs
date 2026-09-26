@@ -490,14 +490,11 @@ export function createPaintedSkillRenderer(gl) {
     const R = r * (.25 + .8 * (1 - Math.pow(1 - clamp(t / .14), 3)) + .12 * smooth(.14, .6, t)), fl = smooth(.06, .22, t), heat = 1 - smooth(.08, .42, t), ero = smooth(.3, .62, t);
     if (ero < 1) { const c = [e.x, .02, e.z]; at([e.x, R * .4, e.z]); bb(DOME_FIRE, c, R * 1.35 / .9, R * 1.35 / .9, P.blaze, {p: [fl, heat, sq, ero], seed, lift: R * 2.2, edge: .7}); }
     for (let j = 0; j < 3; j++) { const k = clamp((t - .05 - j * .03) / .22); if (k > 0 && k < 1) { const q = [e.x, r * (.15 + .25 * j), e.z]; at(q); bb(GLOW, q, r * (1 + 1.6 * k), r * .06 * (1 - k), P.hot, {alpha: 1 - k, edge: 0, soft: .6, lift: r * 1.5, bias: .5}); } } // shock streaks
-    for (let j = 0; j < 18; j++) { // the dome's top breaks into flames that rise and are eaten away
-      const a = hash(j * 3.1 + seed * 5) * TAU, u = hash(j * 1.7 + seed), el = .5 + 1 * u, born = .3 + .1 * hash(j * 4.4 + seed), rr = r * 1.05;
-      const p0 = [e.x + Math.cos(a) * Math.cos(el) * rr, .1 + Math.sin(el) * rr * .9, e.z + Math.sin(a) * Math.cos(el) * rr * .8];
-      puff(p0, [Math.cos(a) * r * .6, r * (1.2 + u), Math.sin(a) * r * .6 * .8], t - born, .45 + .3 * hash(j * 9.1 + seed), r * .26, r * .16, P.blaze, .7, {rise: 1.6, seed: j + seed * 10, erode: -.3, cool: 1.2, flame: 1.4, sx: .75, sy: 1.5, edge: .4});
-    }
-    for (let j = 0; j < 9; j++) { // smoke billows up out of the fire, darkens, opens holes from the middle and breaks into curling wisps
-      const a = hash(j * 5.7 + seed * 3) * TAU, u = hash(j * 2.9 + seed), born = .22 + .12 * hash(j * 8.3 + seed), p0 = [e.x + Math.cos(a) * r * .45 * u, r * (.6 + .4 * u), e.z + Math.sin(a) * r * .35 * u];
-      puff(p0, [Math.cos(a) * r * .7, r * (.9 + .7 * u), Math.sin(a) * r * .5], t - born, .95 + .35 * hash(j * 4.1 + seed), r * .3, r * .62, P.smoke, 0, {rise: .4, drag: 2.5, seed: j * 5 + seed * 13, erode: 0, smoke: 1, edge: .5, bias: -.02});
+    for (let j = 0; j < 22; j++) { // the dome bursts sideways: the fire mass swells out wide and low, tears into long streaks that fly apart and vanish; beige smoke rides inside it
+      const a = (j / 22 + hash(j * 3.1 + seed) * .08) * TAU, u = hash(j * 1.7 + seed), smoke = j % 4 === 3, born = .18 + .08 * hash(j * 4.4 + seed);
+      const p0 = [e.x + Math.cos(a) * r * .5, r * (.25 + .9 * u), e.z + Math.sin(a) * r * .4], sp = r * (2.2 + 1.3 * hash(j * 9.1 + seed));
+      puff(p0, [Math.cos(a) * sp, r * (.5 + .9 * u), Math.sin(a) * sp * .8], t - born, (smoke ? .75 : .6) + .25 * hash(j * 6.7 + seed), r * .36, r * (smoke ? .62 : .55), smoke ? P.smoke : P.blaze, smoke ? 0 : .9,
+        {drag: 3.2, rise: .25, sx: 1.45, sy: 1, seed: j * 7 + seed * 11, erode: 0, smoke: 1, cool: 1.1, edge: smoke ? .5 : .4, bias: smoke ? -.03 : 0});
     }
     for (let j = 0; j < 14; j++) { // ground dust rolling out from the dome's base
       const a = j * TAU / 14 + hash(j + seed) * .4, sp = r * (1.3 + .6 * hash(j * 2.3 + seed)), born = .08 + .04 * hash(j * 5.5 + seed);
