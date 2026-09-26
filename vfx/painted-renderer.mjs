@@ -480,21 +480,21 @@ export function createPaintedSkillRenderer(gl) {
     const k = t / life; if (k <= 0 || k >= 1) return;
     const dr = o.drag ?? 3.5, m = (1 - Math.exp(-dr * t)) / dr, c = [p0[0] + v[0] * m, p0[1] + v[1] * m + (o.rise ?? 0) * t * t, p0[2] + v[2] * m];
     const sz = mix(s0, s1, 1 - Math.pow(1 - k, 2.2)), ero = smooth(o.erode ?? .35, 1, k), heat = clamp(heat0 * (1 - k * (o.cool ?? 1.6)));
-    at(c); bb(PUFF, c, sz * (o.sx ?? 1), sz * (o.sy ?? 1), pal, {alpha: o.alpha ?? 1, p: [ero, heat, o.flame ?? 0, o.smoke ?? 0], seed: o.seed ?? 0, lift: o.lift ?? .2, edge: o.edge ?? .75, bias: o.bias ?? 0});
+    at(c); bb(PUFF, c, sz * (o.sx ?? 1), sz * (o.sy ?? 1), pal, {rot: (o.spin ?? 0) * t, alpha: o.alpha ?? 1, p: [ero, heat, o.flame ?? 0, o.smoke ?? 0], seed: o.seed ?? 0, lift: o.lift ?? .2, edge: o.edge ?? .75, bias: o.bias ?? 0});
   }
-  function fireBlast(e) { // Inferno burst: a white-hot dome swells on the ground, turns to fire licking up its surface, then its top breaks into rising flames; dust rolls out along the ground
+  function fireBlast(e) { // Inferno burst: a white-hot dome swells on the ground, turns to fire and dissolves; the blast throws spinning balls of smoke outward and dust rolls along the ground
     const t = e.age, r = e.r || 1, seed = hash(e.x * .9 + e.z * 1.7), sq = Math.abs(cam.u[1]) > .05 ? Math.abs(cam.f[1]) : .62;
     disc(LIQUID, e.x, e.z, r * 1.05, P.scorch, {alpha: .55 * smooth(0, .08, t) * (1 - smooth(1.2, 1.65, t)), p: [.55, 2, 1, 0], layer: 0, seed, dissolve: smooth(1.2, 1.65, t), edge: .5});
     glowDecal(e.x, e.z, r * 1.8, P.fire, .8 * (1 - smooth(.08, .6, t)));
     const hz = 1 - smooth(.1, .7, t); if (hz > 0) { const g = [e.x, r * .45, e.z]; at(g); glow(g, r * 2.4, P.ember, .45 * hz, {lift: .2, bias: -.2}); } // red-hot haze
-    const R = r * (.25 + .8 * (1 - Math.pow(1 - clamp(t / .14), 3)) + .12 * smooth(.14, .6, t)), fl = smooth(.06, .22, t), heat = 1 - smooth(.08, .42, t), ero = smooth(.3, .62, t);
+    const R = r * (.25 + .8 * (1 - Math.pow(1 - clamp(t / .14), 3)) + .1 * smooth(.14, .6, t)), fl = smooth(.06, .22, t), heat = 1 - smooth(.08, .45, t), ero = smooth(.32, .85, t);
     if (ero < 1) { const c = [e.x, .02, e.z]; at([e.x, R * .4, e.z]); bb(DOME_FIRE, c, R * 1.35 / .9, R * 1.35 / .9, P.blaze, {p: [fl, heat, sq, ero], seed, lift: R * 2.2, edge: .7}); }
     for (let j = 0; j < 3; j++) { const k = clamp((t - .05 - j * .03) / .22); if (k > 0 && k < 1) { const q = [e.x, r * (.15 + .25 * j), e.z]; at(q); bb(GLOW, q, r * (1 + 1.6 * k), r * .06 * (1 - k), P.hot, {alpha: 1 - k, edge: 0, soft: .6, lift: r * 1.5, bias: .5}); } } // shock streaks
-    for (let j = 0; j < 22; j++) { // the dome bursts sideways: the fire mass swells out wide and low, tears into long streaks that fly apart and vanish; beige smoke rides inside it
-      const a = (j / 22 + hash(j * 3.1 + seed) * .08) * TAU, u = hash(j * 1.7 + seed), smoke = j % 4 === 3, born = .18 + .08 * hash(j * 4.4 + seed);
-      const p0 = [e.x + Math.cos(a) * r * .5, r * (.25 + .9 * u), e.z + Math.sin(a) * r * .4], sp = r * (2.2 + 1.3 * hash(j * 9.1 + seed));
-      puff(p0, [Math.cos(a) * sp, r * (.5 + .9 * u), Math.sin(a) * sp * .8], t - born, (smoke ? .75 : .6) + .25 * hash(j * 6.7 + seed), r * .36, r * (smoke ? .62 : .55), smoke ? P.smoke : P.blaze, smoke ? 0 : .9,
-        {drag: 3.2, rise: .25, sx: 1.45, sy: 1, seed: j * 7 + seed * 11, erode: 0, smoke: 1, cool: 1.1, edge: smoke ? .5 : .4, bias: smoke ? -.03 : 0});
+    for (let j = 0; j < 10; j++) { // smoke thrown out by the blast: round balls flung from the dome, slowed by the air, each spinning as a whole while it dissolves
+      const a = (j / 10 + hash(j * 3.1 + seed) * .06) * TAU, u = hash(j * 1.7 + seed), el = .1 + .8 * u, born = .15 + .05 * hash(j * 4.4 + seed), sp = r * (3.5 + 2 * hash(j * 9.1 + seed));
+      const dir = [Math.cos(a) * Math.cos(el), Math.sin(el), Math.sin(a) * Math.cos(el) * .8], p0 = [e.x + dir[0] * r * 1.05, .15 + dir[1] * r, e.z + dir[2] * r * 1.05];
+      puff(p0, [dir[0] * sp, dir[1] * sp * .8, dir[2] * sp], t - born, .8 + .3 * hash(j * 6.7 + seed), r * .2, r * .42, P.smoke, 0,
+        {drag: 5, rise: .2, seed: j * 7 + seed * 11, erode: 0, smoke: 1, spin: (hash(j * 2.2 + seed) < .5 ? -1 : 1) * (1.2 + hash(j * 5.3 + seed)), edge: .5, bias: -.02});
     }
     for (let j = 0; j < 14; j++) { // ground dust rolling out from the dome's base
       const a = j * TAU / 14 + hash(j + seed) * .4, sp = r * (1.3 + .6 * hash(j * 2.3 + seed)), born = .08 + .04 * hash(j * 5.5 + seed);
@@ -815,8 +815,7 @@ void main(){
   float F=m*1.25+(n-.5)*1.3*(.4+y01)-.34;
   d=-F*.45;tone=clamp(F*1.25+(n-.5)*.5+(1.-y01)*.12-ax*.15,0.,1.);fill=smoothstep(0.,.1,y01-.14*ax*ax+.015);
  }else if(k==44){ // a cel-shaded puff of fire, smoke or dust: a lit ball that noise eats away as it ages (P.x erosion 0..1, P.y heat 0..1, P.z flame streaks, P.w smoke mode: holes open in the middle first, then it breaks into thin curling wisps and darkens)
-  float ca=cos(P.w*P.x*1.6),sa=sin(P.w*P.x*1.6);vec2 qr=mat2(ca,-sa,sa,ca)*q;
-  vec2 nq=qr*vec2(1.7,1.7-P.z*.9)+vec2(0.,-P.z*T*1.2);
+  vec2 nq=q*vec2(1.7,1.7-P.z*.9)+vec2(0.,-P.z*T*1.2);
   vec2 wq=(nq+(vec2(fbm(nq*.8+seed*3.1),fbm(nq*.8-seed*1.7))-.5)*1.2*P.w)*(1.-P.w*.45);
   float nz=fbm(wq+seed*7.3)*(.7+.25*P.w)+fbm(wq*2.1-seed*2.9)*(.3-.25*P.w),rr=r/.92,lump=fbm(dir*2.3+seed*5.)-.5;
   float lit=clamp(dot(vec3(q/.92,sqrt(max(0.,1.-rr*rr))),vec3(-.42,.56,.72)),0.,1.);
@@ -831,7 +830,8 @@ void main(){
  }else if(k==45){ // a dome of fire on the ground: a round top over the front half of its base ellipse, flames licking up its surface (P.x flames 0..1, P.y heat 0..1, P.z base squash = sin of camera pitch, P.w erosion 0..1)
   float t=T*1.3;vec2 p=vQ*1.35,pp=vec2(p.x,p.y<0.?p.y/max(P.z,.2):p.y);float rho=length(pp)/.9,up=max(p.y,0.);
   float n=fbm(vec2(p.x*3.+seed,p.y*1.8-t*2.6))*.6+fbm(vec2(p.x*6.2-seed,p.y*3.8-t*4.))*.4;
-  float F=(1.-rho)*1.2+(n-.5)*P.x*(.3+up*1.1)*step(0.,p.y)*1.3-P.w*(1.3+up*.5)+(n-.5)*P.w*1.1-smoothstep(1.2,1.33,max(abs(p.x),p.y))*2.;
+  float F=(1.-rho)*1.2+(n-.5)*P.x*(.3+up*1.1)*step(0.,p.y)*1.3-smoothstep(1.2,1.33,max(abs(p.x),p.y))*2.;
+  if(P.w>0.){float m=fbm(pp*1.6+seed*4.)*.7+fbm(pp*3.3-seed)*.3,rim=pow(1.-abs(m-.5)*2.,2.5),keep=mix(m,rim,smoothstep(.3,.7,P.w))+(rho-.5)*P.w*.5;F=min(F,(keep-mix(.2,1.05,pow(P.w,.8)))*1.6);}
   d=-F*.45;
   float lit=clamp(dot(vec3(pp/.9,sqrt(max(0.,1.-rho*rho))),vec3(-.35,.55,.76)),0.,1.);
   tone=clamp(.12+lit*.45+(n-.5)*1.3*P.x+(P.y-.5)*.5+(1.-rho)*.2,0.,1.);
