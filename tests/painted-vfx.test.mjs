@@ -57,11 +57,11 @@ test('every skill, evolution and fire effect is painted by the new renderer', ()
 
 test('fire takes a clear, different form in every branch and never uses flame sticks or swirling ribbons (owner feedback)', () => {
   const vfx = createPaintedSkillRenderer(null), FLAME_STICKS = [2, 23], FIRE_RIBBON = 31;
-  const FIRELINE = 37, ROCK = 39, FLAMEBALL = 40, SUN = 41, EXPLODE = 42, TORNADO = 43, PUFF = 44;
+  const FIRELINE = 37, ROCK = 39, FLAMEBALL = 40, SUN = 41, EXPLODE = 42, TORNADO = 43, PUFF = 44, DOME_FIRE = 45;
   const branches = {
     shot: [{projectiles: [{x: 0, z: 0, y: .36, tx: 3, tz: 0, life: 1.5}]}, [FLAMEBALL]],
     scatter: [{projectiles: [{x: 1, z: 0, vx: 5.8, vz: 0, life: .5, ember: true}]}, [FLAMEBALL]],
-    blast: [{fx: [{type: 'blast', x: 0, z: 0, r: 1, age: .2}]}, [PUFF]],
+    blast: [{fx: [{type: 'blast', x: 0, z: 0, r: 1, age: .2}]}, [DOME_FIRE, PUFF]],
     burn: [{patches: [{x: 0, z: 0, r: .8, age: .5, life: 1}]}, [FIRELINE]],
     sunfall: [{events: [{type: 'sun', x: 0, z: 0, age: .2, delay: .5, s: {radius: 1.4}}]}, [SUN]],
     sunburst: [{fx: [{type: 'sun', x: 0, z: 0, r: 1.4, age: .3}]}, [EXPLODE]],
@@ -76,9 +76,9 @@ test('fire takes a clear, different form in every branch and never uses flame st
     assert.ok(!shapes.has(FIRE_RIBBON), name + ' has no swirling fire ribbons');
     for (const s of want) assert.ok(shapes.has(s), name + ' uses its own form ' + s);
   }
-  // Blast is a burst of many cel puffs (fire, smoke, dust), as in the owner's reference clips.
-  const blast = vfx.plan(branches.blast[0], {}, 1, () => true, {vp: VP});
-  assert.ok(blast.filter(it => it.v[3] === PUFF).length >= 20, 'blast is built from many puffs');
+  // Blast is a dome of fire on the ground that breaks into rising flames, as in the owner's reference clip.
+  const blast = vfx.plan({fx: [{type: 'blast', x: 0, z: 0, r: 1, age: .4}]}, {}, 1, () => true, {vp: VP});
+  assert.ok(blast.filter(it => it.v[3] === PUFF).length >= 12, 'the dome breaks into many rising flames');
   // The sun is a sun: its disc and corona, not an explosion, while it falls.
   const sun = vfx.plan(branches.sunfall[0], {}, 1, () => true, {vp: VP});
   assert.ok(!sun.some(it => it.v[3] === EXPLODE));

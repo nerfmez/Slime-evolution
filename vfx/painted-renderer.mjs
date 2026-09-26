@@ -21,7 +21,7 @@ export function createPaintedSkillRenderer(gl) {
   const BLOB = 0, RING = 1, DROP = 2, SHARD = 4, SPIRAL = 9, BOLT = 11, FAN = 12, FLOWER = 13, RIBBON = 17, DOME = 18,
     DRILL = 19, COLUMN = 20, LIQUID = 26, SURF = 29,
     WATER_R = 30, FIRE_R = 31, GLOW_R = 32, GOO_R = 33, FOG = 35, FIRELINE = 37, GLOW = 38, ROCK = 39,
-    FLAMEBALL = 40, SUN = 41, EXPLODE = 42, TORNADO = 43, PUFF = 44;
+    FLAMEBALL = 40, SUN = 41, EXPLODE = 42, TORNADO = 43, PUFF = 44, DOME_FIRE = 45;
   // Palettes: light / mid / dark wash. The pigment edge is derived from the dark wash.
   const P = {
     shadow: tones('#6f8a4c', '#5f7a40', '#4c6533'),
@@ -482,29 +482,24 @@ export function createPaintedSkillRenderer(gl) {
     const sz = mix(s0, s1, 1 - Math.pow(1 - k, 2.2)), ero = smooth(o.erode ?? .35, 1, k), heat = clamp(heat0 * (1 - k * (o.cool ?? 1.6)));
     at(c); bb(PUFF, c, sz * (o.sx ?? 1), sz * (o.sy ?? 1), pal, {alpha: o.alpha ?? 1, p: [ero, heat, o.flame ?? 0, 0], seed: o.seed ?? 0, lift: o.lift ?? .2, edge: o.edge ?? .75, bias: o.bias ?? 0});
   }
-  function fireBlast(e) { // Inferno burst: a white flash, a white-hot dome, shock streaks, then a mass of cel fire and smoke that breaks up and rises, dust on the ground
-    const t = e.age, r = e.r || 1, seed = hash(e.x * .9 + e.z * 1.7), c0 = [e.x, .1, e.z];
+  function fireBlast(e) { // Inferno burst: a white-hot dome swells on the ground, turns to fire licking up its surface, then its top breaks into rising flames; dust rolls out along the ground
+    const t = e.age, r = e.r || 1, seed = hash(e.x * .9 + e.z * 1.7), sq = Math.abs(cam.u[1]) > .05 ? Math.abs(cam.f[1]) : .62;
     disc(LIQUID, e.x, e.z, r * 1.05, P.scorch, {alpha: .55 * smooth(0, .08, t) * (1 - smooth(1.2, 1.65, t)), p: [.55, 2, 1, 0], layer: 0, seed, dissolve: smooth(1.2, 1.65, t), edge: .5});
     glowDecal(e.x, e.z, r * 1.8, P.fire, .8 * (1 - smooth(.08, .6, t)));
-    const hz = 1 - smooth(.1, .7, t); if (hz > 0) { const g = [e.x, r * .5, e.z]; at(g); glow(g, r * 2.6, P.ember, .45 * hz, {lift: .2, bias: -.2}); } // red-hot haze
-    if (t < .05) { const g = [e.x, .35, e.z]; at(g); glow(g, r * 3.2, P.hot, 1, {lift: .6, bias: 1}); } // the flash
-    const dk = clamp(t / .12); if (dk < 1) { // the white-hot dome swells, then breaks apart into the fire below
-      const R = r * (.4 + .45 * smooth(0, .5, dk)), d = [e.x, R * .5, e.z]; at(d);
-      glow(d, R * 1.5, P.hot, 1 - smooth(.5, 1, dk), {lift: .3, bias: .29});
-      bb(PUFF, d, R * .9, R * .9, P.hot, {alpha: 1 - smooth(.6, 1, dk), p: [smooth(.55, 1, dk) * .8, 1, 0, 0], seed, lift: .3, edge: 0, soft: .4, bias: .3});
+    const hz = 1 - smooth(.1, .7, t); if (hz > 0) { const g = [e.x, r * .45, e.z]; at(g); glow(g, r * 2.4, P.ember, .45 * hz, {lift: .2, bias: -.2}); } // red-hot haze
+    const R = r * (.25 + .8 * (1 - Math.pow(1 - clamp(t / .14), 3)) + .12 * smooth(.14, .6, t)), fl = smooth(.06, .22, t), heat = 1 - smooth(.08, .42, t), ero = smooth(.3, .62, t);
+    if (ero < 1) { const c = [e.x, .02, e.z]; at([e.x, R * .4, e.z]); bb(DOME_FIRE, c, R * 1.35 / .9, R * 1.35 / .9, P.blaze, {p: [fl, heat, sq, ero], seed, lift: R * 1.1, edge: .7}); }
+    for (let j = 0; j < 3; j++) { const k = clamp((t - .05 - j * .03) / .22); if (k > 0 && k < 1) { const q = [e.x, r * (.15 + .25 * j), e.z]; at(q); bb(GLOW, q, r * (1 + 1.6 * k), r * .06 * (1 - k), P.hot, {alpha: 1 - k, edge: 0, soft: .6, lift: r * 1.5, bias: .5}); } } // shock streaks
+    for (let j = 0; j < 18; j++) { // the dome's top breaks into flames that rise and are eaten away
+      const a = hash(j * 3.1 + seed * 5) * TAU, u = hash(j * 1.7 + seed), el = .5 + 1 * u, born = .3 + .1 * hash(j * 4.4 + seed), rr = r * 1.05;
+      const p0 = [e.x + Math.cos(a) * Math.cos(el) * rr, .1 + Math.sin(el) * rr * .9, e.z + Math.sin(a) * Math.cos(el) * rr * .8];
+      puff(p0, [Math.cos(a) * r * .6, r * (1.2 + u), Math.sin(a) * r * .6 * .8], t - born, .45 + .3 * hash(j * 9.1 + seed), r * .26, r * .16, P.blaze, .7, {rise: 1.6, seed: j + seed * 10, erode: -.3, cool: 1.2, flame: 1.4, sx: .75, sy: 1.5, edge: .4});
     }
-    for (let j = 0; j < 3; j++) { const k = clamp((t - .03 - j * .025) / .2); if (k > 0 && k < 1) { const q = [e.x, r * (.18 + .22 * j), e.z]; at(q); bb(GLOW, q, r * (.8 + 1.4 * k), r * .07 * (1 - k), P.hot, {alpha: 1 - k, edge: 0, soft: .6, lift: .5, bias: .5}); } } // shock streaks
-    for (let j = 0; j < 40; j++) { // the fire mass: cel puffs flung up and out, cooling from white-hot to orange; a few are smoke
-      const h = hash(j * 7.3 + seed), a = hash(j * 3.1 + seed * 5) * TAU, el = .25 + .9 * hash(j * 1.7 + seed), sp = r * (1.4 + 1.8 * hash(j * 9.1 + seed)), born = .08 + .06 * hash(j * 4.4 + seed);
-      const v = [Math.cos(a) * Math.cos(el) * sp, Math.sin(el) * sp * 1.2, Math.sin(a) * Math.cos(el) * sp * .8], smoke = h < .1;
-      puff([e.x + Math.cos(a) * r * .15, .25, e.z + Math.sin(a) * r * .15], v, t - born, smoke ? 1.1 : .6 + .35 * h, r * .18, r * (smoke ? .42 : .32), smoke ? P.smoke : P.blaze, smoke ? 0 : 1, {rise: smoke ? .6 : 1.6, seed: j + seed * 10, erode: smoke ? .2 : .05, cool: smoke ? 1.6 : .8, sy: smoke ? 1 : 1.15, flame: smoke ? 0 : 1, bias: smoke ? -.05 : 0, edge: smoke ? .6 : .35, alpha: smoke ? .8 : 1});
-      if (!smoke && j % 3 === 0 && t - born > 0 && t - born < .5) { const q = [e.x + Math.cos(a) * r * .3, r * .5 + (t - born) * r, e.z + Math.sin(a) * r * .3]; at(q); glow(q, r * .7, P.blaze, .35 * (1 - (t - born) / .5), {bias: -.1}); } // the fire glows
+    for (let j = 0; j < 14; j++) { // ground dust rolling out from the dome's base
+      const a = j * TAU / 14 + hash(j + seed) * .4, sp = r * (2 + hash(j * 2.3 + seed)), born = .08 + .04 * hash(j * 5.5 + seed);
+      puff([e.x + Math.cos(a) * r * .8, .08, e.z + Math.sin(a) * r * .65], [Math.cos(a) * sp, .05, Math.sin(a) * sp * .8], t - born, .6 + .25 * hash(j * 6.1 + seed), r * .18, r * .34, P.dust, 0, {drag: 3.5, sx: 1.5, sy: .75, seed: j * 3 + seed * 7, erode: .1, lift: .05, alpha: .85});
     }
-    for (let j = 0; j < 12; j++) { // ground dust rolling outward
-      const a = j * TAU / 12 + hash(j + seed) * .5, sp = r * (2.2 + hash(j * 2.3 + seed)), born = .1 + .05 * hash(j * 5.5 + seed);
-      puff([e.x, .1, e.z], [Math.cos(a) * sp, .1, Math.sin(a) * sp * .8], t - born, .55 + .2 * hash(j * 6.1 + seed), r * .12, r * .24, P.dust, 0, {drag: 3, sx: 1.5, sy: .7, seed: j * 3 + seed * 7, erode: .1, lift: .05, alpha: .8});
-    }
-    if (t < .9) for (let j = 0; j < 8; j++) { const an = j * TAU / 8 + seed * 5 + hash(j * 7 + seed) * .6, sp = 3 + 2 * hash(j + seed); ember([e.x, .4, e.z], [Math.cos(an) * sp, 2.8 + 2 * hash(j * 3 + seed), Math.sin(an) * sp], Math.max(0, t - .1), .035 + .02 * hash(j * 5 + seed), 1 - smooth(.5, .9, t), j); }
+    if (t > .14 && t < .9) for (let j = 0; j < 8; j++) { const an = j * TAU / 8 + seed * 5 + hash(j * 7 + seed) * .6, sp = 3 + 2 * hash(j + seed); ember([e.x, .5, e.z], [Math.cos(an) * sp, 3 + 2 * hash(j * 3 + seed), Math.sin(an) * sp], t - .12, .035 + .02 * hash(j * 5 + seed), 1 - smooth(.5, .9, t), j); }
   }
   function firePatch(t, i) { // BURN: the ground keeps burning — a scorched stain, a low line of licking fire, rising embers
     const r = t.r || .8, fade = clamp((t.life ?? 1) * 2) * smooth(0, .15, t.age ?? 1), seed = hash(t.x * 1.3 + t.z * .7 + i);
@@ -824,6 +819,14 @@ void main(){
   float F=(1.-rr)*1.05+(nz-.5)*(.55+P.x*.7+P.z*.45)-P.x*1.05;
   d=-F*.5;tone=clamp(lit*.75+(nz-.5)*.4+(P.y-.5)*.55+.1,0.,1.);
   hd=P.y>0.?1.02-lit*P.y*1.1-(nz-.5)*.35:9.;
+ }else if(k==45){ // a dome of fire on the ground: a round top over the front half of its base ellipse, flames licking up its surface (P.x flames 0..1, P.y heat 0..1, P.z base squash = sin of camera pitch, P.w erosion 0..1)
+  float t=T*1.3;vec2 p=vQ*1.35,pp=vec2(p.x,p.y<0.?p.y/max(P.z,.2):p.y);float rho=length(pp)/.9,up=max(p.y,0.);
+  float n=fbm(vec2(p.x*3.+seed,p.y*1.8-t*2.6))*.6+fbm(vec2(p.x*6.2-seed,p.y*3.8-t*4.))*.4;
+  float F=(1.-rho)*1.2+(n-.5)*P.x*(.3+up*1.1)*step(0.,p.y)*1.3-P.w*(1.3+up*.5)+(n-.5)*P.w*1.1-smoothstep(1.2,1.33,max(abs(p.x),p.y))*2.;
+  d=-F*.45;
+  float lit=clamp(dot(vec3(pp/.9,sqrt(max(0.,1.-rho*rho))),vec3(-.35,.55,.76)),0.,1.);
+  tone=clamp(.12+lit*.45+(n-.5)*1.3*P.x+(P.y-.5)*.5+(1.-rho)*.2,0.,1.);
+  hd=1.05-P.y*1.2-lit*P.y*.3-(n-.5)*.9*P.x-up*.15*P.x;
  }else if(k==38){ // soft glow: light without edges
   float lr=length(vQ);d=lr-.98;tone=clamp(1.-lr*1.15,0.,1.);fill=pow(clamp(1.-lr,0.,1.),1.5);
  }else if(k==39){ // meteor rock: a lumpy stone with glowing cracks
