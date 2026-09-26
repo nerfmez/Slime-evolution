@@ -26,7 +26,7 @@ export function createPaintedSkillRenderer(gl) {
   const P = {
     shadow: tones('#6f8a4c', '#5f7a40', '#4c6533'),
     water: tones('#f1fbff', '#a9ddf4', '#5aa6da'), waterDeep: tones('#c4e8f8', '#74c0e8', '#3d88c6'), foam: tones('#ffffff', '#eaf7fd', '#b2dbef'), jet: tones('#ffffff', '#d3f0fd', '#94cdef'),
-    tide: tones('#f5eeff', '#d2baf5', '#9f7bdb'), tideDeep: tones('#e0cdf9', '#ae8ee8', '#7753c2'),
+    tide: tones('#f5eeff', '#d2baf5', '#9f7bdb'), tideDeep: tones('#e0cdf9', '#ae8ee8', '#7753c2'), tideFoam: tones('#fdfaff', '#ece0ff', '#b99ce9'),
     fire: tones('#ffdc7a', '#ff9838', '#e4502a'), flame: tones('#ffcd6a', '#f7853a', '#d4422a'), ember: tones('#ffa45c', '#b93a2b', '#5e1d1a'),
     hot: tones('#fffbe6', '#fff0b0', '#ffc860'), dust: tones('#eadfce', '#bfa98f', '#86705c'), stone: tones('#d8c6ad', '#a68e74', '#76604c'), dustLight: tones('#f6efe4', '#dccbb4', '#ad977e'), blaze: tones('#fff3b8', '#ffb22e', '#f0561e'), smoke: tones('#f7f1e8', '#ddd1c3', '#b4a292'), scorch: tones('#cda57e', '#9d6c4d', '#6d4433'),
     toxin: tones('#f1d6ff', '#b25ae6', '#5e1f8f'), toxinDeep: tones('#d7a3f4', '#8633c2', '#5a2a8a'), toxinShade: tones('#dcb8f2', '#9a55cc', '#5a2488'), acid: tones('#f6ffd0', '#bdf545', '#62a818'), stem: tones('#dff2a0', '#8fbf45', '#4f7a22'),
@@ -276,41 +276,59 @@ export function createPaintedSkillRenderer(gl) {
       const q = [c0[0] - d[0] * k * .9, c0[1] + k * .6 - k * k * .5, c0[2] - d[2] * k * .9]; at(q); mote(q, H * .09 * (1 - .5 * k), P.foam, A * rise * (1 - k), {bias: .02}); }
     if (crash > 0) for (let j = 0; j < 12; j++) { const u = (j / 11 - .5) * 1.9, q0 = at3(rows - 1, u); puff(q0, [d[0] * 3, -.5, d[2] * 3], (p - .7) * t.life, .5, H * .25, H * .5, P.foam, 0, {drag: 4, seed: seed * 9 + j, erode: .2, lift: .1}); } // the lip crashes down in foam
   }
-  // ---------------------------------------------------------------- Tide: lilac ripples, a bubble dome, a whirlpool
-  function tideRing(t) { // Tide Ring: two soft ripples spreading over the ground
-    const p = clamp(t.age / t.life), R = Math.max(.05, t.r * Math.min(1, p * 3)), A = 1 - smooth(.6, 1, p), seed = hash(t.x + t.z * 1.7);
-    disc(GLOW, t.x, t.z, R * 1.05, P.tide, {alpha: .3 * A, layer: 0, edge: 0, soft: 1});
-    disc(RING, t.x, t.z, R * 1.08, P.tideDeep, {alpha: .9 * A, p: [.86, .08, .7, .03], layer: 2, seed, rag: .4, soft: .15});
-    disc(RING, t.x, t.z, R * 1.08, P.tide, {alpha: .7 * A * smooth(.12, .35, p), p: [.6, .05, .6, .03], layer: 3, seed: seed + 1, rag: .5, soft: .25});
+  // ---------------------------------------------------------------- Tide: lilac water that rises, rolls and throws spray (owner round 6: more motion)
+  // A raised crest of water running round a circle: a lilac body with a white foam lip, drawn as two ribbons in true perspective.
+  function crest(x, z, R, h, A, seed, pal = P.tide, foam = true) {
+    if (R < .05 || A <= 0) return; const n = Math.max(16, Math.min(44, Math.round(R * 10))), body = [], bw = [], lip = [], lw = [];
+    for (let i = 0; i <= n; i++) { const an = i / n * TAU, wob = 1 + .06 * Math.sin(an * 5 + now * 6 + seed * 7), hh = h * (.75 + .25 * Math.sin(an * 3 - now * 5 + seed)); body.push([x + Math.cos(an) * R, .02 + hh * .45 * wob, z + Math.sin(an) * R]); bw.push(hh * .5 + .01); lip.push([x + Math.cos(an) * R * 1.01, .03 + hh * .9 * wob, z + Math.sin(an) * R * 1.01]); lw.push(hh * .16 + .008); }
+    at([x, 0, z]); ribbon(WATER_R, body, bw, pal, {alpha: A, seed, p: [2.2, 1, 0, 0], edge: .25, key: x * cam.f[0] + z * cam.f[2]});
+    if (foam) ribbon(GLOW_R, lip, lw, P.tideFoam, {alpha: A * .95, seed: seed + 1, soft: .3, edge: 0, key: x * cam.f[0] + z * cam.f[2] + .01});
   }
-  function tideDome(t) { // REPULSION DOME: a lilac soap-bubble shield that pushes out in pulses
-    const p = clamp(t.age / t.life), r = t.r, A = smooth(0, .1, p) * (1 - smooth(.82, 1, p)), R = r * (.35 + .65 * smooth(0, .16, p)), seed = hash(t.x * 1.3 + t.z);
-    disc(GLOW, t.x, t.z, R, P.tide, {alpha: .35 * A, layer: 0, edge: 0, soft: 1});
+  function spray(x, z, R, n, tt, A, seed, up = 2.6, out = 1.6) { // drops thrown off a crest, outward
+    for (let j = 0; j < n; j++) { const an = j * TAU / n + seed * 5 + hash(j + seed) * .4, sp = out * (.7 + .6 * hash(j * 3 + seed)); thrown([x + Math.cos(an) * R, .15, z + Math.sin(an) * R], [Math.cos(an) * sp, up * (.7 + .5 * hash(j * 7 + seed)), Math.sin(an) * sp], tt, j % 3 ? P.tide : P.tideFoam, .045, WATER_R, {alpha: A, seed: j, g: 11, tail: .07, rp: [0, .9, 0, 0]}); }
+  }
+  function tideRing(t) { // Tide Ring: a crest of lilac water with a foam lip runs outward over a wet shine, throwing spray, then sinks back
+    const p = clamp(t.age / t.life), grow = 1 - Math.pow(1 - Math.min(1, p * 3), 2), R = Math.max(.05, t.r * grow), A = 1 - smooth(.55, 1, p), seed = hash(t.x + t.z * 1.7), h = (t.r > 4 ? .5 : .35) * (1 - smooth(.3, 1, p)) + .04;
+    disc(GLOW, t.x, t.z, R * 1.05, P.tide, {alpha: .35 * A, layer: 0, edge: 0, soft: 1});
+    disc(LIQUID, t.x, t.z, R * .98, P.tide, {alpha: .3 * A, p: [.3, 5, 0, 0], layer: 1, seed, shine: .7, edge: .2, soft: .3}); // the wet shine it leaves
+    disc(RING, t.x, t.z, R * 1.08, P.tideDeep, {alpha: .7 * A, p: [.86, .05, .7, .03], layer: 2, seed, rag: .4, soft: .2}); // the ripple on the ground under the crest, on the damage radius
+    disc(RING, t.x, t.z, R * .72, P.tide, {alpha: .6 * A * smooth(.1, .3, p), p: [.8, .05, .6, .03], layer: 2, seed: seed + 1, rag: .5, soft: .3}); // a smaller ripple behind it
+    crest(t.x, t.z, R, h, A, seed);
+    if (t.r < 6) spray(t.x, t.z, R * .95, 10, t.age, A * (1 - smooth(.4, .8, p)), seed, 2.4, 1.8);
+  }
+  function tideDome(t) { // REPULSION DOME: a lilac bubble shield; each pulse it swells, a shockwave of water rolls out over the ground and drops are flung away; bubbles drift up inside it
+    const p = clamp(t.age / t.life), r = t.r, A = smooth(0, .1, p) * (1 - smooth(.82, 1, p)), k = (t.age % .5) / .5, kick = Math.exp(-k * 7), R = r * (.35 + .65 * smooth(0, .16, p)) * (1 + .07 * kick), seed = hash(t.x * 1.3 + t.z);
+    disc(GLOW, t.x, t.z, R * 1.1, P.tide, {alpha: (.3 + .25 * kick) * A, layer: 0, edge: 0, soft: 1});
     disc(RING, t.x, t.z, R, P.tideDeep, {alpha: .9 * A, p: [.9, .055, .35, .02], layer: 2, seed, rag: .4, soft: .15});
-    const k = (t.age % .5) / .5; disc(RING, t.x, t.z, R, P.tide, {alpha: A * (1 - k) * .8, p: [mix(.45, .92, k), .04, .8, .02], layer: 3, seed: seed + 2, soft: .3});
+    crest(t.x, t.z, R * (1 + .7 * (1 - Math.pow(1 - k, 2))), .3 * (1 - k), A * (1 - k), seed + Math.floor(t.age * 2)); // the shockwave rolling out each pulse
+    if (k < .5) spray(t.x, t.z, R, 8, k * .5, A * (1 - k * 2), seed + Math.floor(t.age * 2), 1.8, 2.4);
     at([t.x, 0, t.z]);
-    bb(DOME, [t.x, 0, t.z], R, R, P.tide, {alpha: .92 * A, p: [Math.max(.2, cam.f[1]), 0, 0, 0], seed, rag: .3});
+    bb(DOME, [t.x, 0, t.z], R, R, P.tide, {alpha: .9 * A, p: [Math.max(.2, cam.f[1]), 0, 0, 0], seed, rag: .3, lift: R * 1.3}); // lifted toward the camera so the ground never clips its lower half
+    for (let j = 0; j < 8; j++) { const q = (t.age * .6 + j / 8) % 1, an = j * 2.4 + seed * 4, rr = R * .7 * Math.sqrt(hash(j + seed)), c = [t.x + Math.cos(an) * rr, .1 + q * R * .8 * (1 - (rr / R) ** 2), t.z + Math.sin(an) * rr]; at(c); mote(c, .05 + .03 * hash(j * 5 + seed), P.tideFoam, A * smooth(0, .15, q) * (1 - smooth(.8, 1, q)), {shine: .8, p: [.7, .4, .5, 0], bias: .02}); } // bubbles drifting up inside
   }
-  function tideVacuum(t) { // VACUUM COLLAPSE: a whirlpool that swells, pulls everything in and bursts
-    const p = clamp(t.age / t.life), R = Math.max(.08, t.r * Math.sin(p * Math.PI)), A = smooth(0, .06, p) * (1 - smooth(.92, 1, p)), seed = hash(t.x + t.z * 2.1);
-    disc(GLOW, t.x, t.z, R, P.tideDeep, {alpha: .3 * A, layer: 0, edge: 0, soft: 1});
-    disc(SPIRAL, t.x, t.z, R, P.tideDeep, {alpha: .85 * A, p: [1.9, 4, -t.age * 2.4, .44], layer: 1, wobble: .05, seed, rag: .5});
-    disc(RING, t.x, t.z, R * 1.04, P.tide, {alpha: A, p: [.88, .06, .3, .03], layer: 2, seed, rag: .5, soft: .15});
-    for (let j = 0; j < 10; j++) {
-      const k = (t.age * 1.3 + j / 10) % 1, an = j * 2.4 + t.age * 3 + k * 2.6, rr = R * (1 - k), c = [t.x + Math.cos(an) * rr, .08 + k * .06, t.z + Math.sin(an) * rr];
-      mote(c, .06 * (1 - k * .5), P.tide, A * smooth(0, .2, k) * (1 - smooth(.85, 1, k)), {p: [.8, .3, .4, 0]});
-    }
-    if (p > .8) {
-      const k = smooth(.8, 1, p);
+  function tideVacuum(t) { // VACUUM COLLAPSE: a whirlpool whose spiral arms wind inward, a water funnel rising at its heart, everything dragged in; then it bursts in a crown of water
+    const p = clamp(t.age / t.life), R = Math.max(.08, t.r * Math.sin(Math.min(1, p / .85) * Math.PI * .5) * (1 - smooth(.8, .9, p) * .8)), A = smooth(0, .06, p) * (1 - smooth(.9, 1, p)), seed = hash(t.x + t.z * 2.1), spin = t.age * 3.2;
+    disc(GLOW, t.x, t.z, R, P.tideDeep, {alpha: .35 * A, layer: 0, edge: 0, soft: 1});
+    disc(SPIRAL, t.x, t.z, R, P.tideDeep, {alpha: .8 * A, p: [1.9, 4, -t.age * 3, .44], layer: 1, wobble: .05, seed, rag: .5});
+    for (let j = 0; j < 3; j++) { const pts = [], ws = []; // spiral arms of water winding in
+      for (let i = 0; i <= 14; i++) { const f = i / 14, rr = R * (1 - f * .92), an = j * TAU / 3 - spin - f * 4.2; pts.push([t.x + Math.cos(an) * rr, .05 + .08 * (1 - f), t.z + Math.sin(an) * rr]); ws.push(R * .035 * (1 - f * .6) + .008); }
+      at([t.x, 0, t.z]); ribbon(WATER_R, pts, ws, j ? P.tide : P.tideDeep, {alpha: A, seed: seed + j, p: [3, 1, 0, 0], edge: .1}); ribbon(GLOW_R, pts, ws.map(w => w * .4), P.tideFoam, {alpha: A * .9, seed: seed + j + 4, soft: .3, edge: 0, bias: .01}); }
+    const fh = R * .9 * smooth(.1, .5, p) * (1 - smooth(.8, .9, p)); if (fh > .05) { const c = addv([t.x, .02, t.z], cam.u, fh * .68); at([t.x, fh * .5, t.z]); bb(TORNADO, c, R * .35, fh, P.tide, {alpha: A, p: [1, R * .35 * Math.abs(cam.f[1]) / (2 * fh) * 1.25, 0, 0], seed, lift: .1, edge: .4}); } // the funnel at its heart
+    for (let j = 0; j < 14; j++) { const k = (t.age * 1.3 + j / 14) % 1, an = j * 2.4 + t.age * 3 + k * 3, rr = R * 1.15 * (1 - k), c = [t.x + Math.cos(an) * rr, .08 + k * .4, t.z + Math.sin(an) * rr]; at(c); mote(c, .06 * (1 - k * .5), j % 2 ? P.tide : P.tideFoam, A * smooth(0, .2, k) * (1 - smooth(.85, 1, k)), {p: [.8, .3, .4, 0]}); } // dragged in
+    if (p > .82) { const k = smooth(.82, 1, p), tt = (p - .82) * t.life; // the burst
+      if (tt < .08) { const g = [t.x, .5, t.z]; at(g); glow(g, t.r * .8, P.tideFoam, 1 - tt / .08, {lift: .6, bias: .5}); }
       glowDecal(t.x, t.z, .6 + k * t.r * 1.2, P.tide, (1 - k) * .7);
-      disc(RING, t.x, t.z, .4 + k * t.r * .95, P.tideDeep, {alpha: 1 - k, p: [.85, .07, .6, .03], layer: 3, seed: seed + 3, soft: .3});
-    }
+      crest(t.x, t.z, .4 + t.r * .95 * (1 - Math.pow(1 - k, 2)), .6 * (1 - k * .7), 1 - k * k, seed + 3);
+      spray(t.x, t.z, .3, 16, tt, 1 - k, seed + 5, 3.4, 2.6); }
   }
-  function tideResonance(t) { // RESONANCE CHAIN: rhythmic sound-wave rings
+  function tideResonance(t) { // RESONANCE CHAIN: layered echo crests spreading in rhythm, bright beads racing round each one
     const p = clamp(t.age / t.life), A = 1 - smooth(.62, 1, p), seed = hash(t.x * 2.3 + t.z);
+    disc(GLOW, t.x, t.z, t.r * .9, P.tide, {alpha: .3 * A * (1 - p), layer: 0, edge: 0, soft: 1});
     for (let j = 0; j < 3; j++) {
-      const q = clamp(p * 1.6 - j * .18), R = Math.max(.05, t.r * smooth(0, .6, q));
-      if (q > 0) disc(RING, t.x, t.z, R * 1.08, j ? P.tide : P.tideDeep, {alpha: A * (1 - smooth(.7, 1, q) * .6), p: [.86, .065 - j * .014, .7, .03], layer: 2 + j, seed: seed + j, rag: .4, soft: .2});
+      const q = clamp(p * 1.6 - j * .18), R = Math.max(.05, t.r * (1 - Math.pow(1 - smooth(0, .6, q), 2))); if (q <= 0) continue; const a = A * (1 - smooth(.7, 1, q) * .6);
+      crest(t.x, t.z, R, .16 - j * .03, a, seed + j, j ? P.tide : P.tideDeep, j === 0);
+      disc(RING, t.x, t.z, R * 1.04, j ? P.tide : P.tideDeep, {alpha: a * .6, p: [.86, .04, .7, .03], layer: 2 + j, seed: seed + j, rag: .4, soft: .3});
+      for (let m = 0; m < 4; m++) { const an = m * TAU / 4 + t.age * (j % 2 ? -6 : 6) + j, c = [t.x + Math.cos(an) * R, .15, t.z + Math.sin(an) * R]; at(c); glow(c, .18, P.tideFoam, a * .6); mote(c, .05, P.tideFoam, a, {bias: .02}); } // beads racing round
     }
   }
   // ---------------------------------------------------------------- Toxin: deep purple venom lit by glowing acid green (owner round 4:
