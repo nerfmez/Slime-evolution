@@ -64,9 +64,9 @@ test('fire takes a clear, different form in every branch and never uses flame st
     blast: [{fx: [{type: 'blast', x: 0, z: 0, r: 1, age: .2}]}, [DOME_FIRE, PUFF]],
     burn: [{patches: [{x: 0, z: 0, r: .8, age: .5, life: 1}]}, [FIRELINE]],
     sunfall: [{events: [{type: 'sun', x: 0, z: 0, age: .2, delay: .5, s: {radius: 1.4}}]}, [SUN]],
-    sunburst: [{fx: [{type: 'sun', x: 0, z: 0, r: 1.4, age: .3}]}, [EXPLODE]],
+    sunburst: [{fx: [{type: 'sun', x: 0, z: 0, r: 1.4, age: .3}]}, [DOME_FIRE]],
     meteor: [{events: [{type: 'meteor', x: 2, z: 0, age: .3, delay: .55, flight: .55, s: {radius: .8}}]}, [ROCK, FLAMEBALL]],
-    impact: [{fx: [{type: 'meteor', x: 2, z: 0, r: .8, age: .1}]}, [EXPLODE]],
+    impact: [{fx: [{type: 'meteor', x: 2, z: 0, r: .8, age: .1}]}, [ROCK]],
     cyclone: [{cyclones: [{x: 0, z: 0, r: 1.2, life: 3, age: .5}]}, [TORNADO]],
   };
   for (const [name, [st, want]] of Object.entries(branches)) {
