@@ -147,6 +147,13 @@ export function applyPaintedVfx(bundle, html) {
   b = replaceOne(b, 'c=s===`power`?1:s?Math.max(3,a.count):a.count,', 'c=s===`power`?1:s?Math.max(3,a.count):Math.max(2,a.count),', 'base orbit: two orbs');
   b = replaceOne(b, 'u=a.speed*(s===`power`?.72:s===`pulse`?.88:1)', 'u=a.speed*(s===`power`?.72:s===`pulse`?.88:s?1:1.3)', 'base orbit: faster');
   b = replaceOne(b, ':.24*a.scale,angle:p', ':.24*a.scale*(s?1:1.3),angle:p', 'base orbit: wider hit');
+  // Owner request (2026-09-26): base Orbit circles farther from the slime (1.35x radius). Every Orbit form deals its damage
+  // each time an orb touches a foe, instead of at most once per .4 s per foe: a foe is struck when it comes into contact and
+  // again after it has left and been touched anew; a foe the orb stays on is struck again every .4 s, as before. The Haste mod spins the orbs faster (+10% per level, was +2.9%).
+  b = replaceOne(b, 'l=a.r*(s===`power`?1.2:s===`pulse`?1.08:1)', 'l=a.r*(s===`power`?1.2:s===`pulse`?1.08:s?1:1.35)', 'base orbit: wider circle');
+  b = replaceOne(b, '(f.hitTimes.get(t.id)||0)<=e.clock&&(f.hitTimes.set(t.id,e.clock+.4),', '((f._k=f.hitTimes.get(t.id))&&e.clock-f._k[1]<.4?(f._k[0]=e.clock,0):(f.hitTimes.set(t.id,[e.clock,e.clock]),1))&&(', 'orbit hits on contact');
+  b = replaceOne(b, 'for(let[t,n]of f.hitTimes)n<e.clock-1&&f.hitTimes.delete(t)', 'for(let[t,n]of f.hitTimes)n[0]<e.clock&&f.hitTimes.delete(t)', 'orbit contact ends');
+  b = replaceOne(b, 'speed:(3.2+.1*i.multi)*(1+.045*n.haste*.65)', 'speed:(3.2+.1*i.multi)*(1+.1*n.haste)', 'haste spins orbit');
   // Owner request (2026-09-26): the game's own burnt-grass map marks the ground under fire, so the painted effects draw no
   // crater of their own. The burn is stamped deepest at the centre and the ground shows it in stepped layers (light
   // scorch, burnt, charred), with the grass shortest where it burnt deepest; the layers shrink toward the centre as it heals.

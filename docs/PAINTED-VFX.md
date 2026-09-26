@@ -159,3 +159,9 @@ The owner found the close-range skills weak next to the ranged ones, since they 
 ## Base Orbit is easier to land (owner request, 2026-09-26)
 
 Before evolving, Orbit was hard to use early on: one small orb had to swing round onto a foe while both moved. Base Orbit now always has at least two orbs, they circle 1.3x faster and each orb's hit area is 1.3x wider (the painted orb follows the hit size). Skill-lab DPS 25 → 55. Gravity Mace, Multi and Pulse keep their own counts, speeds and sizes.
+
+## Orbit round 2 (owner request, 2026-09-26)
+
+- Base Orbit circles farther from the slime: 1.35x radius (1.22 → 1.65 before the Area mod). The evolutions keep their own radius.
+- Every Orbit form deals damage each time an orb touches a foe. The old .4 s lock per orb and foe is gone: a foe is struck on contact, and again after it has left and been touched anew. A foe the orb stays on (Gravity Mace, a satellite that has darted in) is struck again every .4 s as before, so the evolutions lose nothing.
+- The Haste mod spins every Orbit form faster: +10% per level (was +2.9%). Skill-lab DPS at Haste 5: base 55 → 81, Gravity Mace 323 → 390, Hunting Satellites 536 → 594, Arc Halo 748 → 871.
