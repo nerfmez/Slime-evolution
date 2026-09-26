@@ -1,5 +1,5 @@
 // Build-time HUD polish. Presentation only: no combat, pacing, art or save data changes.
-export const HUD_POLISH_VERSION='hud-polish-v1';
+export const HUD_POLISH_VERSION='hud-polish-v2';
 
 const ELITE_OLD='for(let e of J.enemies){if(!e.elite||e.hp<=0)continue;let a=({thorn:1.95,spark:1.08,turtle:1.25,water:1.38}[e.type]||1.15)*(e.scale||1),[o,s]=proj(e.x,a,e.z),c=Math.max(66,Math.min(104,74*(e.scale||1))),l=7,u=s-16,d=Math.max(0,Math.min(1,e.hp/Math.max(1,e.maxHP||e.hp)));r.font=`700 12px system-ui`,r.lineWidth=3,r.strokeStyle=`rgba(54,37,26,.9)`,r.fillStyle=`#fff4d7`,r.strokeText(pt(e).name,o,u-5),r.fillText(pt(e).name,o,u-5),r.fillStyle=`rgba(45,31,25,.88)`,r.fillRect(o-c/2-2,u-2,c+4,l+4),r.fillStyle=`#f1dfbb`,r.fillRect(o-c/2,u,c,l),r.fillStyle=d>.35?`#e74e47`:`#d43d3d`,r.fillRect(o-c/2,u,c*d,l),r.strokeStyle=`rgba(86,50,32,.9)`,r.lineWidth=1,r.strokeRect(o-c/2,u,c,l)}';
 // Compact paper tags sized from measured text (fonts differ per OS; left-aligned from m.width because WebKit reports ink left/right differently under center alignment): star + roster name, HP only once damaged, stacked instead of overlapping, faded over the player.
@@ -7,8 +7,10 @@ const ELITE_NEW='{const tags=[],placed=[],[px,py]=proj(W.player[0],.45,W.player[
 
 const BUNDLE_EDITS=[
   ['elite tags',ELITE_OLD,ELITE_NEW],
-  // The movement hint retires once the player has actually moved.
-  ['hint retire','B(`retry`).hidden=J.hp>0&&!J.finished,','W.moving&&B(`hint`)?.classList.add(`hint-done`),B(`retry`).hidden=J.hp>0&&!J.finished,'],
+  // The movement hint retires once the player has actually moved. The round clock (top centre) and the stage line (the status
+  // without the time, which moves to the clock) update with it; #status keeps its full text for tools and screen readers.
+  ['hint retire','B(`retry`).hidden=J.hp>0&&!J.finished,','W.moving&&B(`hint`)?.classList.add(`hint-done`),B(`stage-line`)&&(B(`stage-line`).textContent=B(`status`).textContent.replace(/ · \\d\\d:\\d\\d \\/ \\d\\d:\\d\\d/,``)),B(`clock`)&&(B(`clock`).hidden=J.hp<=0||J.finished||J.bossSpawned,B(`clock`).firstChild.textContent=t,B(`clock`).style.setProperty(`--p`,String(e/(J.mode===`auto`?600:300)))),B(`retry`).hidden=J.hp>0&&!J.finished,'],
+  ['lab hides clock','if(Z.active){B(`boss-health`).hidden=!0,','if(Z.active){B(`boss-health`).hidden=!0,B(`clock`)&&(B(`clock`).hidden=!0),B(`stage-line`)&&(B(`stage-line`).textContent=`ห้องทดสอบสกิล`),'],
   ['empty skill slot','}else i.textContent=`ช่องสกิลว่าง`;t.append(i)','}else i.classList.add(`empty`),i.title=`ช่องสกิลว่าง`,i.setAttribute(`aria-label`,`ช่องสกิลว่าง`),i.textContent=`+`;t.append(i)'],
 ];
 
@@ -16,7 +18,24 @@ const STYLE='<style id="hud-polish">'+
   '#experience{height:8px}#experience::-webkit-progress-bar{background:#cfc8a8}#experience::-webkit-progress-value{background:#3f9aa6}#experience::-moz-progress-bar{background:#3f9aa6}'+
   '#level-text{color:#2f6f78}.title small{letter-spacing:.04em}'+
   '#hint{transition:opacity .8s ease}#hint.hint-done{opacity:0}'+
-  '.equipped-skill.empty{width:22px;height:22px;box-sizing:border-box;border:1.5px dashed #b3a988;border-radius:50%;display:inline-grid;place-items:center;color:#a39a78;font-size:14px;line-height:1}'+
+  '.equipped-skill.empty{box-sizing:border-box;border:1.5px dashed #b3a988;border-radius:50%;display:inline-grid;place-items:center;color:#a39a78;font-size:16px;line-height:1}'+
+  // Round clock in the top row, left of the buttons, so the boss banner keeps the centre (the time used to hide inside the status line), a stage line in the panel, clearer HP and EXP
+  // bars, and larger skill chips with round icons.
+  '#status{position:absolute!important;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}'+
+  '#stage-line{font-size:12px;color:#4f6452;line-height:1.3}'+
+  '#clock{position:fixed;z-index:5;top:max(14px,env(safe-area-inset-top));right:calc(max(16px,env(safe-area-inset-right)) + 172px);padding:6px 18px 8px;display:grid;justify-items:center;gap:5px;min-width:118px;pointer-events:none}'+
+  '#clock b{font:800 26px/1 ui-rounded,system-ui,sans-serif;letter-spacing:.05em;color:#233c36;font-variant-numeric:tabular-nums}'+
+  '#clock i{display:block;width:100%;height:5px;border-radius:3px;background:#d8cfae;overflow:hidden}'+
+  '#clock s{display:block;height:100%;width:calc(var(--p,0) * 100%);border-radius:3px;background:linear-gradient(90deg,#3f9aa6,#d98a2b 70%,#bd551c);text-decoration:none}'+
+  '#health{height:12px;border-radius:6px;overflow:hidden;-webkit-appearance:none;appearance:none;border:0;background:#e2d8bd}'+
+  '#health::-webkit-progress-bar{background:#e2d8bd;border-radius:6px}#health::-webkit-progress-value{background:linear-gradient(180deg,#ec6c5f,#c63d3a);border-radius:6px}#health::-moz-progress-bar{background:linear-gradient(180deg,#ec6c5f,#c63d3a);border-radius:6px}'+
+  '#health-text{font-weight:700;color:#7a3a30}#health-text::before{content:"\\2764\\FE0E  ";color:#d24a45}'+
+  '#experience{border-radius:4px;overflow:hidden;-webkit-appearance:none;appearance:none;border:0}#experience::-webkit-progress-bar{border-radius:4px}#experience::-webkit-progress-value{border-radius:4px;background:linear-gradient(180deg,#5cb8c2,#3f9aa6)}'+
+  '#level-text{font-weight:700}'+
+  '#fire-slot{gap:8px;padding:6px 8px}'+
+  '.equipped-skill{display:inline-flex;align-items:center;gap:7px;padding:3px 12px 3px 3px;border-radius:999px;background:#fff8e6;border:1px solid #d6c9a3;font-size:12.5px;font-weight:700;color:#3b3a2a}'+
+  '.equipped-skill img{width:32px;height:32px;border-radius:50%;background:#efe4c8;padding:2px;box-sizing:border-box;object-fit:contain}'+
+  '.equipped-skill.empty{width:38px;height:38px;padding:0;justify-content:center;background:none}'+
   // Boss banner: compact everywhere; on wide screens it sits in the top row between the HUD and the buttons.
   '#boss-health{padding:6px 14px}#boss-health strong{font-size:11px}#boss-health progress{height:8px;margin:4px 0}#boss-health small{font-size:10px}'+
   '@media (min-width:960px){#boss-health{top:max(16px,env(safe-area-inset-top));width:clamp(220px,calc(100vw - 760px),420px)}}'+
@@ -42,6 +61,8 @@ const STYLE='<style id="hud-polish">'+
   '#health{height:8px}#experience{height:6px}progress{margin:3px 0}'+
   '#fire-slot{flex-wrap:nowrap;align-items:center}'+
   '#boss-health{top:calc(max(10px,env(safe-area-inset-top)) + 134px)}'+
+  '#clock{top:calc(max(10px,env(safe-area-inset-top)) + 108px);right:12px;min-width:78px;padding:4px 10px 6px}#clock b{font-size:18px}'+
+  '.equipped-skill{font-size:11px;padding-right:8px;white-space:nowrap}.equipped-skill img{width:26px;height:26px}.equipped-skill.empty{width:30px;height:30px}'+
   '}</style>';
 
 // Start menu shown once per page load, above the opening skill choice (the game is already
@@ -70,7 +91,8 @@ const MENU_SCRIPT='<script>(()=>{const m=document.getElementById("start-menu");i
 
 const HTML_EDITS=[
   ['page title','<title>Slime — ฉากทดลองเว็บ</title>','<title>Slime Evolution</title>'],
-  ['header title','<small>SLIME · FIRE & SOULS</small><strong>ทุ่งหญ้า Slime</strong>','<small>ทุ่งหญ้า</small><strong>Slime Evolution</strong>'],
+  ['header title','<small>SLIME · FIRE & SOULS</small><strong>ทุ่งหญ้า Slime</strong>','<small>ทุ่งหญ้า</small><strong>Slime Evolution</strong><span id="stage-line"></span>'],
+  ['round clock','<div class="right">','<div id="clock" class="paper" hidden aria-label="เวลาในรอบ"><b>00:00</b><i><s></s></i></div><div class="right">'],
   ['hud style','</head>',STYLE+'</head>'],
   ['start menu','<body>','<body>'+MENU],
   ['start menu script','<div id="error" class="paper" hidden></div></body>','<div id="error" class="paper" hidden></div>'+MENU_SCRIPT+'</body>'],
