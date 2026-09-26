@@ -165,3 +165,9 @@ Before evolving, Orbit was hard to use early on: one small orb had to swing roun
 - Base Orbit circles farther from the slime: 1.35x radius (1.22 → 1.65 before the Area mod). The evolutions keep their own radius.
 - Every Orbit form deals damage each time an orb touches a foe. The old .4 s lock per orb and foe is gone: a foe is struck on contact, and again after it has left and been touched anew. A foe the orb stays on (Gravity Mace, a satellite that has darted in) is struck again every .4 s as before, so the evolutions lose nothing.
 - The Haste mod spins every Orbit form faster: +10% per level (was +2.9%). Skill-lab DPS at Haste 5: base 55 → 81, Gravity Mace 323 → 390, Hunting Satellites 536 → 594, Arc Halo 748 → 871.
+
+## Evolutions keep the base upgrades: Gravity Mace moons (owner request, 2026-09-26)
+
+The owner found that evolving threw away what the base skill had been upgraded into, for example four orbs becoming one Gravity Mace. The mace still merges the orbs into one star, but every orb beyond the first stays on as a moon (up to four): moon count = orb count - 1. Each moon strikes a foe it touches for the base orb damage (again every .4 s while it stays on). The game places the moons (`moonN`, `moonT` on the orb) and the painted moons are drawn at those same spots. Skill-lab DPS: Multi 0 → 345 (no moons), Multi 2 → 367 (1 moon), Multi 4 → 412 (3 moons).
+
+Hunting Satellites and Arc Halo already keep the orb count (at least three). The other evolutions carry the base upgrades through their damage and size: water's evolutions deal the whole volley's damage, Tide's include the echo rings' damage, Glacial Borer scales from the crystal damage, and Chain Relay and Overcharge scale their chain count and arcs from Relay.

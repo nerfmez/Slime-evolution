@@ -580,9 +580,9 @@ export function createPaintedSkillRenderer(gl) {
       if (!big) glow(c, R * 1.9, pal, .4, {bias: -.03});
       if (big) { // GRAVITY MACE (owner round 2): a clean, round star with no aura, and moons circling close to it, slowly, on tilted orbits
         bb(STAR, c, R, R, P.orbitDeep, {p: [10, 0, 0, 0], seed, bias: .02, lift: R * 2, edge: .45}); // a shaded sphere with a turning surface
-        for (let k = 0; k < 3; k++) {
-          const rad = R * (1.3 + .18 * k), tl = [.45, -.6, .9][k], sp = [1.5, -1.1, .8][k], ph = k * 2.1 + seed * 5, e1 = [Math.cos(k * 1.3), 0, Math.sin(k * 1.3)], e2 = norm([-e1[2] * Math.cos(tl), Math.sin(tl), e1[0] * Math.cos(tl)]);
-          const pt = a => [c[0] + (e1[0] * Math.cos(a) + e2[0] * Math.sin(a)) * rad, c[1] + e2[1] * Math.sin(a) * rad, c[2] + (e1[2] * Math.cos(a) + e2[2] * Math.sin(a)) * rad], a0 = now * sp + ph, m = pt(a0), mr = R * [.3, .24, .19][k];
+        for (let k = 0; k < (o.moonN ?? 3); k++) { // one moon per orb the base skill had beyond the first; the game strikes with them, at these same spots
+          const rad = R * (1.3 + .18 * k), tl = [.45, -.6, .9, -.25][k], sp = [1.5, -1.1, .8, -1.3][k], ph = k * 2.1 + seed * 5, e1 = [Math.cos(k * 1.3), 0, Math.sin(k * 1.3)], e2 = norm([-e1[2] * Math.cos(tl), Math.sin(tl), e1[0] * Math.cos(tl)]);
+          const pt = a => [c[0] + (e1[0] * Math.cos(a) + e2[0] * Math.sin(a)) * rad, c[1] + e2[1] * Math.sin(a) * rad, c[2] + (e1[2] * Math.cos(a) + e2[2] * Math.sin(a)) * rad], a0 = (o.moonT ?? now) * sp + ph, m = pt(a0), mr = R * [.3, .24, .19, .22][k];
           const tp = [], tw = []; for (let i = 0; i <= 10; i++) { tp.push(pt(a0 - Math.sign(sp) * i * .09)); tw.push(mr * .6 * (1 - i / 10) + .004); }
           const dm = [m[0] - c[0], m[1] - c[1], m[2] - c[2]], zb = dm[0] * cam.f[0] + dm[1] * cam.f[1] + dm[2] * cam.f[2], lat = Math.hypot(dm[0] - cam.f[0] * zb, dm[1] - cam.f[1] * zb, dm[2] - cam.f[2] * zb), vis = zb > 0 ? smooth(R * .75, R * 1.05, lat) : 1; // hidden while it passes behind the star
           at(m); ribbon(GLOW_R, tp, tw, k % 2 ? P.foam : P.orbit, {alpha: .55 * vis, seed: seed + k, soft: .4, edge: 0, lift: R * 2});
