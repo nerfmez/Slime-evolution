@@ -136,6 +136,11 @@ export function applyPaintedVfx(bundle, html) {
   b = replaceOne(b, 'for(let i of[...e.abilities]){if(i.delay>0){i.delay-=t;continue}',
     'for(let i of[...e.abilities]){if(i.family===`tide`&&i.follow&&r){i.x=r[0];i.z=r[2]}if(i.delay>0){i.delay-=t;continue}',
     'tide field moves with the slime');
+  // Owner request (2026-09-26): the close-range skills felt weak next to the ranged ones, since they only hit what is
+  // already beside the slime. Tide (every ring, Dome, Vacuum and Resonance, all scaled from this base) deals 1.5x, and
+  // Tesla Field, the lightning field round the slime, deals 1.4x per tick.
+  b = replaceOne(b, 'let e=L((7+1.85*r)*(1+.2*i.impact)*a*(i.impact===4?1.25:1))', 'let e=L((7+1.85*r)*(1+.2*i.impact)*a*(i.impact===4?1.25:1)*1.5)', 'close range: tide damage');
+  b = replaceOne(b, 'damage:o.damage*.2,interval:.22', 'damage:o.damage*.2*1.4,interval:.22', 'close range: tesla damage');
   // Owner request (2026-09-26): the game's own burnt-grass map marks the ground under fire, so the painted effects draw no
   // crater of their own. The burn is stamped deepest at the centre and the ground shows it in stepped layers (light
   // scorch, burnt, charred), with the grass shortest where it burnt deepest; the layers shrink toward the centre as it heals.

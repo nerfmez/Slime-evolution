@@ -151,3 +151,7 @@ The owner corrected round 6: tide is an energy field, not water, and Vacuum Coll
 
 Power and Haste reach every skill through its stats (damage and cooldown). Area and Duration were missing in six places, now patched in `vfx/painted-style.mjs`: Neurotoxin's burst size (Area), Plague Bloom's life (Duration), each poison flower's life (Duration, `plife`), Lightning Network's life (Duration), Glacial Borer's size (Area) and Whiteout Breath's reach (Area). Checked in the skill lab at mods 0 and 5.
 
+
+## Close-range skills hit harder (owner request, 2026-09-26)
+
+The owner found the close-range skills weak next to the ranged ones, since they only reach foes already beside the slime. Tide's base damage is 1.5x (every ring, Repulsion Dome, Vacuum Collapse and Resonance Chain scale from it) and Tesla Field's damage per tick is 1.4x. Skill-lab DPS against the four dummies over 12 s, before → after: Tide 14 → 20, Repulsion Dome 221 → 329, Vacuum Collapse 198 → 298, Resonance Chain 350 → 525, Tesla Field 268 → 306 (its Static bursts are unchanged). For reference: Aqua Railgun 507, Frost Shatter 450, Whiteout Breath 391.
