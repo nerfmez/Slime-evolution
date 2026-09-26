@@ -155,3 +155,7 @@ Power and Haste reach every skill through its stats (damage and cooldown). Area 
 ## Close-range skills hit harder (owner request, 2026-09-26)
 
 The owner found the close-range skills weak next to the ranged ones, since they only reach foes already beside the slime. Tide's base damage is 1.5x (every ring, Repulsion Dome, Vacuum Collapse and Resonance Chain scale from it) and Tesla Field's damage per tick is 1.4x. Skill-lab DPS against the four dummies over 12 s, before → after: Tide 14 → 20, Repulsion Dome 221 → 329, Vacuum Collapse 198 → 298, Resonance Chain 350 → 525, Tesla Field 268 → 306 (its Static bursts are unchanged). For reference: Aqua Railgun 507, Frost Shatter 450, Whiteout Breath 391.
+
+## Base Orbit is easier to land (owner request, 2026-09-26)
+
+Before evolving, Orbit was hard to use early on: one small orb had to swing round onto a foe while both moved. Base Orbit now always has at least two orbs, they circle 1.3x faster and each orb's hit area is 1.3x wider (the painted orb follows the hit size). Skill-lab DPS 25 → 55. Gravity Mace, Multi and Pulse keep their own counts, speeds and sizes.

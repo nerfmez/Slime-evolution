@@ -141,6 +141,12 @@ export function applyPaintedVfx(bundle, html) {
   // Tesla Field, the lightning field round the slime, deals 1.4x per tick.
   b = replaceOne(b, 'let e=L((7+1.85*r)*(1+.2*i.impact)*a*(i.impact===4?1.25:1))', 'let e=L((7+1.85*r)*(1+.2*i.impact)*a*(i.impact===4?1.25:1)*1.5)', 'close range: tide damage');
   b = replaceOne(b, 'damage:o.damage*.2,interval:.22', 'damage:o.damage*.2*1.4,interval:.22', 'close range: tesla damage');
+  // Owner request (2026-09-26): base Orbit (before evolving) was hard to land early on, waiting for one small orb to swing
+  // round onto a foe while both move. Base Orbit now always has at least two orbs, they circle 1.3x faster and each orb's
+  // hit area is 1.3x wider (drawn to match). The evolutions keep their own counts, speeds and sizes.
+  b = replaceOne(b, 'c=s===`power`?1:s?Math.max(3,a.count):a.count,', 'c=s===`power`?1:s?Math.max(3,a.count):Math.max(2,a.count),', 'base orbit: two orbs');
+  b = replaceOne(b, 'u=a.speed*(s===`power`?.72:s===`pulse`?.88:1)', 'u=a.speed*(s===`power`?.72:s===`pulse`?.88:s?1:1.3)', 'base orbit: faster');
+  b = replaceOne(b, ':.24*a.scale,angle:p', ':.24*a.scale*(s?1:1.3),angle:p', 'base orbit: wider hit');
   // Owner request (2026-09-26): the game's own burnt-grass map marks the ground under fire, so the painted effects draw no
   // crater of their own. The burn is stamped deepest at the centre and the ground shows it in stepped layers (light
   // scorch, burnt, charred), with the grass shortest where it burnt deepest; the layers shrink toward the centre as it heals.
