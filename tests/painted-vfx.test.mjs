@@ -37,7 +37,7 @@ test('every skill, evolution and fire effect is painted by the new renderer', ()
   for (const [tag, t] of cases) {
     const items = vfx.plan({abilities: [t]}, {}, 1, () => true, {vp: VP}), d = vfx.diagnostics;
     assert.equal(d.kinds[tag], 1, tag); assert.ok(items.length > 0, tag + ' draws shapes'); assert.equal(d.invalid, 0, tag);
-    for (const it of items) assert.ok(it.v.length === 32 && it.v.every(Number.isFinite), tag + ' finite instance');
+    for (const it of items) assert.ok(it.v.length === 40 && it.v.every(Number.isFinite), tag + ' finite instance');
   }
   for (const evo of ['', 'power', 'multi', 'pulse']) {
     vfx.plan({orbs: [{x: 1, z: 0, r: evo === 'power' ? .62 : .17, angle: 0}], skills: {orbit: {evo}}}, {}, 1, () => true, {vp: VP});
@@ -55,20 +55,38 @@ test('every skill, evolution and fire effect is painted by the new renderer', ()
   assert.equal(vfx.diagnostics.kinds['fire:burning'], undefined, 'hidden lab targets carry no flames');
 });
 
-test('fire is made of living flames, never rigid flame sticks or a solid pillar (owner feedback)', () => {
-  const vfx = createPaintedSkillRenderer(null), FLAME = 2, FIRE = 23, TWISTER = 27;
-  const states = [{projectiles: [{x: 0, z: 0, y: .36, tx: 3, tz: 0, life: 1.5}]}, {fx: [{type: 'blast', x: 0, z: 0, r: 1, age: .3}]}, {patches: [{x: 0, z: 0, r: .8, age: .5, life: 1}]},
-    {events: [{type: 'sun', x: 0, z: 0, age: .2, delay: .5, s: {radius: 1.4}}]}, {fx: [{type: 'sun', x: 0, z: 0, r: 1.4, age: .3}]},
-    {events: [{type: 'meteor', x: 2, z: 0, age: .3, delay: .55, flight: .55, s: {radius: .8}}]}, {fx: [{type: 'meteor', x: 2, z: 0, r: .8, age: .1}]},
-    {cyclones: [{x: 0, z: 0, r: 1.2, life: 3, age: .5}]}, {projectiles: [{x: 1, z: 0, vx: 5.8, vz: 0, life: .5, ember: true}]}];
-  for (const st of states) {
-    const items = vfx.plan(st, {}, 1, () => true, {vp: VP}), shapes = items.map(it => it.v[3]);
-    assert.ok(shapes.includes(FIRE), JSON.stringify(Object.keys(st)) + ' uses living flames');
-    assert.ok(!shapes.includes(FLAME), JSON.stringify(Object.keys(st)) + ' has no teardrop flame sticks');
-    for (const it of items.filter(it => it.v[3] === TWISTER)) assert.ok(it.v[11] <= .4 && it.v[31] >= .5, 'cyclone heat swirl stays soft and see-through');
+test('fire takes a different form in every branch and never uses flame sticks (owner feedback)', () => {
+  const vfx = createPaintedSkillRenderer(null), FLAME_STICKS = [2, 23], TWISTER = 27;
+  const branches = {
+    shot: {projectiles: [{x: 0, z: 0, y: .36, tx: 3, tz: 0, life: 1.5}]}, blast: {fx: [{type: 'blast', x: 0, z: 0, r: 1, age: .3}]},
+    burn: {patches: [{x: 0, z: 0, r: .8, age: .5, life: 1}]}, scatter: {projectiles: [{x: 1, z: 0, vx: 5.8, vz: 0, life: .5, ember: true}]},
+    sunfall: {events: [{type: 'sun', x: 0, z: 0, age: .2, delay: .5, s: {radius: 1.4}}]}, sunburst: {fx: [{type: 'sun', x: 0, z: 0, r: 1.4, age: .3}]},
+    meteor: {events: [{type: 'meteor', x: 2, z: 0, age: .3, delay: .55, flight: .55, s: {radius: .8}}]}, impact: {fx: [{type: 'meteor', x: 2, z: 0, r: .8, age: .1}]},
+    cyclone: {cyclones: [{x: 0, z: 0, r: 1.2, life: 3, age: .5}]},
+  };
+  const signature = {};
+  for (const [name, st] of Object.entries(branches)) {
+    const items = vfx.plan(st, {}, 1, () => true, {vp: VP}), shapes = [...new Set(items.map(it => it.v[3]))].sort((a, b) => a - b);
+    assert.ok(items.length > 0, name + ' draws');
+    for (const s of FLAME_STICKS) assert.ok(!shapes.includes(s), name + ' has no flame sticks');
+    for (const it of items.filter(it => it.v[3] === TWISTER)) assert.ok(it.v[11] <= .4 && it.v[31] >= .5, 'cyclone heat column stays soft and see-through');
+    signature[name] = shapes.join(',');
   }
+  for (const a of ['shot', 'blast', 'burn', 'scatter', 'sunburst', 'meteor', 'cyclone']) for (const b of ['shot', 'blast', 'burn', 'scatter', 'sunburst', 'meteor', 'cyclone'])
+    if (a < b) assert.notEqual(signature[a], signature[b], a + ' and ' + b + ' must look different');
   vfx.plan({}, {enemies: [{x: 1, z: 1, hp: 5, burnTime: 1, radius: .5}]}, 1, () => true, {vp: VP});
   assert.ok(vfx.diagnostics.kinds['fire:burning'] > 0);
+});
+
+test('tails flow along the real path: an orbiting core leaves a curved ribbon, never a stiff shape (owner feedback)', () => {
+  const vfx = createPaintedSkillRenderer(null), orb = {x: 2, z: 0, r: .17, angle: 0}, combat = {orbs: [orb], skills: {orbit: {evo: ''}}};
+  let items = [];
+  for (let f = 0; f <= 30; f++) { const a = f * .12; orb.x = Math.cos(a) * 2; orb.z = Math.sin(a) * 2; orb.angle = a; items = vfx.plan(combat, {}, f / 60, () => true, {vp: VP}); }
+  const segs = items.filter(it => it.v[3] === 32 && it.v[35] === 1);
+  assert.ok(segs.length >= 6, 'trail has many flowing segments ' + segs.length);
+  const dirs = segs.map(it => Math.atan2(it.v[6] - it.v[2], it.v[4] - it.v[0]));
+  assert.ok(Math.max(...dirs) - Math.min(...dirs) > .3, 'trail bends with the orbit');
+  assert.ok(!items.some(it => it.v[3] === 0 && it.v[15] > 0), 'cores carry no painted face');
 });
 
 test('effects keep the gameplay sizes (rings, cones, lines and waves match their hit areas)', () => {
@@ -84,7 +102,7 @@ test('effects keep the gameplay sizes (rings, cones, lines and waves match their
   assert.ok(Math.abs(len - 4.4) < .01 && Math.abs(fan.v[12] - .55) < 1e-6, 'cone ' + len);
   // Aqua Railgun: the stream runs the whole line once extended.
   items = vfx.plan({abilities: [ability('water', 'beam', {dx: 1, dz: 0, r: .6, length: 12, age: .15, life: .3})]}, {}, 1, () => true, {vp: VP});
-  const stream = items.find(it => it.g === 1 && it.v[3] === 28), reach = stream.v[0] + Math.hypot(stream.v[4], stream.v[5], stream.v[6]);
+  const reach = Math.max(...items.filter(it => it.v[3] === 30 && it.v[35] === 1 && it.v[38] > 5).flatMap(it => [it.v[0], it.v[4], it.v[8], it.v[32]]));
   assert.ok(Math.abs(reach - 12) < .01, 'railgun reach ' + reach);
   // Tidal Surge: the rushing water spans the full gameplay width.
   items = vfx.plan({abilities: [ability('water', 'wave', {dx: 0, dz: -1, r: 1.6, age: .3, life: .8})]}, {}, 1, () => true, {vp: VP});
@@ -117,7 +135,7 @@ test('assembled runtime draws the painted effects and keeps the old look behind 
   assert.ok(!out.bundle.includes('\nexport function createPaintedSkillRenderer'), 'embedded without export');
   assert.ok(out.html.includes('id="vfx-style-on"') && out.html.includes('slime.vfxStyle.v2'), 'test switch saved on the device');
   assert.throws(() => applyPaintedVfx('nothing', out.html), /expected exactly one baseline/);
-  assert.equal(PAINTED_VFX_VERSION, 'painted-watercolor-v1');
+  assert.equal(PAINTED_VFX_VERSION, 'painted-watercolor-v2');
   const c = JSON.parse(await read('CANON.json')), sha = async p => createHash('sha256').update(await readFile(new URL('../' + p, import.meta.url))).digest('hex');
   assert.equal(await sha('vfx/painted-style.mjs'), c.paintedVfx.moduleSHA256);
   assert.equal(await sha('vfx/painted-renderer.mjs'), c.paintedVfx.rendererSHA256);

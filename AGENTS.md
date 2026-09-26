@@ -42,8 +42,15 @@ Source of truth: `pacing/encounter-director.js`; details in `docs/COZY-PACING.md
 - **EXP:** every creature drops its matching EXP animal. See `docs/SPECIES-EXP-ELITES.md`.
 - **Skill effects (prototype, owner request):**
   - Every skill, fire and its evolutions included, is redrawn from its original concept and card art by `vfx/painted-renderer.mjs`, wired in by `vfx/painted-style.mjs`. A filter over the old effects was rejected.
-  - Look: organic painted shapes (droplets, living flames, petals, soft clouds, ice facets, lightning strokes) with stepped cel tones, a thin darker same-hue edge (NO black outlines), white paper highlights, paper grain and a watercolour dissolve. Nothing should read as a rigid geometric solid.
-  - Fire (owner feedback): living flames with a round base and curling tongues that break away. Never stick, cone or pillar flames.
+  - Look: stepped cel tones, a soft darker same-hue edge (NO black outlines), white paper highlights, paper grain and a watercolour dissolve.
+  - Owner rules (rounds 1–3, see `docs/PAINTED-VFX.md`):
+    - Effects must look natural, never like sculpted geometry. Small particles are soft dots with no outline; no star stickers, speckles or chips.
+    - Tails are never stiff: they are ribbons along the real path.
+    - Fire takes a different form in every branch and never uses flame sticks.
+    - Water is one smooth body. Tidal Surge is one clean layer with no smoke or spray bits.
+    - Fog and smoke are wispy, never lumps.
+    - Use card art for mood only (no faces on orbs).
+    - Review with the target monsters hidden, and look at animated sequences.
   - The renderer reads combat objects only. Shapes follow the gameplay hit areas; sizes, timing and damage are unchanged.
   - The old effects stay behind Settings > Test > "สีน้ำวาดมือแบบใหม่" (`slime.vfxStyle.v2`) until the owner approves.
   - See `docs/PAINTED-VFX.md`.

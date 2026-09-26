@@ -4,7 +4,7 @@
  * fire images), saved per device. Presentation only: no combat value is read-modified.
  */
 import {readFileSync} from 'node:fs';
-export const PAINTED_VFX_VERSION = 'painted-watercolor-v1';
+export const PAINTED_VFX_VERSION = 'painted-watercolor-v2';
 const read = name => readFileSync(new URL(name, import.meta.url), 'utf8');
 
 function replaceOne(source, from, to, label) {

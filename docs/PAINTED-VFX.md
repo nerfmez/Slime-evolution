@@ -1,66 +1,103 @@
 # Painted skill effects
 
-Owner request (2026-09-25): every skill effect is redrawn in a cel-shaded watercolour style that fits the painted meadow. The owner rejected a filter over the old effects ("it only adjusts the old skills, so it looks the same and does not fit the theme"). So each effect is now designed again from its skill concept and its card art.
+Owner request (2026-09-25): every skill effect is redrawn in a cel-shaded watercolour style that fits the painted meadow.
+
+The owner rejected a filter over the old effects ("it only adjusts the old skills, so it looks the same and does not fit the theme"). Each effect is therefore designed again from its skill concept.
 
 - **Code:** `vfx/painted-renderer.mjs` (renderer) and `vfx/painted-style.mjs` (build wiring, Settings switch).
 - **Tests:** `tests/painted-vfx.test.mjs` and `tests/painted-vfx-browser.mjs` (Chromium + WebKit in `.github/workflows/painted-vfx.yml`).
 
+## Owner rules (review rounds 1–3)
+
+1. **Effects must look natural, never like sculpted geometry.** This applies especially to small bits and fragments.
+   - Small particles are soft dots with no outline (the pigment edge fades out on anything smaller than about 18 CSS px).
+   - There are no star stickers, paint speckles or chips.
+2. **Tails are never stiff.** Every tail is a ribbon painted along the path the object really took:
+   - remembered positions for orbiting and darting cores;
+   - the ballistic arc for thrown drops and sparks;
+   - the fall curve for meteors.
+
+   Straight shots get a tail that flutters like cloth.
+3. **Fire takes a different form in every branch, and never uses flame "sticks".**
+
+   | Branch | Form |
+   | --- | --- |
+   | Basic shot | A ball of fire with a flowing flame trail. |
+   | Blast | A billowing fireball that cools into smoke. |
+   | Scatter | Sparks with wavy flame trails. |
+   | Burn | A bed of licking fire (noise rising through a soft mask). |
+   | Sunfall | A sun sinking under a heat trail, then a dome of fire, shock rings and a smoke column. |
+   | Meteor | A rock with a fluttering fire-and-smoke trail, then a crater burst. |
+   | Cyclone | Ribbons of fire spiralling up a heat column. |
+
+   A unit test checks that the branches' shape sets differ.
+4. **Water is one smooth body.** Streams are cohesive ribbons with a flowing highlight, not frayed spray.
+5. **One clean layer for the wave.** Tidal Surge is a single sheet of water with one foam lip. There is no smoke and there are no spray bits.
+6. **Smoke and fog are wispy, never lumps.** They use domain-warped noise with soft wet edges.
+7. **Use card art for mood and colour only.** Do not copy it literally: no faces on orbs and no decorative crystals.
+8. **Review with the target monsters hidden** (the skill lab's hide-targets switch). Always look at animated sequences, not single frames.
+
 ## Look
 
-The look matches the card icons in `game/assets/cards/*.png`:
-
-- Flat washes in three stepped (cel) tones, with a slightly darker seam where two tones meet.
-- A thin edge in a darker shade of the same colour, plus softer pigment pooling inside it. There are never black outlines.
-- White "paper" highlights, paper grain, and ragged hand-painted edges.
-- Effects fade by drying away in patches (watercolour dissolve), not by a uniform fade.
-- Nothing is a rigid geometric solid. Every shape breathes a little (animated domain warp) and edges are "lost and found" (the pigment line fades in and out). Mist, smoke, spray and glows use soft wet-in-wet edges.
-- **Fire is alive (owner feedback: no flame "sticks").** Each flame has a round base and three curling, tapering tongues that sway and flicker, with small drops breaking off the tips. Bursts combine a ball of licking fire (FIREBALL field), a ring of living flames and soft rolling smoke.
-
-Palettes come from the icons: water blue, tide lilac, fire red-orange-yellow with an ember core, toxin lime with purple shadows, frost blue-lavender, chain white-lilac, orbit cyan, and warm smoke.
-
-Toxin uses lime on purple shadows so it stays readable on the green grass.
+- Flat washes in three stepped (cel) tones.
+- A soft edge in a darker shade of the same colour (never black) that comes and goes like a real pigment edge.
+- White paper highlights, paper grain, and a watercolour dissolve when effects fade.
+- Palettes:
+  - water: blue
+  - tide: lilac
+  - fire: yellow, orange and red, with warm smoke
+  - toxin: lime on purple shadows, so it stays readable on grass
+  - frost: blue and lavender
+  - chain: white and lilac
+  - orbit: cyan
 
 ## Concept → design
 
 | Skill | Concept | Painted design |
 | --- | --- | --- |
-| Water Shot | water droplet shot | Teardrop droplet with a white highlight and trailing drops. Splash crown and ripple on hit. |
-| AQUA RAILGUN | pierce a whole line | Gushing straight stream that swells from the slime and frays into spray at its edges, with foam patches, a misty halo, flying drops and a splash at both ends. |
-| PRESSURE JET | continuous high-pressure stream | Thinner gushing stream with drops peeling off, a soft mist and a splash where it breaks up. |
-| TIDAL SURGE | wide wave wall sweeping forward | A sheet of water rushing forward, seen from above: foam lines racing at the front, rolling froth and spray. |
-| Tide Ring | ripple ring | Concentric dry-brush lilac rings, scattered paint dots, and four faceted crystals on the diagonals (as on the card). |
-| REPULSION DOME | temporary push dome | Lilac soap-bubble dome with a highlight, a brush rim on the ground and push ripples. |
-| VACUUM COLLAPSE | expand, collapse inward, explode | Whirlpool spiral with bubbles sucked inward, then a burst. |
+| Water Shot | water droplet shot | Glossy droplet pulling a smooth, fluttering water tail. On hit: rings on the ground and a few drops thrown up on real arcs. |
+| AQUA RAILGUN | pierce a whole line | One smooth, gently wavering stream with a flowing highlight inside a soft mist. Rings and splash drops at the ends. |
+| PRESSURE JET | continuous high-pressure stream | A thinner stream that throbs with pressure pulses, with a ring and drops where it lands. |
+| TIDAL SURGE | wide wave wall sweeping forward | One sheet of water rushing forward: deep blue under the front, one scalloped foam lip, lighter water behind. |
+| Tide Ring | ripple ring | Two soft lilac ripples spreading over a faint glow. |
+| REPULSION DOME | temporary push dome | Lilac soap-bubble dome, a rim on the ground and push pulses. |
+| VACUUM COLLAPSE | expand, collapse inward, explode | Whirlpool spiral with soft bubbles sucked inward, then a glow and ring burst. |
 | RESONANCE CHAIN | mini shockwaves from hit foes | Rhythmic sound-wave rings, plus small rings on every hit foe. |
-| Toxin Blob | poison blob and puddle | Lime drop with bubbles on a purple shadow; bubbling puddle. |
-| NEUROTOXIN INJECTION | strong poison, bursts when time ends | Pulsing poison drop above the target, orbiting bubbles, then a splash burst. |
-| PLAGUE BLOOM | a bloom releasing spores | Purple poison flower opening on the ground and puffing spores in rhythm; spores fly to new victims. |
-| CORROSIVE MIASMA | acid fog following foes | Soft rolling purple and lime fog with acid bubbles and a stain. |
-| Frost Spike | ice spike | Faceted ice shard with a frosty trail and sparkles. |
-| GLACIAL BORER | big ice drill | A big faceted crystal point flanked by two smaller ones (as on the card), soft frost mist, orbiting ice chips and a frozen trail. |
-| WHITEOUT BREATH | ice breath cone | Soft snowy cone (same half-angle and length as the hit area), rolling snow clouds and snowflakes. |
-| CRYSTAL CHAINBURST | embedded crystals burst in chains | Crystal columns erupt on a frost star, then shatter into shards. |
-| Chain Spark | chaining lightning | Thin jagged white-lilac bolt with branches and a soft blue glow, and a spark at the target. |
-| JUDGMENT BOLT | sky lightning, three strikes | Bolt from the sky onto a rune circle, with a burst and shards. |
-| LIGHTNING NETWORK | foes linked by electricity | Rune node at the caster and bolts between foes. |
-| TESLA DOMAIN | stunning field around the slime | Rotating rune circle with crackling bolts on its rim. |
-| Orbit Core | orbiting cores | Glossy water orbs with a little slime face (as on the card), drop trails and sparkles. |
-| GRAVITY MACE | one big mace orb | Heavy core wrapped in gravity rings, with small orbiting drops. |
-| HUNTING SATELLITES | cores dart out and return | Smaller orbs whose trails stretch as they dart. |
-| ARC HALO | cores linked into a wall | Two thin strands of light twisting between the orbs over a soft glow, with sparkles. |
-| Inferno | fireball | A living flame that leans back as it flies, dropping little flames and sparks. The burst is a ball of licking fire in a ring of living flames, then warm rolling smoke over a scorched, glowing stain. |
-| SUNFALL CORE | charge a fire core, big explosion | A sun of fire (a licking fireball crowned with small living flames) falls onto a glowing circle, then a big burst of flames, a shock ring and a smoke column. |
-| METEOR SHOWER | meteors rain on many spots | Ember rocks trailing living flames and smoke streak in diagonally, then burst into flames and smoke. |
-| FLAME CYCLONE | fire storm moving to foes | Living flames whirl in a rising spiral round a soft swirl of heat, with embers, smoke on top and a scorched spiral on the ground (no solid column). |
-| Status | poison, chill, freeze, burn | Rising poison bubbles, frost crystals at the feet, and small living flames on burning foes. |
+| Toxin Blob | poison blob and puddle | Ball of goo stretching a sticky strand along its arc; bubbling lime puddle on a purple shadow. |
+| NEUROTOXIN INJECTION | strong poison, bursts when time ends | Pulsing poison drop over the target, then a goo splash, drops thrown on arcs and a toxic puff. |
+| PLAGUE BLOOM | a bloom releasing spores | Purple flower on the ground puffing wispy spore clouds each beat; spores drift to new victims with soft trails. |
+| CORROSIVE MIASMA | acid fog following foes | Low, wispy purple and lime fog with a few rising bubbles. |
+| Frost Spike | ice spike | Faceted ice shard trailing cold mist. |
+| GLACIAL BORER | big ice drill | A spinning drill (flutes slide toward the tip) wrapped in two spirals of frosty wind, with a mist trail. |
+| WHITEOUT BREATH | ice breath cone | Soft snowy cone (same half-angle and length as the hit area), rolling breath clouds and blowing snow. |
+| CRYSTAL CHAINBURST | embedded crystals burst in chains | Crystal columns erupt from a frost patch, then shatter into a few shards. |
+| Chain Spark | chaining lightning | Thin jagged bolt with a soft glow and a flash where it lands. |
+| JUDGMENT BOLT | sky lightning, three strikes | Bolt from the sky, a flash and a spreading ring. |
+| LIGHTNING NETWORK | foes linked by electricity | The caster glows as the first node; bolts link the foes. |
+| TESLA DOMAIN | stunning field around the slime | Soft electric field with crackling bolts on its rim. |
+| Orbit Core | orbiting cores | Glossy cores (no faces) with a glow and a tail that curves along the orbit. |
+| GRAVITY MACE | one big mace orb | A heavy glossy core with a deeper glow and a curved tail. |
+| HUNTING SATELLITES | cores dart out and return | Tails trace every dart and return. |
+| ARC HALO | cores linked into a wall | Twisting strands of light between the cores. |
+| Inferno (basic) | fireball | Ball of fire with a flowing flame trail. |
+| Inferno blast | explosion | Billowing fireball cooling into smoke, sparks on arcs, a scorch mark. |
+| Inferno scatter | sparks | Sparks flying out on wavy flame trails. |
+| Inferno burn | burning ground | Bed of licking fire on a scorched, glowing patch, embers rising. |
+| SUNFALL CORE | charge a fire core, big explosion | A sun of fire sinks under a trail of heat onto a glowing circle, then a dome of fire, fires round the rim, shock rings and a mushroom column of smoke. |
+| METEOR SHOWER | meteors rain on many spots | Glowing rocks fall along their curve with fluttering fire and smoke trails, then a crater burst and dust. |
+| FLAME CYCLONE | fire storm moving to foes | Three ribbons of fire spiral up round a soft heat column, a fire bed at the base, embers and smoke on top. |
+| Status | poison, chill, freeze, burn | Soft poison glow and bubbles, frost crystals at the feet, a small bed of fire on burning foes. |
 
 ## Technical notes
 
-- **One draw call.** One instanced draw call per frame. Each instance is a quad with a signed-distance shape or a noise-sculpted field (flame, fireball, smoke, liquid, stream, surf) shaded in the fragment shader; there are no textures.
-- **Review tip.** In the skill lab, hide the target monsters so they do not cover the effects.
-- **Instance data.** 32 floats per instance: centre, two half-axes, shape, seed, opacity, four shape parameters, three tones with dissolve / edge / wobble, aspect, shine and raggedness.
-- **Quad placement.** Quads are ground decals, camera-facing billboards, direction-aligned billboards, spans between two world points (beams, bolts), or walls (the wave).
-- **Draw order.** Ground decals draw first, by layer. Billboards are then sorted back to front per effect. Depth test is on and depth write is off. `lift` pulls effects on a foe slightly toward the camera so they draw in front of it.
-- **Inputs are read-only.** The renderer only reads combat objects. Hit areas, sizes, timing and damage are unchanged. Fire timings come from the live fire settings: blast length, Sunfall burst and smoke, meteor impact, and cyclone rise and fade.
-- **Old style switch.** The old style stays behind Settings > Test > "สีน้ำวาดมือแบบใหม่ (ปิด = เอฟเฟกต์เดิม)", saved as `slime.vfxStyle.v2`, until the owner approves. With the switch off, the Godot port and the painted fire images draw exactly as before.
+- **One draw call per frame.** Each instance is a quad with a signed-distance shape or a noise field, shaded in the fragment shader. There are no textures.
+- **Instance data: 40 floats.**
+  - The first 32: centre, two half-axes, shape, seed, opacity, four shape parameters, three tones with dissolve / edge / wobble, aspect, shine, raggedness and softness.
+  - The last 8 turn the quad into a bilinear ribbon segment: the fourth corner, a ribbon flag, and the path fraction at both ends plus the total length.
+  - Neighbouring segments share corners, so ribbons bend without seams.
+- **Quad placement.** Quads are ground decals, camera-facing billboards, direction-aligned billboards, spans between two points (lightning), or ribbons along a path.
+- **Draw order.** Ground decals draw first, by layer. Billboards and ribbon segments are sorted back to front. Depth test is on and depth write is off. `lift` pulls effects on a foe slightly toward the camera.
+- **Inputs are read-only.** Hit areas, sizes, timing and damage are unchanged. Fire timings come from the live fire settings.
+- **Derivatives.** All screen derivatives are taken before any `discard`, which is required for iPad/Metal.
+- **Old style switch.** The old style stays behind Settings > Test > "สีน้ำวาดมือแบบใหม่ (ปิด = เอฟเฟกต์เดิม)", saved as `slime.vfxStyle.v2`, until the owner approves.
 - **QA hook.** `?qa=1` exposes `__slimePaintedVfx` with `plan`, `draw`, `diagnostics` and `camera`.
