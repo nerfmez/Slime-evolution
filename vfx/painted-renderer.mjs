@@ -480,11 +480,11 @@ export function createPaintedSkillRenderer(gl) {
     const k = t / life; if (k <= 0 || k >= 1) return;
     const dr = o.drag ?? 3.5, m = (1 - Math.exp(-dr * t)) / dr, c = [p0[0] + v[0] * m, p0[1] + v[1] * m + (o.rise ?? 0) * t * t, p0[2] + v[2] * m];
     const sz = mix(s0, s1, 1 - Math.pow(1 - k, 2.2)), ero = smooth(o.erode ?? .35, 1, k), heat = clamp(heat0 * (1 - k * (o.cool ?? 1.6)));
-    at(c); bb(PUFF, c, sz * (o.sx ?? 1), sz * (o.sy ?? 1), pal, {rot: (o.spin ?? 0) * t, alpha: o.alpha ?? 1, p: [ero, heat, o.flame ?? 0, o.smoke ?? 0], seed: o.seed ?? 0, lift: o.lift ?? .2, edge: o.edge ?? .75, bias: o.bias ?? 0});
+    at(c); bb(PUFF, c, sz * (o.sx ?? 1), sz * (o.sy ?? 1), pal, {rot: (o.spin ?? 0) * t, alpha: o.alpha ?? 1, p: [ero, heat, o.flame ?? 0, o.smoke ?? 0], seed: o.seed ?? 0, lift: o.lift ?? .2, edge: o.edge ?? .75, soft: o.soft ?? 0, bias: o.bias ?? 0});
   }
   function fireBlast(e) { // Inferno burst: a white-hot dome swells on the ground, turns to fire and dissolves; the blast throws spinning balls of smoke outward and dust rolls along the ground
     const t = e.age, r = e.r || 1, seed = hash(e.x * .9 + e.z * 1.7), sq = Math.abs(cam.u[1]) > .05 ? Math.abs(cam.f[1]) : .62;
-    disc(LIQUID, e.x, e.z, r * 1.05, P.scorch, {alpha: .55 * smooth(0, .08, t) * (1 - smooth(1.2, 1.65, t)), p: [.55, 2, 1, 0], layer: 0, seed, dissolve: smooth(1.2, 1.65, t), edge: .5});
+    disc(LIQUID, e.x, e.z, r * 1.05, P.scorch, {alpha: .55 * smooth(0, .08, t) * (1 - smooth(1.2, 1.65, t)), p: [.1, 2, 1, 0], wobble: .01, layer: 0, seed, dissolve: smooth(1.2, 1.65, t), edge: .5});
     glowDecal(e.x, e.z, r * 1.8, P.fire, .8 * (1 - smooth(.08, .6, t)));
     const hz = 1 - smooth(.1, .7, t); if (hz > 0) { const g = [e.x, r * .45, e.z]; at(g); glow(g, r * 2.4, P.ember, .45 * hz, {lift: .2, bias: -.2}); } // red-hot haze
     const R = r * (.25 + .8 * (1 - Math.pow(1 - clamp(t / .14), 3)) + .1 * smooth(.14, .6, t)), fl = smooth(.06, .22, t), heat = 1 - smooth(.08, .45, t), ero = smooth(.32, .85, t);
@@ -496,9 +496,10 @@ export function createPaintedSkillRenderer(gl) {
       puff(p0, [dir[0] * sp, dir[1] * sp * .8, dir[2] * sp], t - born, .8 + .3 * hash(j * 6.7 + seed), r * .2, r * .42, P.smoke, 0,
         {drag: 5, rise: .2, seed: j * 7 + seed * 11, erode: 0, smoke: 1, spin: (hash(j * 2.2 + seed) < .5 ? -1 : 1) * (1.2 + hash(j * 5.3 + seed)), edge: .5, bias: -.02});
     }
+    { const k = clamp((t - .06) / .5); if (k > 0 && k < 1) disc(RING, e.x, e.z, r * mix(1, 2.1, 1 - Math.pow(1 - k, 2)), P.dust, {alpha: .8 * (1 - smooth(.5, 1, k)), p: [.8, .12 * (1 - k) + .03, .5, 0], layer: 1, seed, soft: .35, edge: .4}); } // a round ring of dust rolling out
     for (let j = 0; j < 14; j++) { // ground dust rolling out from the dome's base
       const a = j * TAU / 14 + hash(j + seed) * .4, sp = r * (1.3 + .6 * hash(j * 2.3 + seed)), born = .08 + .04 * hash(j * 5.5 + seed);
-      puff([e.x + Math.cos(a) * r * .8, .08, e.z + Math.sin(a) * r * .65], [Math.cos(a) * sp, .05, Math.sin(a) * sp * .8], t - born, .7 + .25 * hash(j * 6.1 + seed), r * .18, r * .34, P.dust, 0, {drag: 3.5, sx: 1.5, sy: .75, seed: j * 3 + seed * 7, erode: 0, smoke: 1, lift: .05});
+      puff([e.x + Math.cos(a) * r * .8, .08, e.z + Math.sin(a) * r * .65], [Math.cos(a) * sp, .05, Math.sin(a) * sp * .8], t - born, .55 + .2 * hash(j * 6.1 + seed), r * .22, r * .4, P.dust, 0, {drag: 3.5, sx: 1.4, sy: .6, seed: j * 3 + seed * 7, erode: .3, lift: .05, edge: .15, soft: .5, alpha: .75});
     }
     if (t > .14 && t < .9) for (let j = 0; j < 8; j++) { const an = j * TAU / 8 + seed * 5 + hash(j * 7 + seed) * .6, sp = 3 + 2 * hash(j + seed); ember([e.x, .5, e.z], [Math.cos(an) * sp, 3 + 2 * hash(j * 3 + seed), Math.sin(an) * sp], t - .12, .035 + .02 * hash(j * 5 + seed), 1 - smooth(.5, .9, t), j); }
   }
