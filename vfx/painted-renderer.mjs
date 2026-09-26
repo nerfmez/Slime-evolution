@@ -794,7 +794,7 @@ void main(){
   float lit=lw/ws; // puffs nearer the viewer win, blended so no seam shows between them
   float n=fbm(vQ*2.3+vec2(seed,-t*.5)),fl=fbm(vec2(vQ.x*3.2+seed,vQ.y*2.4-t*1.6));
   d=dm+(n-.5)*P.y*.08;
-  tone=clamp(lit*.5+(fl-.5)*.75+(P.z-.5)*.6+.14-max(0.,-vQ.y-.3)*.35,0.,1.);
+  tone=clamp(.5+(lit-.55)*.95+(fl-.5)*.6+(P.z-.5)*.36-max(0.,-vQ.y-.3)*.35,0.,1.);
  }else if(k==37){ // a bed of fire: flowing noise rises through a soft mask, so many tongues of different heights lick up and break away (base at -y)
   float t=T*P.x,y01=(vQ.y+1.)*.5,ax=abs(vQ.x);
   float n=fbm(vec2(q.x*1.9+seed,vQ.y*1.5-t*2.3))*.62+fbm(vec2(q.x*3.8-seed,vQ.y*3.1-t*3.7))*.38;
