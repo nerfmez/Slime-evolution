@@ -80,6 +80,14 @@ export function applyPaintedVfx(bundle, html) {
   b = replaceOne(b, 'castInterval(){let e=z[this.preset].family;return e?Ct(e,this.combat.skills[e],this.combat.mods).cooldown||4.8', 'castInterval(){let e=z[this.preset].family;return e?Ct(e,this.combat.skills[e],this.combat.mods).cooldown*(e===`water`&&this.combat.skills[e].evo===`flow`?1.5:1)||4.8', 'lab tidal surge pace');
   // Owner request (2026-09-26): CRYSTAL CHAINBURST is bigger and wider: both burst radii are 1.4x.
   b = replaceOne(b, 'r:(1.18+.08*s.shatter)*o.A,secondaryRadius:(.82+.06*s.shatter)*o.A', 'r:(1.18+.08*s.shatter)*o.A*1.4,secondaryRadius:(.82+.06*s.shatter)*o.A*1.4', 'crystal chainburst size');
+  // Owner request (2026-09-26, round 2): CRYSTAL CHAINBURST is a thicket of ice spikes that stab up out of the ground ONE AT A
+  // TIME, far enough apart in time to tell apart (9 spikes, .16 s apart, positions jumping round the patch). Each spike hits and
+  // chills the foes right round it when it erupts (radius .42x the patch, .55x the old burst damage), instead of one instant
+  // burst that chained to new bursts. Positions come from the cast point, so later RNG stays deterministic.
+  b = replaceOne(b, 'r:(1.18+.08*s.shatter)*o.A*1.4,secondaryRadius:(.82+.06*s.shatter)*o.A*1.4,life:.3,damage:o.ref*1.55,generation:0,seen:new Set',
+    'r:(1.18+.08*s.shatter)*o.A*1.4,secondaryRadius:(.82+.06*s.shatter)*o.A*1.4,life:9*.16+.55,damage:o.ref*1.55*.55,generation:0,seen:new Set,spikes:9,every:.16,done:0,sr:(1.18+.08*s.shatter)*o.A*1.4*.42,seed:Math.abs(i.x*1.7+i.z*2.3)%6.2832', 'ice spike thicket');
+  b = replaceOne(b, 'if([`ring`,`resonance`,`dome`,`vacuum`,`chainburst`].includes(i.kind)){',
+    'if(i.kind===`chainburst`&&i.spikes){for(let k=Math.min(i.spikes,Math.floor(i.age/i.every)+1);i.done<k;i.done++){let j=i.done*5%i.spikes,f=j?Math.sqrt(j/(i.spikes-1)):0,g=j*2.39996+i.seed,x=i.x+Math.cos(g)*i.r*.8*f,z=i.z+Math.sin(g)*i.r*.8*f;for(let t of n.enemies)t.hp>0&&Math.hypot(t.x-x,t.z-z)<i.sr+t.radius&&(e.elementalHit(`frost`,t,i.damage,x,z),Et(e,n,t,i.s))}}else if([`ring`,`resonance`,`dome`,`vacuum`,`chainburst`].includes(i.kind)){', 'ice spikes erupt one at a time');
   b = replaceOne(b, 'if([`beam`,`jet`,`wave`,`borer`,`cone`].includes(i.kind)){i.speed',
     'if(i.kind===`jet`&&i.follow&&r){i.x=r[0];i.z=r[2];let T=i.lock&&i.lock.hp>0&&Math.hypot(i.lock.x-r[0],i.lock.z-r[2])<i.range+i.lock.radius?i.lock:n.enemies.filter(e=>e.hp>0&&Math.hypot(e.x-r[0],e.z-r[2])<i.range+e.radius).sort((e,t)=>Math.hypot(e.x-r[0],e.z-r[2])-Math.hypot(t.x-r[0],t.z-r[2]))[0];if(T){i.lock=T;let o=T.x-r[0],s=T.z-r[2],c=Math.hypot(o,s)||1;i.dx=o/c;i.dz=s/c;i.length=Math.max(.8,c)}else i.length=i.range}if([`beam`,`jet`,`wave`,`borer`,`cone`].includes(i.kind)){i.speed',
     'pressure jet follows the slime');
