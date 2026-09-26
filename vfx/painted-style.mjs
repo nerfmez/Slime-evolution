@@ -72,6 +72,14 @@ export function applyPaintedVfx(bundle, html) {
   // follows the slime every frame, so the stream stays on that foe while the slime moves.
   b = replaceOne(b, 'r:(1.55+.23*s.flow)*o.A,speed:5+.25*s.flow', 'r:(1.55+.23*s.flow)*o.A*1.7,speed:2.6+.15*s.flow', 'tidal surge wide and short');
   b = replaceOne(b, 'maxTargets:1+o.pierce,push:.32', 'maxTargets:1,push:.32,follow:1,lock:i,range:8.4+.45*s.flow', 'pressure jet single target');
+  // Owner report (2026-09-26): the wave "blinks". It lived 1.1 s but was recast every ~.9 s, so a new wave popped up while the
+  // last one was still crashing. Tidal Surge now waits 1.5x its cooldown and hits 1.5x as hard (same damage per second), so each
+  // wave finishes before the next rises. The skill lab repeats it at the same pace.
+  b = replaceOne(b, 'speed:2.6+.15*s.flow,life:1.1,damage:L(o.ref*1.02)', 'speed:2.6+.15*s.flow,life:1.1,damage:L(o.ref*1.02*1.5)', 'tidal surge damage per wave');
+  b = replaceOne(b, 'seen:new Set})}return o.cooldown}function jt(', 'seen:new Set})}return t===`water`&&c===`flow`?o.cooldown*1.5:o.cooldown}function jt(', 'tidal surge cooldown');
+  b = replaceOne(b, 'castInterval(){let e=z[this.preset].family;return e?Ct(e,this.combat.skills[e],this.combat.mods).cooldown||4.8', 'castInterval(){let e=z[this.preset].family;return e?Ct(e,this.combat.skills[e],this.combat.mods).cooldown*(e===`water`&&this.combat.skills[e].evo===`flow`?1.5:1)||4.8', 'lab tidal surge pace');
+  // Owner request (2026-09-26): CRYSTAL CHAINBURST is bigger and wider: both burst radii are 1.4x.
+  b = replaceOne(b, 'r:(1.18+.08*s.shatter)*o.A,secondaryRadius:(.82+.06*s.shatter)*o.A', 'r:(1.18+.08*s.shatter)*o.A*1.4,secondaryRadius:(.82+.06*s.shatter)*o.A*1.4', 'crystal chainburst size');
   b = replaceOne(b, 'if([`beam`,`jet`,`wave`,`borer`,`cone`].includes(i.kind)){i.speed',
     'if(i.kind===`jet`&&i.follow&&r){i.x=r[0];i.z=r[2];let T=i.lock&&i.lock.hp>0&&Math.hypot(i.lock.x-r[0],i.lock.z-r[2])<i.range+i.lock.radius?i.lock:n.enemies.filter(e=>e.hp>0&&Math.hypot(e.x-r[0],e.z-r[2])<i.range+e.radius).sort((e,t)=>Math.hypot(e.x-r[0],e.z-r[2])-Math.hypot(t.x-r[0],t.z-r[2]))[0];if(T){i.lock=T;let o=T.x-r[0],s=T.z-r[2],c=Math.hypot(o,s)||1;i.dx=o/c;i.dz=s/c;i.length=Math.max(.8,c)}else i.length=i.range}if([`beam`,`jet`,`wave`,`borer`,`cone`].includes(i.kind)){i.speed',
     'pressure jet follows the slime');

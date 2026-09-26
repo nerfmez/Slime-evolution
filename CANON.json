@@ -21,7 +21,7 @@
     "bundleSHA256": "a88fd9e4ca5b35f6a1b06799e0fd46806c88ca1f0a7cde8621494f2604d4115e",
     "htmlSHA256": "70dcfc240d46d731e60fbc2b8b261684572c7d7a8596005d9460a9dcb6e3911e"
   },
-  "runtimeTree": "9cd9b18666dac87477ceb743352d9150eeb64eb1",
+  "runtimeTree": "48469947e353dda23c9d52da5aff5a8973fc7ce7",
   "species": {
     "assemblerSHA256": "e2bb471b7013268d36e641e718b517cdfefb02459c767968554d95a04580bc59",
     "tree": "f855e1d4bab5484f5e8738f41216f23170020eaf"
@@ -36,7 +36,7 @@
     "moduleSHA256": "625d76894cd7c2de868f2e3b40082a825214eceeb4d6813dbc8e376efb01482f"
   },
   "paintedVfx": {
-    "moduleSHA256": "6c60114df8944cc7cbcebcf1924a0be096829ba2debc6c943bbc2863821eb6bf",
-    "rendererSHA256": "d26d3b01b7d5675eb6a8e298a4ce9bdfa142772f68c9226f906418bb173ca0eb"
+    "moduleSHA256": "48a08185db6b88c5a78ab266fb485ce131c005de8af83a7f70d2e0c7a62b8a0f",
+    "rendererSHA256": "5f6b3bfab37ea1884b5a156b4b4dd546b35b4574daf9786dbeb913baea982828"
   }
 }

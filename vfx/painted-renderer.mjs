@@ -21,7 +21,7 @@ export function createPaintedSkillRenderer(gl) {
   const BLOB = 0, RING = 1, DROP = 2, SHARD = 4, SPIRAL = 9, BOLT = 11, FAN = 12, FLOWER = 13, RIBBON = 17, DOME = 18,
     DRILL = 19, COLUMN = 20, LIQUID = 26, SURF = 29,
     WATER_R = 30, FIRE_R = 31, GLOW_R = 32, GOO_R = 33, FOG = 35, FIRELINE = 37, GLOW = 38, ROCK = 39,
-    FLAMEBALL = 40, SUN = 41, EXPLODE = 42, TORNADO = 43, PUFF = 44, DOME_FIRE = 45, CRATER = 46, WATERBALL = 48, SHEET = 34;
+    FLAMEBALL = 40, SUN = 41, EXPLODE = 42, TORNADO = 43, PUFF = 44, DOME_FIRE = 45, CRATER = 46, WATERBALL = 48, SHEET = 34, ICE = 49, CRYSTAL = 50;
   // Palettes: light / mid / dark wash. The pigment edge is derived from the dark wash.
   const P = {
     shadow: tones('#6f8a4c', '#5f7a40', '#4c6533'),
@@ -31,16 +31,16 @@ export function createPaintedSkillRenderer(gl) {
     hot: tones('#fffbe6', '#fff0b0', '#ffc860'), dust: tones('#eadfce', '#bfa98f', '#86705c'), stone: tones('#d8c6ad', '#a68e74', '#76604c'), dustLight: tones('#f6efe4', '#dccbb4', '#ad977e'), blaze: tones('#fff3b8', '#ffb22e', '#f0561e'), smoke: tones('#f7f1e8', '#ddd1c3', '#b4a292'), scorch: tones('#cda57e', '#9d6c4d', '#6d4433'),
     toxin: tones('#eef8a2', '#b9d64c', '#6d9a26'), toxinDeep: tones('#cfe274', '#8aae34', '#4a6e1d'), toxinShade: tones('#ecdcf6', '#be9fdc', '#7c58a8'),
     petal: tones('#f3daf7', '#cc93e2', '#8a4fae'), spore: tones('#fdfbe0', '#eef3a4', '#b3c455'),
-    frost: tones('#f7f9ff', '#c8d5f8', '#8fa0e8'), frostDeep: tones('#dfe6fb', '#a3b2ee', '#6b7cd2'),
+    frost: tones('#f6fdff', '#c2ecf8', '#72c3e3'), frostDeep: tones('#e2f7fd', '#8fd6ef', '#3f9ccb'), ice: tones('#fbfeff', '#cdeff9', '#7fc9e6'),
     chain: tones('#ffffff', '#e8e2fc', '#aa9de6'), chainBlue: tones('#e5ecff', '#a8baf6', '#627ad8'),
-    orbit: tones('#f2fbff', '#a6dff8', '#58b0e6'), orbitDeep: tones('#c8e9fb', '#70bbea', '#3c84c8'),
+    orbit: tones('#f2fbff', '#a6dff8', '#58b0e6'), orbitDeep: tones('#c8e9fb', '#70bbea', '#3c84c8'), star: tones('#ffffff', '#d4f1fd', '#8fd2f2'),
   };
   const Z4 = [0, 0, 0, 0], NO_RIBBON = [0, 0, 0, 0, 0, 0, 0, 0];
   let items = [], seq = 0, depth = 0, cfg = {}, now = 0;
   const cam = {f: [0, .6247, .7809], r: [1, 0, 0], u: [0, .7809, -.6247]};
   const diagnostics = {version: 'painted-watercolor-v2', instances: 0, calls: 0, kinds: {}, invalid: 0};
   const note = tag => { diagnostics.kinds[tag] = (diagnostics.kinds[tag] || 0) + 1; };
-  const impactStates = new WeakMap(), history = new WeakMap();
+  const impactStates = new WeakMap(), history = new WeakMap(), freezeStates = new WeakMap();
 
   function setCamera(vp) {
     const a = [vp[0], vp[4], vp[8]], b = [vp[1], vp[5], vp[9]];
@@ -113,7 +113,7 @@ export function createPaintedSkillRenderer(gl) {
     for (let i = 0; i < n - 1; i++) {
       const p0 = Q[i], p1 = Q[i + 1], s0 = side[i], s1 = side[i + 1], w0 = widths[i], w1 = widths[i + 1];
       const key = ((pts[i][0] + pts[i + 1][0]) * cam.f[0] + (pts[i][1] + pts[i + 1][1]) * cam.f[1] + (pts[i][2] + pts[i + 1][2]) * cam.f[2]) / 2;
-      put(style, addv(p0, s0, -w0), addv(p1, s1, -w1), addv(p0, s0, w0), pal, o, [...addv(p1, s1, w1), 1, acc[i] / total, acc[i + 1] / total, total, 0], key);
+      put(style, addv(p0, s0, -w0), addv(p1, s1, -w1), addv(p0, s0, w0), pal, o, [...addv(p1, s1, w1), 1, acc[i] / total, acc[i + 1] / total, total, 0], o.key ?? key);
     }
   }
   // A straight tail behind `head` that flutters sideways like cloth in the wind.
@@ -262,12 +262,12 @@ export function createPaintedSkillRenderer(gl) {
     // the cross-section in (forward, up) units of H: a short back slope, the crest, and a lip that curls over and, when it crashes, reaches the ground
     const lipF = .15 + .45 * curl + .5 * crash, lipY = mix(1, .55, curl) * (1 - .9 * crash);
     const prof = [[-.75, .02], [-.5, .36], [-.25, .68], [-.05, .9], [.12, 1], [.12 + lipF * .55, mix(1, .98, curl)], [.12 + lipF * .9, mix(.9, .82, curl) * (1 - .5 * crash)], [.12 + lipF, lipY]];
-    const tones = [.08, .3, .5, .66, .8], n = 19, rows = prof.length;
+    const tones = [.08, .3, .5, .66, .8], n = 19, rows = prof.length, wk = base[0] * cam.f[0] + H * .5 * cam.f[1] + base[2] * cam.f[2]; // one sort key for the whole wave, so its strips never swap order (that flickers)
     const at3 = (i, u) => { const e = 1 - Math.pow(Math.abs(u), 4), [f, y] = prof[i]; const g = f * H * .8 * (.3 + .7 * e); return [base[0] + side[0] * w * 1.08 * u + d[0] * g, .02 + y * H * e, base[2] + side[2] * w * 1.08 * u + d[2] * g]; };
     const row = (i0, i1, style, pal, o) => { // one strip of the surface between two points of the cross-section
       const pts = [], ws = [], a0 = at3(i0, 0), a1 = at3(i1, 0), s = cross3(cam.f, side), dir = Math.sign((a1[0] - a0[0]) * s[0] + (a1[1] - a0[1]) * s[1] + (a1[2] - a0[2]) * s[2]) || 1;
       for (let m = 0; m < n; m++) { const u = (m / (n - 1) - .5) * 2, q0 = at3(i0, u), q1 = at3(i1, u); pts.push([(q0[0] + q1[0]) / 2, (q0[1] + q1[1]) / 2, (q0[2] + q1[2]) / 2]); ws.push(Math.hypot(q1[0] - q0[0], q1[1] - q0[1], q1[2] - q0[2]) * (o.wide ?? .75) + .02); }
-      at(pts[n >> 1]); ribbon(style, pts, ws, pal, {...o, p: o.p || [tones[i0], tones[i1], i0 + .5, dir]});
+      ribbon(style, pts, ws, pal, {...o, key: wk, p: o.p || [tones[i0], tones[i1], i0 + .5, dir]});
     };
     for (let i = 0; i < 4; i++) row(i, i + 1, SHEET, P.waterDeep, {alpha: A * (1 - smooth(.8, 1, p)), seed, edge: 0, soft: .5, wide: 1, bias: i * .004}); // the body
     for (let i = 4; i < rows - 1; i++) row(i, i + 1, GLOW_R, P.foam, {alpha: A * (.6 + .4 * curl) * (1 - smooth(.8, 1, p)), seed: seed + i, edge: 0, soft: .35, p: [0, 1, 0, 0], bias: .02 + i * .004}); // the curling lip of foam
@@ -383,7 +383,8 @@ export function createPaintedSkillRenderer(gl) {
     const d = [t.dx, 0, t.dz], c = [t.x, .44, t.z], A = clamp((t.life - t.age) * 6) * smooth(0, .05, t.age), sd = hash(t.x * 5 + t.z);
     at(c); shadow(t.x, t.z, .2, .2 * A);
     streak(GLOW_R, addv(c, d, -.1), [-d[0], .03, -d[2]], Math.min(.9, (t.speed || 9) * t.age), .1, P.frost, {alpha: .8 * A, seed: sd, soft: .5, edge: 0, flutter: .3, lift: .2});
-    aim(SHARD, c, d, .34, .14, P.frost, {alpha: A, p: [.36, 1, 0, 0], seed: sd, bias: .02, lift: .25});
+    glow(c, .45, P.frost, .35 * A, {bias: -.01, lift: .2});
+    aim(CRYSTAL, c, d, .42, .17, P.ice, {alpha: A, p: [.3, .7, 0, 0], seed: sd, bias: .02, lift: .25, edge: .5});
   }
   function frostBorer(t) { // GLACIAL BORER: a spinning ice drill wrapped in a spiral of frosty wind
     const d = [t.dx, 0, t.dz], p = [t.x, .55, t.z], A = clamp((t.life - t.age) * 5) * smooth(0, .06, t.age), sd = hash(t.x + t.z * 3), R = t.r;
@@ -411,17 +412,19 @@ export function createPaintedSkillRenderer(gl) {
       mote([t.x + Math.sin(yaw + a) * dist, .2 + .5 * hash(j * 3) + k * .2, t.z + Math.cos(yaw + a) * dist], .03 + .03 * hash(j + 5), j % 3 ? P.foam : P.frost, A * smooth(0, .1, k) * (1 - smooth(.75, 1, k)), {lift: .25, bias: .03});
     }
   }
-  function frostCluster(t) { // CRYSTAL CHAINBURST: crystals erupt from a patch of frost, then shatter
-    const p = clamp(t.age / t.life), r = t.r, A = 1 - smooth(.8, 1, p), grow = smooth(0, .4, p), seed = hash(t.x * 1.7 + t.z * .3), g = t.generation || 0;
-    disc(LIQUID, t.x, t.z, r * (.5 + .6 * grow), P.frost, {alpha: .6 * A, p: [.6, 3, 0, 0], layer: 1, seed, shine: .6, edge: .5});
-    const n = g > 0 ? 4 : 6;
+  function frostCluster(t) { // CRYSTAL CHAINBURST: a cluster of big ice crystals bursts out of a frozen patch, glints, then shatters into shards and cold mist
+    const p = clamp(t.age / t.life), r = t.r, A = 1 - smooth(.8, 1, p), grow = 1 - Math.pow(1 - smooth(0, .35, p), 2.5), seed = hash(t.x * 1.7 + t.z * .3), g = t.generation || 0;
+    disc(LIQUID, t.x, t.z, r * (.6 + .5 * grow), P.frost, {alpha: .65 * A, p: [.6, 3, 0, 0], layer: 1, seed, shine: .7, edge: .4});
+    glowDecal(t.x, t.z, r * 1.1, P.frost, .5 * A);
+    const n = g > 0 ? 5 : 8, gone = smooth(.72, .95, p);
     for (let j = 0; j < n; j++) {
-      const an = hash(j * 5.1 + seed) * TAU, dist = j ? r * (.22 + .38 * hash(j * 2.3 + seed)) : 0, h = r * (j ? .6 + .3 * hash(j * 1.7 + seed) : 1.15) * grow, w = Math.max(.01, h * .25);
+      const an = j ? j / (n - 1) * TAU + hash(j * 5.1 + seed) * .6 : 0, dist = j ? r * (.3 + .35 * hash(j * 2.3 + seed)) : 0, h = r * (j ? .55 + .3 * hash(j * 1.7 + seed) : 1.05) * grow, w = Math.max(.01, h * (j ? .3 : .34));
       const base = [t.x + Math.cos(an) * dist, 0, t.z + Math.sin(an) * dist]; at(base);
-      const tilt = (hash(j + seed) - .5) * .7, u = screenDir(Math.PI / 2 + tilt);
-      bb(COLUMN, addv(base, u, h / 2), h / 2, w, j % 2 ? P.frost : P.frostDeep, {rot: Math.PI / 2 + tilt, asp: h / 2 / w, alpha: A * (1 - smooth(.72, .95, p)), p: [.3, 0, 0, 0], seed: j, lift: .15});
+      const tilt = j ? Math.cos(an) * .55 + (hash(j + seed) - .5) * .3 : 0, u = screenDir(Math.PI / 2 + tilt); // the outer crystals lean away from the centre
+      bb(CRYSTAL, addv(base, u, h / 2), h / 2, w, j % 3 ? P.ice : P.frostDeep, {rot: Math.PI / 2 + tilt, asp: h / 2 / w, alpha: A * (1 - gone), p: [.22, .6, 0, 0], seed: j, lift: .15, edge: .5});
     }
-    if (p > .6) { const k = smooth(.6, 1, p); for (let j = 0; j < 5; j++) { const an = j * TAU / 5 + seed * 4, c = [t.x + Math.cos(an) * r * (.3 + k * .8), .25 + Math.sin(k * Math.PI) * .5, t.z + Math.sin(an) * r * (.3 + k * .8)]; at(c); aim(SHARD, c, [Math.cos(an), .5, Math.sin(an)], .15, .07, P.frost, {alpha: 1 - k, p: [.4, 1, 0, 0], seed: j, lift: .2}); } }
+    if (p > .6) { const k = smooth(.6, 1, p); at([t.x, .4, t.z]); fog([t.x, .4, t.z], r * (.5 + .7 * k), r * (.35 + .4 * k), P.frost, .6 * (1 - k), {seed, lift: .3, dissolve: smooth(.4, 1, k)});
+      for (let j = 0; j < 8; j++) { const an = j * TAU / 8 + seed * 4, c = [t.x + Math.cos(an) * r * (.3 + k * 1.1), .25 + Math.sin(k * Math.PI) * .6, t.z + Math.sin(an) * r * (.3 + k * 1.1)]; at(c); aim(CRYSTAL, c, [Math.cos(an), .5, Math.sin(an)], .2, .08, P.ice, {alpha: 1 - k, p: [.35, .5, 0, 0], seed: j, lift: .2}); } }
   }
   function frostBurst(t) { // a frozen foe shattering: a puff of frost and a few shards
     const p = clamp(t.age / t.life), r = t.r, A = 1 - smooth(.55, 1, p), q = 1 - (1 - p) ** 2, seed = hash(t.x + t.z * 5);
@@ -479,7 +482,18 @@ export function createPaintedSkillRenderer(gl) {
       at(c); shadow(o.x, o.z, R * .85, .2);
       if (trail.length > 2) ribbon(GLOW_R, trail, trail.map((_, i) => R * .8 * Math.pow(1 - i / (trail.length - 1), .8) + .005), pal, {alpha: .8, seed, soft: .35, edge: .2, bias: -.02});
       glow(c, R * 1.9, pal, big ? .5 : .4, {bias: -.03});
-      bb(BLOB, c, R, R, pal, {p: [1, .3, big ? 0 : .2, 0], seed, bias: .01, wobble: big ? .05 : 0});
+      if (big) { // GRAVITY MACE: a small star, its corona licking out, with moons circling it on tilted orbits
+        glow(c, R * 3, P.orbit, .4, {bias: -.04, lift: R * 2});
+        bb(SUN, c, R * 1.45, R * 1.45, P.star, {p: [1.6, 1, 0, 0], seed, bias: .01, edge: .2, lift: R * 2});
+        bb(BLOB, c, R * .78, R * .78, P.star, {p: [1, .3, 0, 0], seed, bias: .02, lift: R * 2, edge: .2}); // its bright, round core
+        for (let k = 0; k < 3; k++) {
+          const rad = R * (1.75 + .55 * k), tl = [.45, -.6, .9][k], sp = [2.6, -1.9, 1.4][k], ph = k * 2.1 + seed * 5, e1 = [Math.cos(k * 1.3), 0, Math.sin(k * 1.3)], e2 = norm([-e1[2] * Math.cos(tl), Math.sin(tl), e1[0] * Math.cos(tl)]);
+          const pt = a => [c[0] + (e1[0] * Math.cos(a) + e2[0] * Math.sin(a)) * rad, c[1] + e2[1] * Math.sin(a) * rad, c[2] + (e1[2] * Math.cos(a) + e2[2] * Math.sin(a)) * rad], a0 = now * sp + ph, m = pt(a0), mr = R * [.3, .24, .19][k];
+          const tp = [], tw = []; for (let i = 0; i <= 10; i++) { tp.push(pt(a0 - Math.sign(sp) * i * .12)); tw.push(mr * .7 * (1 - i / 10) + .004); }
+          at(m); ribbon(GLOW_R, tp, tw, k % 2 ? P.foam : P.orbit, {alpha: .7, seed: seed + k, soft: .4, edge: 0});
+          glow(m, mr * 2.2, P.orbit, .45, {bias: -.01}); bb(BLOB, m, mr, mr, k % 2 ? P.orbit : P.foam, {p: [1, .3, 0, 0], seed: seed + k, bias: .01});
+        }
+      } else bb(BLOB, c, R, R, pal, {p: [1, .3, .2, 0], seed, bias: .01});
     }
   }
   function orbitArc(t) { // ARC HALO: twisting strands of light linking the cores
@@ -662,8 +676,14 @@ export function createPaintedSkillRenderer(gl) {
       }
       if (e.chill > 0 || e.frozen > 0) {
         note('status:frost'); const fr = e.frozen > 0;
-        if (fr) disc(LIQUID, e.x, e.z, rad * 1.2, P.frost, {alpha: .6, p: [.6, 3, 0, 0], layer: 2, seed: e.id || 0, shine: .6, edge: .5});
-        for (let j = 0; j < 3; j++) { const an = j * 2.094 + (e.id || 0), base = [e.x + Math.cos(an) * rad, 0, e.z + Math.sin(an) * rad * .6], h = fr ? .4 : .22, w = h * .3; at(base); bb(COLUMN, addv(base, cam.u, h / 2), h / 2, w, j % 2 ? P.frost : P.frostDeep, {rot: Math.PI / 2 + (j - 1) * .35, asp: h / 2 / w, p: [.3, 0, 0, 0], lift: .2, seed: j}); }
+        let st = freezeStates.get(e); if (fr && (!st || now < st.seen - 1e-6 || now - st.seen > .25)) { st = {since: now}; freezeStates.set(e, st); } if (st) st.seen = now;
+        if (fr) { // frozen solid: frost spreads over the ground and a block of ice grows up around the foe
+          const g = smooth(0, .22, now - st.since);
+          disc(LIQUID, e.x, e.z, rad * (1 + .5 * g), P.frost, {alpha: .75, p: [.6, 3, 0, 0], layer: 2, seed: e.id || 0, shine: .7, edge: .4});
+          const c = [e.x, rad * 1.3, e.z]; at(c);
+          bb(ICE, c, rad * 1.5, rad * 1.5, P.ice, {alpha: .95, p: [g, 0, 0, 0], seed: e.id || 0, lift: rad * 1.4, shine: .6, edge: .4});
+          for (let j = 0; j < 4; j++) { const an = j * 1.7 + (e.id || 0), base = [e.x + Math.cos(an) * rad * 1.05, 0, e.z + Math.sin(an) * rad * .7], h = rad * (.55 + .2 * hash(j + (e.id || 0))) * g, w = h * .32, tilt = Math.cos(an) * .6; at(base); bb(CRYSTAL, addv(base, screenDir(Math.PI / 2 + tilt), h / 2), h / 2, w, j % 2 ? P.ice : P.frostDeep, {rot: Math.PI / 2 + tilt, asp: h / 2 / w, p: [.25, .6, 0, 0], lift: rad * 1.5, seed: j, edge: .5}); }
+        } else for (let j = 0; j < 3; j++) { const an = j * 2.094 + (e.id || 0), base = [e.x + Math.cos(an) * rad, 0, e.z + Math.sin(an) * rad * .6], h = .24, w = h * .3; at(base); bb(CRYSTAL, addv(base, cam.u, h / 2), h / 2, w, j % 2 ? P.ice : P.frostDeep, {rot: Math.PI / 2 + (j - 1) * .35, asp: h / 2 / w, p: [.25, .6, 0, 0], lift: .2, seed: j}); } // chilled: a few ice crystals at its feet
       }
     }
   }
@@ -910,6 +930,23 @@ void main(){
   d=w-.92;float bands=floor(w*P.x)/P.x;
   tone=clamp(.05+bands*.85+(fbm(q*2.4+seed*3.)-.5)*.15,0.,1.);
   hd=P.y>0.?abs(w-.86)-.035*P.y:9.;
+ }else if(k==49){ // a block of ice around a frozen foe: an uneven faceted shell, clear in the middle, frosted toward its rim, bright facet ridges; it grows from the ground up (P.x grow 0..1)
+  vec2 V0=vec2(-.78,-.96),V1=vec2(.84,-.96),V2=vec2(.99,-.08),V3=vec2(.72,.9),V4=vec2(-.08,.99),V5=vec2(-.92,.52),C=vec2(.08+.1*sin(seed*5.),.16);
+  d=max(max(max(edge(q,V0,V1),edge(q,V1,V2)),max(edge(q,V2,V3),edge(q,V3,V4))),max(edge(q,V4,V5),edge(q,V5,V0)));
+  d=max(d,q.y-mix(-1.2,1.1,P.x));
+  float sa=atan(q.y-C.y,q.x-C.x),fc=floor((sa+3.1416)/1.0472);
+  tone=clamp(.55+.12*sin(fc*2.3+seed*3.)+.25*dot(normalize(q-C+1e-4),vec2(-.6,.8))*.5+(fbm(q*2.+seed)-.5)*.15,0.,1.);
+  hd=min(min(min(seg(q,C,V2),seg(q,C,V4)),min(seg(q,C,V0),seg(q,C,V5)))-.018,length((q-vec2(-.45,.45))/vec2(.5,1.4))-.12);
+  fill=mix(.38,.95,smoothstep(-.3,0.,d));
+ }else if(k==50){ // an ice crystal: a six-sided prism with a pointed tip (tip at +x); three faces in cold tones, bright ridges, clear inside with faint cracks (P.x tip length, P.y base width 0..1)
+  float tl=asp*2.*P.x,sx=asp-tl,bw=mix(.55,.95,P.y);
+  vec2 v0=vec2(asp,0.),v1=vec2(sx,.95),v2=vec2(-asp,bw),v3=vec2(-asp,-bw),v4=vec2(sx,-.95);
+  d=max(max(max(edge(q,v0,v1),edge(q,v1,v2)),max(edge(q,v2,v3),edge(q,v3,v4))),edge(q,v4,v0));
+  float wy=q.y/max(.05,q.x>sx?.95*(asp-q.x)/max(tl,.01):mix(bw,.95,clamp((q.x+asp)/max(sx+asp,.01),0.,1.)));
+  float face=wy>.3?.93:wy>-.3?.64:.36,cr=abs(vn(q*vec2(1.2,3.)+seed*3.)-.5);
+  tone=clamp(face+(q.x>sx?(q.y>0.?.05:-.08):0.)+(fbm(q*1.3+seed)-.5)*.14-(1.-smoothstep(0.,.04,cr))*.22,0.,1.);
+  hd=min(abs(wy-.3)-.05+(q.x>sx?.4:0.),seg(q,vec2(-asp*.55,.7),vec2(sx-.15,.72))-.05);
+  fill=.7+.3*smoothstep(-asp,asp*.5,q.x);
  }else if(k==48){ // a giant ball of water: a glassy sphere, deep at the rim, bright inside, currents swirling through it (P.x swirl speed)
   float rr=r+(vn(dir*2.+seed+T*3.)-.5)*.05;d=rr-.9;
   vec3 n=vec3(q/.9,sqrt(max(0.,1.-rr*rr/.81)));

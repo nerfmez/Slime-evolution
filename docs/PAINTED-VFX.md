@@ -69,16 +69,16 @@ The owner rejected a filter over the old effects ("it only adjusts the old skill
 | NEUROTOXIN INJECTION | strong poison, bursts when time ends | Pulsing poison drop over the target, then a goo splash, drops thrown on arcs and a toxic puff. |
 | PLAGUE BLOOM | a bloom releasing spores | Purple flower on the ground puffing wispy spore clouds each beat; spores drift to new victims with soft trails. |
 | CORROSIVE MIASMA | acid fog following foes | Low, wispy purple and lime fog with a few rising bubbles. |
-| Frost Spike | ice spike | Faceted ice shard trailing cold mist. |
+| Frost Spike | ice spike | A six-sided ice crystal (clear, cold cyan, bright ridges) trailing cold mist. Frozen foes are encased in a faceted block of ice that grows up from the ground, with crystals at their feet; chilled foes get a few small crystals. |
 | GLACIAL BORER | big ice drill | A spinning drill (flutes slide toward the tip) wrapped in two spirals of frosty wind, with a mist trail. |
 | WHITEOUT BREATH | ice breath cone | Soft snowy cone (same half-angle and length as the hit area), rolling breath clouds and blowing snow. |
-| CRYSTAL CHAINBURST | embedded crystals burst in chains | Crystal columns erupt from a frost patch, then shatter into a few shards. |
+| CRYSTAL CHAINBURST | embedded crystals burst in chains (1.4x radius, owner request) | A cluster of big ice crystals bursts out of a frozen patch, the outer ones leaning away, then shatters into shards and cold mist. |
 | Chain Spark | chaining lightning | Thin jagged bolt with a soft glow and a flash where it lands. |
 | JUDGMENT BOLT | sky lightning, three strikes | Bolt from the sky, a flash and a spreading ring. |
 | LIGHTNING NETWORK | foes linked by electricity | The caster glows as the first node; bolts link the foes. |
 | TESLA DOMAIN | stunning field around the slime | Soft electric field with crackling bolts on its rim. |
 | Orbit Core | orbiting cores | Glossy cores (no faces) with a glow and a tail that curves along the orbit. |
-| GRAVITY MACE | one big mace orb | A heavy glossy core with a deeper glow and a curved tail. |
+| GRAVITY MACE | one big mace orb | A small star (bright round core, licking corona) with three moons circling it on tilted orbits, each with a short trail. |
 | HUNTING SATELLITES | cores dart out and return | Tails trace every dart and return. |
 | ARC HALO | cores linked into a wall | Twisting strands of light between the cores. |
 | Inferno (basic) | fireball | Round ball of fire, white-hot inside, flames licking back into a short tail. |
@@ -101,7 +101,7 @@ The owner rejected a filter over the old effects ("it only adjusts the old skill
 - **Draw order.** Ground decals draw first, by layer. Billboards and ribbon segments are sorted back to front. Depth test is on and depth write is off. `lift` pulls effects on a foe slightly toward the camera.
 - **Inputs are read-only.** Hit areas, sizes, timing and damage are unchanged. Fire timings come from the live fire settings.
 - **Derivatives.** All screen derivatives are taken before any `discard`, which is required for iPad/Metal.
-- **Water evolution timing** (owner request, 2026-09-26; patched in `vfx/painted-style.mjs`): Aqua Railgun lives .8 s; its ball flies the line in the first 60% and each foe is hit when the ball reaches it (was: the whole line hit at once). Pressure Jet lasts until the next cast so it never stops (same damage per second). Tidal Surge lasts 1.1 s (was .8 s; each foe is still hit once). Round 2 (owner: "railgun far, wave wide and short, jet single target"): Tidal Surge is 1.7x wider and travels 2.6 units/s (was 5); Pressure Jet hits one foe at a time (no pierce), locks onto the foe it was cast at (or the nearest in reach), its nozzle follows the slime every frame and the stream ends on that foe.
+- **Water evolution timing** (owner request, 2026-09-26; patched in `vfx/painted-style.mjs`): Aqua Railgun lives .8 s; its ball flies the line in the first 60% and each foe is hit when the ball reaches it (was: the whole line hit at once). Pressure Jet lasts until the next cast so it never stops (same damage per second). Tidal Surge lasts 1.1 s (was .8 s; each foe is still hit once). Round 2 (owner: "railgun far, wave wide and short, jet single target"): Tidal Surge is 1.7x wider and travels 2.6 units/s (was 5); Pressure Jet hits one foe at a time (no pierce), locks onto the foe it was cast at (or the nearest in reach), its nozzle follows the slime every frame and the stream ends on that foe. Round 3: Tidal Surge waits 1.5x its cooldown and hits 1.5x as hard (same damage per second), so a wave always finishes before the next one rises (overlapping waves read as blinking); the wave's strips share one sort key so they never swap order while it moves.
 - **Sunfall fall time.** Owner request (2026-09-26): the sun takes 1 s to fall (default `fall` in the fire settings, was .5 s); `vfx/painted-style.mjs` patches the default. Its damage lands when it does.
 - **Burnt ground.** The game already burns the grass under fire (a 96x96 burn map sampled by the ground and grass shaders). The painted effects draw no crater of their own; `vfx/painted-style.mjs` stamps the burn deepest at the centre and shows it in stepped layers (light scorch, burnt, charred), with the grass shortest where it burnt deepest. The layers shrink toward the centre as the ground heals. This applies in both effect styles.
 - **Old style switch.** The old style stays behind Settings > Test > "สีน้ำวาดมือแบบใหม่ (ปิด = เอฟเฟกต์เดิม)", saved as `slime.vfxStyle.v2`, until the owner approves.
