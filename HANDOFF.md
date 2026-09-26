@@ -5,6 +5,7 @@ Rules live in `AGENTS.md`; repository layout in `README.md`. This file only trac
 ## In progress (branch `claude/check-organize-files-vqyx02`)
 
 - **Painted skill effects.** The owner rejected the watercolour filter prototype ("it only adjusts the old skills"), so every skill effect is now redrawn from its concept and card art by `vfx/painted-renderer.mjs`, fire included. Design table: `docs/PAINTED-VFX.md`.
+  - Owner feedback (round 2): fire looked like rigid sticks and many effects like hard geometric shapes. Fire is now built from living flames; streams, surge, fog, lightning and links are organic. Review captures hide the target monsters (the lab has a hide-targets switch).
   - The owner reviews on the iPad preview. Settings > Test switches back to the old effects.
   - Next: refine per owner feedback, then remove the switch and the old draw path once approved.
 - **Removed:** the filter prototype (`vfx/watercolor-style.mjs`, its tests and workflow).

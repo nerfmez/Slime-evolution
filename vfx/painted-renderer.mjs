@@ -16,13 +16,13 @@ export function createPaintedSkillRenderer(gl) {
   // Shape library (must match the fragment shader).
   const BLOB = 0, RING = 1, FLAME = 2, STAR = 3, SHARD = 4, STREAK = 5, SPLAT = 6, PUFF = 7, CRESCENT = 8, SPIRAL = 9,
     SNOW = 10, BOLT = 11, FAN = 12, FLOWER = 13, RUNE = 14, ARC = 15, MACE = 16, RIBBON = 17, DOME = 18, DRILL = 19,
-    COLUMN = 20, BURST = 21, WAVE = 22;
+    COLUMN = 20, BURST = 21, WAVE = 22, FIRE = 23, FIREBALL = 24, SMOKE = 25, LIQUID = 26, TWISTER = 27, STREAM = 28, SURF = 29;
   // Palettes taken from the card icons: light / mid / dark wash. The pigment edge is derived from the dark wash.
   const P = {
     shadow: tones('#6f8a4c', '#5f7a40', '#4c6533'),
     water: tones('#f1fbff', '#a9ddf4', '#5aa6da'), waterDeep: tones('#c4e8f8', '#74c0e8', '#3d88c6'), foam: tones('#ffffff', '#eaf7fd', '#b2dbef'),
     tide: tones('#f5eeff', '#d2baf5', '#9f7bdb'), tideDeep: tones('#e0cdf9', '#ae8ee8', '#7753c2'),
-    fire: tones('#fff2ac', '#ffaa42', '#ee5b2c'), flame: tones('#ffc862', '#f7803a', '#d2402a'), ember: tones('#ffa45c', '#b93a2b', '#6b1f1f'),
+    fire: tones('#ffd978', '#ff9a3a', '#ea5528'), flame: tones('#ffcd6a', '#f7853a', '#d4422a'), ember: tones('#ffa45c', '#b93a2b', '#6b1f1f'),
     smoke: tones('#fbf6ee', '#e4d9cb', '#bba99a'), scorch: tones('#cda57e', '#9d6c4d', '#6d4433'),
     toxin: tones('#eef8a2', '#b9d64c', '#6d9a26'), toxinDeep: tones('#cfe274', '#8aae34', '#4a6e1d'), toxinShade: tones('#ecdcf6', '#be9fdc', '#7c58a8'),
     petal: tones('#f3daf7', '#cc93e2', '#8a4fae'), spore: tones('#fdfbe0', '#eef3a4', '#b3c455'),
@@ -54,7 +54,7 @@ export function createPaintedSkillRenderer(gl) {
     const a = o.alpha ?? 1; if (!(a > .003)) return;
     const v = [c[0], c[1], c[2], shape, U[0], U[1], U[2], o.seed ?? 0, V[0], V[1], V[2], Math.min(1, a), ...(o.p || Z4),
       pal[0], pal[1], pal[2], o.dissolve ?? 0, pal[3], pal[4], pal[5], o.edge ?? 1, pal[6], pal[7], pal[8], o.wobble ?? 0,
-      o.asp ?? 1, o.shine ?? 0, o.rag ?? 0, 0];
+      o.asp ?? 1, o.shine ?? 0, o.rag ?? 0, o.soft ?? 0];
     if (!v.every(Number.isFinite)) { diagnostics.invalid++; return; }
     items.push({g: o.ground ? 0 : 1, k: o.ground ? (o.layer || 0) : depth + (o.bias || 0), s: seq++, v});
   }
@@ -106,16 +106,17 @@ export function createPaintedSkillRenderer(gl) {
     at(p); shadow(t.x, t.z, r * 1.3, .22 * a);
     for (let j = 0; j < 2; j++) {
       const k = (time * 2.2 + j * .5 + sd) % 1, q = [p[0] - d[0] * r * (3.4 + j * 1.3 + k * 1.2), p[1] - .03 - k * .12, p[2] - d[2] * r * (3.4 + j * 1.3 + k * 1.2)];
-      trail(STREAK, q, back, r * (.75 - j * .15), r * (.3 - j * .06), P.water, {alpha: a * (1 - k), p: [1, 0, 0, 0], seed: j + sd, shine: 1});
+      const ds = r * (.36 - j * .08); bb(BLOB, q, ds, ds * 1.08, P.water, {alpha: a * (1 - k), p: [.8, .32, 0, 0], seed: j + sd});
     }
-    trail(STREAK, p, back, r * 3.4, r * 1.12, P.water, {alpha: a, p: [1, .04, 5, 0], seed: sd, shine: 1, lift: .15});
+    trail(STREAK, p, back, r * 2.3, r * 1.2, P.water, {alpha: .85 * a, p: [.6, .04, 5, 0], seed: sd, shine: .6, lift: .15});
+    bb(BLOB, p, r * 1.25, r * 1.25, P.water, {alpha: a, p: [1, .3, .15, 0], seed: sd, shine: .4, lift: .16, bias: .01});
   }
   function splashCrown(x, z, p, size, seed, pal = P.water) { // droplets thrown up in a crown, like the splash on the card
     const g = smooth(0, .55, p), A = 1 - smooth(.5, 1, p);
     for (let j = 0; j < 7; j++) {
       const an = j * TAU / 7 + seed * 6, sp = size * (.35 + .25 * hash(j + seed)), out = size * .15 + g * sp, up = Math.sin(Math.min(1, p * 1.25) * Math.PI) * size * (.55 + .3 * hash(j * 3 + seed));
       const c = [x + Math.cos(an) * out, .08 + up, z + Math.sin(an) * out], vy = Math.cos(Math.min(1, p * 1.25) * Math.PI);
-      at(c); trail(STREAK, c, [-Math.cos(an) * .6, -vy, -Math.sin(an) * .6], size * .2, size * .075, pal, {alpha: A, p: [1, 0, 0, 0], seed: j, shine: 1, lift: .45});
+      at(c); trail(STREAK, c, [-Math.cos(an) * .6, -vy, -Math.sin(an) * .6], size * .13, size * .08, pal, {alpha: A, p: [1, 0, 0, 0], seed: j, shine: 1, lift: .45});
     }
   }
   function waterImpacts(combat, time, visible) {
@@ -136,38 +137,36 @@ export function createPaintedSkillRenderer(gl) {
   }
   function waterBeam(t, time) { // AQUA RAILGUN: one straight, pressurised water line that pierces everything
     const p = clamp(t.age / t.life), d = [t.dx, 0, t.dz], w = t.r, ext = smooth(0, .25, p), A = 1 - smooth(.7, 1, p), dis = smooth(.62, 1, p), sd = hash(t.x + t.z * 3);
-    const L = Math.max(w, t.length * ext), a = [t.x + d[0] * .3, .48, t.z + d[2] * .3], b = [t.x + d[0] * L, .48, t.z + d[2] * L], m = [(a[0] + b[0]) / 2, .48, (a[2] + b[2]) / 2];
-    decal(RIBBON, (a[0] + b[0]) / 2, (a[2] + b[2]) / 2, d[0], d[2], L / 2, w * 1.35, P.water, {alpha: .5 * A, p: [.9, 1, 0, .08], layer: 1, dissolve: dis, seed: sd, shine: .5});
+    const L = Math.max(w, t.length * ext), a = [t.x + d[0] * .25, .48, t.z + d[2] * .25], b = [t.x + d[0] * L, .48, t.z + d[2] * L], m = [(a[0] + b[0]) / 2, .48, (a[2] + b[2]) / 2];
+    decal(STREAM, m[0], m[2], d[0], d[2], L / 2, w * 1.5, P.water, {alpha: .45 * A, p: [1, 0, 0, 0], layer: 1, dissolve: dis, seed: sd, shine: .6});
     at(m);
-    span(RIBBON, a, b, w * 1.12, P.waterDeep, {alpha: .95 * A, p: [.94, 3, .06, .05], dissolve: dis, seed: sd, shine: .35, lift: .5});
-    span(RIBBON, a, b, w * .68, P.water, {alpha: A, p: [.92, 4, .05, .06], dissolve: dis * .9, seed: sd + 1, bias: .01, shine: 1, lift: .5});
-    for (let j = 0; j < 4; j++) { // pressure rings racing along the line
-      const u = (p * 1.6 + j / 4) % 1, c = [a[0] + (b[0] - a[0]) * u, .48, a[2] + (b[2] - a[2]) * u];
-      if (u < .96) aim(RING, c, d, w * .42, w * 1.35, P.foam, {asp: 1, alpha: A * (1 - u * .5), p: [.8, .1, 0, .02], seed: j, bias: .02, lift: .5});
-    }
+    span(STREAM, a, b, w * 1.9, P.foam, {alpha: .45 * A, p: [1.1, 0, 0, 0], seed: sd + 3, soft: .8, lift: .5, bias: -.01});
+    span(STREAM, a, b, w * 1.2, P.waterDeep, {alpha: .95 * A, p: [1.2, 0, 0, 0], dissolve: dis, seed: sd, shine: .4, lift: .5});
+    span(STREAM, a, b, w * .72, P.water, {alpha: A, p: [1.5, 0, 0, 0], dissolve: dis * .9, seed: sd + 1, bias: .01, shine: 1, lift: .5});
     for (let j = 0; j < 12; j++) {
       const u = hash(j * 3.7 + sd), side = j % 2 ? 1 : -1, k = clamp((p - .05 - u * .2) / .55); if (k <= 0 || k >= 1) continue;
       const along = .4 + (L - .4) * u, off = w * (.5 + k * 1.4) * side, c = [t.x + d[0] * along - d[2] * off, .48 + Math.sin(k * Math.PI) * .45, t.z + d[2] * along + d[0] * off];
-      trail(STREAK, c, [d[2] * side, -Math.cos(k * Math.PI), -d[0] * side], w * .38, w * .13, P.water, {alpha: A * (1 - k), p: [1, 0, 0, 0], seed: j, bias: .03, shine: 1, lift: .5});
+      trail(STREAK, c, [d[2] * side, -Math.cos(k * Math.PI), -d[0] * side], w * .22, w * .13, P.water, {alpha: A * (1 - k), p: [1, 0, 0, 0], seed: j, bias: .03, shine: 1, lift: .5});
     }
-    at(b); bb(BURST, [b[0], .52, b[2]], w * 1.6, w * 1.6, P.foam, {alpha: A * smooth(.12, .28, p), p: [10, 2.2, .38, 0], seed: sd, lift: .5});
+    at(b); bb(SMOKE, [b[0], .6, b[2]], w * 1.5, w * 1.2, P.foam, {alpha: A * smooth(.12, .28, p) * .9, p: [.9, 0, 0, 0], seed: sd, lift: .5, soft: .4});
     splashCrown(t.x + d[0] * .45, t.z + d[2] * .45, clamp(p * 1.4), 1.1, sd);
   }
   function waterJet(t, time) { // PRESSURE JET: a continuous high-pressure stream
     const p = clamp(t.age / t.life), d = [t.dx, 0, t.dz], w = t.r, A = smooth(0, .1, p) * (1 - smooth(.8, 1, p)), sd = hash(t.x * 2 + t.z);
-    const a = [t.x + d[0] * .3, .46, t.z + d[2] * .3], b = [t.x + d[0] * t.length, .46, t.z + d[2] * t.length], m = [(a[0] + b[0]) / 2, .46, (a[2] + b[2]) / 2];
-    decal(RIBBON, m[0], m[2], d[0], d[2], t.length / 2, w * 2.6, P.water, {alpha: .45 * A, p: [.88, 1.2, 0, .12], layer: 1, seed: sd, shine: .5});
+    const a = [t.x + d[0] * .25, .46, t.z + d[2] * .25], b = [t.x + d[0] * t.length, .46, t.z + d[2] * t.length], m = [(a[0] + b[0]) / 2, .46, (a[2] + b[2]) / 2];
+    decal(STREAM, m[0], m[2], d[0], d[2], t.length / 2, w * 2.8, P.water, {alpha: .42 * A, p: [1, 0, 0, 0], layer: 1, seed: sd, shine: .6});
     at(m);
-    span(RIBBON, a, b, w * 2.3, P.waterDeep, {alpha: .9 * A, p: [.9, 6, .2, .05], seed: sd, shine: .3, lift: .45});
-    span(RIBBON, a, b, w * 1.35, P.water, {alpha: A, p: [.88, 8, .14, .07], seed: sd + 1, bias: .01, shine: 1, lift: .45});
+    span(STREAM, a, b, w * 3.2, P.foam, {alpha: .4 * A, p: [1.4, 0, 0, 0], seed: sd + 3, soft: .8, lift: .45, bias: -.01});
+    span(STREAM, a, b, w * 2.1, P.waterDeep, {alpha: .92 * A, p: [1.6, 0, 0, 0], seed: sd, shine: .3, lift: .45});
+    span(STREAM, a, b, w * 1.25, P.water, {alpha: A, p: [2, 0, 0, 0], seed: sd + 1, bias: .01, shine: 1, lift: .45});
     for (let j = 0; j < 8; j++) { // droplets peeling off the stream
       const k = (time * 1.8 + j / 8 + sd) % 1, u = hash(j * 5.3 + sd), side = j % 2 ? 1 : -1, along = .5 + (t.length - .5) * u, off = w * (1 + k * 3) * side;
       const c = [t.x + d[0] * along - d[2] * off, .46 + Math.sin(k * Math.PI) * .35, t.z + d[2] * along + d[0] * off];
-      trail(STREAK, c, [d[2] * side - d[0] * .5, -Math.cos(k * Math.PI), -d[0] * side - d[2] * .5], .16, .055, P.water, {alpha: A * (1 - k), p: [1, 0, 0, 0], seed: j, bias: .03, shine: 1, lift: .45});
+      trail(STREAK, c, [d[2] * side - d[0] * .5, -Math.cos(k * Math.PI), -d[0] * side - d[2] * .5], .1, .06, P.water, {alpha: A * (1 - k), p: [1, 0, 0, 0], seed: j, bias: .03, shine: 1, lift: .45});
     }
     for (let j = 0; j < 3; j++) { // mist where the stream breaks up
-      const k = (time * 1.7 + j / 3) % 1, c = [b[0] + d[0] * k * .6 + (j - 1) * .25 * d[2], .45 + k * .35, b[2] + d[2] * k * .6 - (j - 1) * .25 * d[0]];
-      at(c); bb(PUFF, c, .32 + k * .38, .26 + k * .3, P.foam, {alpha: A * (1 - k) * .85, p: [time * 2 + j, 0, 0, 0], seed: j, dissolve: smooth(.6, 1, k), lift: .3});
+      const k = (time * 1.7 + j / 3) % 1, c = [b[0] + d[0] * k * .6 + (j - 1) * .25 * d[2], .5 + k * .35, b[2] + d[2] * k * .6 - (j - 1) * .25 * d[0]];
+      at(c); bb(SMOKE, c, .34 + k * .38, .28 + k * .3, P.foam, {alpha: A * (1 - k) * .85, p: [.8, 0, 0, 0], seed: j, dissolve: smooth(.6, 1, k), lift: .3, soft: .4});
     }
     splashCrown(b[0], b[2], (time * 2.5) % 1, .7, sd + 1);
   }
@@ -179,18 +178,15 @@ export function createPaintedSkillRenderer(gl) {
     V = [V[0] * .45 + cam.u[0] * .55, V[1] * .45 + cam.u[1] * .55, V[2] * .45 + cam.u[2] * .55]; const vn = Math.hypot(V[0], V[1], V[2]); V = [V[0] / vn * h, V[1] / vn * h, V[2] / vn * h];
     put(shape, lifted([(a[0] + b[0]) / 2 + V[0], (a[1] + b[1]) / 2 + V[1], (a[2] + b[2]) / 2 + V[2]], o.lift), U, V, pal, {asp: len / h, ...o});
   }
-  function waterWave(t, time) { // TIDAL SURGE: a curling wave wall rolling forward
-    const p = clamp(t.age / t.life), d = [t.dx, 0, t.dz], sd = [-t.dz, 0, t.dx], w = t.r, A = smooth(0, .1, p) * (1 - smooth(.76, 1, p)), surge = Math.sin(p * Math.PI), seed = hash(t.x * .3 + t.z * .7);
-    decal(BLOB, t.x - d[0] * .8, t.z - d[2] * .8, d[0], d[2], 1, w * 1.02, P.water, {alpha: .45 * A, p: [0, 0, .25, 0], layer: 1, wobble: .12, seed, asp: 1, dissolve: smooth(.6, 1, p), shine: .6});
-    decal(RIBBON, t.x + d[0] * .1, t.z + d[2] * .1, sd[0], sd[2], w, .36, P.foam, {alpha: .9 * A, p: [.8, 1.6, .22, .14], layer: 2, seed});
-    const L = [t.x - sd[0] * w * 1.04, .02, t.z - sd[2] * w * 1.04], R = [t.x + sd[0] * w * 1.04, .02, t.z + sd[2] * w * 1.04], H = .62 + surge * .18;
-    at([t.x, H, t.z]);
-    wall(WAVE, L, R, H, P.waterDeep, {alpha: .95 * A, seed, shine: .4, lift: .35});
-    const n = Math.max(3, Math.round(w * 2 / .55));
-    for (let j = 0; j < n; j++) { // spray thrown off the crest
-      const s = (j + .5) / n * 2 - 1, k = (time * 1.6 + hash(j + seed)) % 1, base = [t.x + sd[0] * s * w * .9 + d[0] * (.1 + k * .5), H * 1.45 + k * .45, t.z + sd[2] * s * w * .9 + d[2] * (.1 + k * .5)];
-      if (j % 2) bb(PUFF, [t.x + sd[0] * s * w * .92, H * 1.25, t.z + sd[2] * s * w * .92], .22, .15, P.foam, {alpha: A * .95, p: [time * 3 + j, 0, 0, 0], seed: j + seed, bias: .02, lift: .4});
-      trail(STREAK, base, [-d[0], -.4 + k, -d[2]], .15, .055, P.water, {alpha: A * (1 - k), p: [1, 0, 0, 0], seed: j, bias: .03, shine: 1, lift: .4});
+  function waterWave(t, time) { // TIDAL SURGE: a sheet of water rushes forward, its foamy front throwing up froth and spray
+    const p = clamp(t.age / t.life), d = [t.dx, 0, t.dz], sd = [-t.dz, 0, t.dx], w = t.r, A = smooth(0, .1, p) * (1 - smooth(.76, 1, p)), seed = hash(t.x * .3 + t.z * .7);
+    decal(SURF, t.x - d[0] * .6, t.z - d[2] * .6, sd[0], sd[2], w * 1.06, .95, P.water, {alpha: .95 * A, p: [1.2, 0, 0, 0], layer: 2, seed, shine: .5, dissolve: smooth(.7, 1, p)});
+    const n = Math.max(3, Math.round(w * 2 / .5));
+    for (let j = 0; j < n; j++) { // froth rolling along the front, spray thrown ahead
+      const s = (j + .5) / n * 2 - 1, taper = 1 - s * s * .5, base = [t.x + sd[0] * s * w * .92 + d[0] * .05, 0, t.z + sd[2] * s * w * .92 + d[2] * .05], h = (.18 + .1 * Math.sin(time * 6 + j * 1.9)) * taper;
+      at(base); bb(SMOKE, [base[0], h, base[2]], .32 * taper, .2 * taper, P.foam, {alpha: A * .95, p: [1.1, 0, 0, 0], seed: j + seed, lift: .35, soft: .3});
+      const k = (time * 1.6 + hash(j + seed)) % 1, c = [base[0] + d[0] * (.1 + k * .6), .15 + Math.sin(k * Math.PI) * .45, base[2] + d[2] * (.1 + k * .6)];
+      trail(STREAK, c, [-d[0], -Math.cos(k * Math.PI) * 1.5, -d[2]], .1, .06, P.water, {alpha: A * (1 - k), p: [1, 0, 0, 0], seed: j, bias: .03, shine: 1, lift: .4});
     }
   }
   // ---------------------------------------------------------------- Tide: lilac brush ripples, a bubble dome, a whirlpool
@@ -253,8 +249,8 @@ export function createPaintedSkillRenderer(gl) {
     decal(BLOB, x + .05, z - .04, 1, 0, r * (1.25 - .45 * Math.sin(p * Math.PI)), r * .8, P.toxinShade, {alpha: .45, asp: 1, layer: 0, edge: .4});
     at(c);
     const vx = t.tx - t.x, vz = t.tz - t.z, n = Math.hypot(vx, vz) || 1, back = [-vx / n, -Math.cos(p * Math.PI) * 1.6, -vz / n];
-    for (let j = 0; j < 2; j++) trail(STREAK, addv(c, back, r * (1.3 + j * .9) / Math.hypot(...back)), back, r * (.5 - j * .12), r * (.22 - j * .05), P.toxin, {alpha: .9 - j * .25, p: [1, 0, 0, 0], seed: j + sd, shine: .6});
-    trail(FLAME, c, back, r * 1.55, r * 1.02, P.toxin, {p: [0, 0, 0, .3], seed: sd, bias: .01, shine: .5});
+    for (let j = 0; j < 3; j++) { const q = addv(c, back, r * (1.25 + j * .75) / Math.hypot(...back)), s = r * (.3 - j * .07); bb(BLOB, q, s, s * 1.1, P.toxin, {alpha: .92 - j * .22, p: [.8, .3, 0, 0], seed: j + sd, shine: .5}); }
+    bb(BLOB, c, r * 1.05, r * (1.05 + .1 * Math.sin(t.age * 18)), P.toxin, {p: [1, .3, 0, 0], seed: sd, bias: .01, shine: .5, wobble: .05});
     bb(BLOB, [x - r * .28, y - r * .1, z], r * .3, r * .3, P.spore, {p: [.4, .35, .7, 0], seed: 2, bias: .02});
     bb(BLOB, [x + r * .22, y + r * .22, z], r * .17, r * .17, P.spore, {p: [.4, .35, .7, 0], seed: 3, bias: .02});
   }
@@ -283,40 +279,40 @@ export function createPaintedSkillRenderer(gl) {
     disc(SPLAT, t.x + .1, t.z - .08, r * (.5 + g * 1.05), P.toxinShade, {alpha: .6 * A, p: [.3, 7, 0, 0], layer: 0, seed, dissolve: smooth(.5, 1, p)});
     disc(SPLAT, t.x, t.z, r * (.4 + g), P.toxin, {alpha: .95 * A, p: [.3, 7, 6, 0], layer: 1, seed, dissolve: smooth(.5, 1, p), shine: .5});
     splashCrown(t.x, t.z, p, 1.3 * r, seed, P.toxin);
-    for (let j = 0; j < 3; j++) { const an = j * 2.1 + seed, c = [t.x + Math.cos(an) * r * .35, .5 + p * .55, t.z + Math.sin(an) * r * .35], s = r * (.45 + p * .6); at(c); bb(PUFF, c, s, s * .72, j % 2 ? P.toxin : P.toxinShade, {alpha: .85 * (1 - smooth(.3, 1, p)), p: [time + j, 0, 0, 0], seed: j, dissolve: smooth(.4, 1, p), lift: .3}); }
+    for (let j = 0; j < 3; j++) { const an = j * 2.1 + seed, c = [t.x + Math.cos(an) * r * .35, .5 + p * .55, t.z + Math.sin(an) * r * .35], s = r * (.45 + p * .6); at(c); bb(SMOKE, c, s, s * .72, j % 2 ? P.toxin : P.toxinShade, {alpha: .85 * (1 - smooth(.3, 1, p)), p: [.6, 0, 0, 0], soft: .35, seed: j, dissolve: smooth(.4, 1, p), lift: .3}); }
   }
   function toxinBloom(t, time) { // PLAGUE BLOOM: a poison flower that puffs spores in rhythm
     const p = clamp(t.age / t.life), r = t.r, A = smooth(0, .08, p) * (1 - smooth(.86, 1, p)), open = smooth(0, .22, p), seed = hash(t.x * .9 + t.z * 1.3);
     disc(BLOB, t.x, t.z, r, P.toxin, {alpha: .16 * A, p: [0, 0, .7, 0], layer: 0, seed, wobble: .08});
     disc(RING, t.x, t.z, r, P.toxinShade, {alpha: .8 * A, p: [.9, .025, .6, .03], layer: 1, seed, rag: 1});
     const fr = 1.6 * (.35 + .65 * open), pulse = 1 + .06 * Math.sin(t.age * TAU / .45);
-    disc(FLOWER, t.x + .08, t.z - .06, fr * 1.06 * pulse, P.toxinShade, {alpha: .5 * A, p: [6, 1.7, .28, seed * 6 + .26], layer: 2, seed});
-    disc(FLOWER, t.x, t.z, fr * pulse, P.petal, {alpha: .85 * A, p: [6, 1.7, .28, seed * 6], layer: 3, seed, rag: .3});
+    disc(FLOWER, t.x + .08, t.z - .06, fr * 1.06 * pulse, P.toxinShade, {alpha: .5 * A, p: [6, 1.7, .28, seed * 6 + .26], layer: 2, seed, wobble: .1});
+    disc(FLOWER, t.x, t.z, fr * pulse, P.petal, {alpha: .85 * A, p: [6, 1.7, .28, seed * 6], layer: 3, seed, rag: .3, wobble: .1});
     const sway = Math.sin(t.age * 2.1) * .08, top = [t.x + sway, .15 + 1.05 * open, t.z], hs = .62 * open * pulse; at([t.x, .6, t.z]);
     span(RIBBON, [t.x, .02, t.z], top, .1, P.toxinDeep, {alpha: A, p: [.75, 0, .04, .25], seed, lift: .6});
     for (const side of [-1, 1]) flame([t.x, .12 + .12 * open, t.z], .42 * open, .17 * open, Math.PI / 2 - side * .95, P.toxin, {alpha: A, p: [0, 0, 0, .3], seed: seed + side, lift: .6});
-    bb(FLOWER, top, hs, hs * .72, P.petal, {alpha: A, p: [6, 1.6, .3, seed * 6], seed, lift: .62, rot: sway, rag: .3});
+    bb(FLOWER, top, hs, hs * .72, P.petal, {alpha: A, p: [6, 1.6, .3, seed * 6], seed, lift: .62, rot: sway, rag: .3, wobble: .09});
     bb(BLOB, [top[0], top[1] + .02, top[2]], hs * .3, hs * .24, P.toxin, {alpha: A, p: [1, .3, 0, 0], seed, lift: .64, shine: .5});
     const k = (t.age % .45) / .45, wave = Math.floor(t.age / .45);
     for (let j = 0; j < 8; j++) {
       const an = j * TAU / 8 + wave * .6, dist = r * k * .8, c = [top[0] + Math.cos(an) * dist, top[1] + Math.sin(k * Math.PI) * .35 - k * .5 + .1 * hash(j + wave), top[2] + Math.sin(an) * dist], s = .13 + .08 * k; at(c);
-      bb(PUFF, c, s, s * .8, j % 2 ? P.spore : P.toxin, {alpha: A * (1 - smooth(.65, 1, k)) * smooth(0, .12, k), p: [time + j, 0, 0, 0], seed: j, lift: .2});
+      bb(SMOKE, c, s, s * .8, j % 2 ? P.spore : P.toxin, {alpha: A * (1 - smooth(.65, 1, k)) * smooth(0, .12, k), p: [.6, 0, 0, 0], soft: .35, seed: j, lift: .2});
     }
   }
   function toxinArc(t, time) { // a spore flying to a new victim
     const p = clamp(t.age / t.life), x = mix(t.x, t.tx, p), z = mix(t.z, t.tz, p), y = .35 + Math.sin(p * Math.PI) * .8, c = [x, y, z]; at(c);
     for (let j = 1; j < 3; j++) { const q = clamp(p - j * .08); bb(BLOB, [mix(t.x, t.tx, q), .35 + Math.sin(q * Math.PI) * .8, mix(t.z, t.tz, q)], .07 - j * .015, .07 - j * .015, P.spore, {alpha: .85 - j * .2, p: [.5, 0, 0, 0], lift: .3}); }
-    bb(PUFF, c, .2, .16, P.spore, {p: [time * 3, 0, 0, 0], bias: .02, lift: .3});
+    bb(SMOKE, c, .2, .16, P.spore, {p: [.6, 0, 0, 0], soft: .35, bias: .02, lift: .3});
   }
   function toxinMiasma(t, time) { // CORROSIVE MIASMA: a rolling purple acid cloud
     const p = clamp(t.age / t.life), r = t.r, A = smooth(0, .12, p) * (1 - smooth(.8, 1, p)), seed = hash(t.x * .37 + t.z * .11), dis = smooth(.82, 1, p);
-    disc(SPLAT, t.x, t.z, r * 1.08, P.toxinShade, {alpha: .6 * A, p: [.12, 6, 4, 0], layer: 0, wobble: .08, seed, dissolve: dis});
-    disc(SPLAT, t.x, t.z, r * .7, P.toxin, {alpha: .5 * A, p: [.15, 5, 0, 0], layer: 1, seed: seed + 1, dissolve: dis});
+    disc(LIQUID, t.x, t.z, r * 1.1, P.toxinShade, {alpha: .55 * A, p: [.6, 2, 0, 0], layer: 0, seed, dissolve: dis, soft: .5});
+    disc(LIQUID, t.x, t.z, r * .75, P.toxin, {alpha: .45 * A, p: [.6, 2.4, 0, 0], layer: 1, seed: seed + 1, dissolve: dis, soft: .5});
     for (let j = 0; j < 6; j++) {
       const an = j * TAU / 6 + t.age * .6, rr = r * .55 * (.85 + .15 * Math.sin(t.age * 1.3 + j)), c = [t.x + Math.cos(an) * rr, .42 + .12 * Math.sin(t.age * 1.7 + j * 2), t.z + Math.sin(an) * rr], s = r * (.5 + .08 * Math.sin(t.age * 2 + j)); at(c);
-      bb(PUFF, c, s, s * .72, j % 3 === 0 ? P.toxin : P.toxinShade, {alpha: .85 * A, p: [t.age * 2 + j, 0, 0, 0], seed: j + seed, dissolve: dis, lift: .2});
+      bb(SMOKE, c, s * 1.1, s * .8, j % 3 === 0 ? P.toxin : P.toxinShade, {alpha: .72 * A, p: [.6, 0, 0, 0], soft: .6, seed: j + seed, dissolve: dis, lift: .2});
     }
-    const c = [t.x, .7, t.z]; at(c); bb(PUFF, c, r * .72, r * .52, P.toxinShade, {alpha: .8 * A, p: [t.age * 1.5, 0, 0, 0], seed: seed + 9, bias: .05, dissolve: dis, lift: .2});
+    const c = [t.x, .7, t.z]; at(c); bb(SMOKE, c, r * .8, r * .58, P.toxinShade, {alpha: .7 * A, p: [.6, 0, 0, 0], soft: .6, seed: seed + 9, bias: .05, dissolve: dis, lift: .2});
     for (let j = 0; j < 4; j++) { const k = (t.age * 1.5 + j / 4) % 1, an = hash(seed + j * 4) * TAU, rr = r * .7 * hash(j + seed), s = .06 + .06 * Math.sin(k * Math.PI), q = [t.x + Math.cos(an) * rr, .08 + k * .1, t.z + Math.sin(an) * rr]; at(q); bb(BLOB, q, s, s, P.toxin, {alpha: A * (1 - smooth(.8, 1, k)), p: [.6, .38, .55, 0], seed: j, lift: .3}); }
   }
   // ---------------------------------------------------------------- Frost: faceted crystals, a crystal drill, snowy breath
@@ -331,17 +327,19 @@ export function createPaintedSkillRenderer(gl) {
     const d = [t.dx, 0, t.dz], s = t.r / .58, p = [t.x, .55, t.z], A = clamp((t.life - t.age) * 5) * smooth(0, .06, t.age), sd = hash(t.x + t.z * 3);
     at(p); shadow(t.x, t.z, t.r * 1.2, .24 * A);
     decal(RIBBON, t.x - d[0] * 1.3, t.z - d[2] * 1.3, d[0], d[2], 1.3, t.r * .9, P.frost, {alpha: .6 * A, p: [.8, 1, 0, .4], layer: 1, seed: sd, shine: .6});
-    for (let j = 0; j < 4; j++) { const k = (time * 2.5 + j / 4) % 1, c = [p[0] - d[0] * (.6 + k * 1.3) + (j - 1.5) * .14 * d[2], .45 + k * .28, p[2] - d[2] * (.6 + k * 1.3) - (j - 1.5) * .14 * d[0]]; bb(PUFF, c, (.26 + k * .32) * s, (.21 + k * .26) * s, P.frost, {alpha: A * (1 - k) * .8, p: [time + j, 0, 0, 0], seed: j, dissolve: smooth(.5, 1, k), lift: .2}); }
-    aim(DRILL, p, d, t.r * 1.45, t.r * .82, P.frost, {alpha: A, p: [time * 3, 1.6, 0, 0], seed: sd, bias: .02, lift: .3});
+    for (let j = 0; j < 4; j++) { const k = (time * 2.5 + j / 4) % 1, c = [p[0] - d[0] * (.6 + k * 1.3) + (j - 1.5) * .14 * d[2], .45 + k * .28, p[2] - d[2] * (.6 + k * 1.3) - (j - 1.5) * .14 * d[0]]; bb(SMOKE, c, (.26 + k * .32) * s, (.21 + k * .26) * s, P.frost, {alpha: A * (1 - k) * .8, p: [.6, 0, 0, 0], soft: .35, seed: j, dissolve: smooth(.5, 1, k), lift: .2}); }
+    const sdv = [-d[2], 0, d[0]];
+    for (const k of [-1, 1]) aim(SHARD, addv(addv(p, d, -t.r * .5), sdv, k * t.r * .42), d, t.r * .8, t.r * .3, P.frostDeep, {alpha: A, p: [.3, 1, 0, 0], seed: sd + k, bias: .01, lift: .3});
+    aim(SHARD, p, d, t.r * 1.55, t.r * .55, P.frost, {alpha: A, p: [.28, 1, 0, 0], seed: sd, bias: .02, lift: .3, shine: .5});
     for (let j = 0; j < 5; j++) { const an = time * 9 + j * TAU / 5, c = addv(addv(p, d, -.15 - .12 * (j % 2)), screenDir(an), t.r * 1.05); aim(SHARD, c, screenDir(an + 1.4), .14, .06, P.frostDeep, {alpha: A * .95, p: [.4, 1, 0, 0], seed: j, bias: .03, lift: .3}); }
   }
   function frostCone(t, time) { // WHITEOUT BREATH: a cone of swirling snow
     const p = clamp(t.age / t.life), A = smooth(0, .12, p) * (1 - smooth(.78, 1, p)), L = t.length * (.35 + .65 * smooth(0, .22, p)), ang = t.angle, d = [t.dx, 0, t.dz], yaw = Math.atan2(t.dx, t.dz), sd = hash(t.x + t.z);
-    decal(FAN, t.x + d[0] * L / 2, t.z + d[2] * L / 2, d[0], d[2], L / 2, L * Math.sin(ang), P.foam, {alpha: .92 * A, p: [ang, 1.4, 0, 0], layer: 1, seed: sd, rag: .6, shine: 1});
-    const L2 = L * .78; decal(FAN, t.x + d[0] * L2 / 2, t.z + d[2] * L2 / 2, d[0], d[2], L2 / 2, L2 * Math.sin(ang * .55), P.frost, {alpha: .75 * A, p: [ang * .55, 2, 0, 0], layer: 2, seed: sd + 1, rag: .6, shine: .6});
+    decal(FAN, t.x + d[0] * L / 2, t.z + d[2] * L / 2, d[0], d[2], L / 2, L * Math.sin(ang), P.foam, {alpha: .92 * A, p: [ang, 1.4, 0, 0], layer: 1, seed: sd, rag: .6, shine: 1, soft: .5});
+    const L2 = L * .78; decal(FAN, t.x + d[0] * L2 / 2, t.z + d[2] * L2 / 2, d[0], d[2], L2 / 2, L2 * Math.sin(ang * .55), P.frost, {alpha: .75 * A, p: [ang * .55, 2, 0, 0], layer: 2, seed: sd + 1, rag: .6, shine: .6, soft: .5});
     for (let j = 0; j < 6; j++) { // snow clouds rolling out along the cone
       const k = (time * .9 + j / 6) % 1, a = (hash(j * 3.3 + sd) - .5) * 1.2 * ang, dist = .5 + k * L * .85, c = [t.x + Math.sin(yaw + a) * dist, .35 + k * .25, t.z + Math.cos(yaw + a) * dist], s = .28 + k * .42; at(c);
-      bb(PUFF, c, s, s * .75, P.frost, {alpha: A * smooth(0, .15, k) * (1 - smooth(.7, 1, k)) * .9, p: [time * 2 + j, 0, 0, 0], seed: j + sd, dissolve: smooth(.6, 1, k), lift: .2});
+      bb(SMOKE, c, s, s * .75, P.frost, {alpha: A * smooth(0, .15, k) * (1 - smooth(.7, 1, k)) * .9, p: [.6, 0, 0, 0], soft: .35, seed: j + sd, dissolve: smooth(.6, 1, k), lift: .2});
     }
     for (let j = 0; j < 12; j++) {
       const k = (time * 1.1 + hash(j * 1.3 + sd)) % 1, a = (hash(j * 7 + sd) - .5) * 1.8 * ang, dist = .4 + k * L * .92, s = .13 + k * .1;
@@ -370,8 +368,8 @@ export function createPaintedSkillRenderer(gl) {
   }
   // ---------------------------------------------------------------- Chain: painted lightning strokes and rune circles
   function bolt(a, b, wide, alpha, seed, rate = 24, branch = 1, lift = 0) {
-    span(BOLT, a, b, wide * 2.4, P.chainBlue, {alpha: alpha * .6, p: [.5, .5, branch, rate], seed, lift, edge: .6});
-    span(BOLT, a, b, wide, P.chain, {alpha, p: [.5, .5, branch, rate], seed, lift, bias: .01});
+    span(BOLT, a, b, wide * 3, P.chainBlue, {alpha: alpha * .55, p: [.5, .5, branch, rate], seed, lift, soft: .7});
+    span(BOLT, a, b, wide * .6, P.chain, {alpha, p: [.5, .5, branch, rate], seed, lift, bias: .01});
   }
   function chainArc(t, time) { // Chain Spark: a jagged painted bolt hopping between foes
     const p = clamp(t.age / t.life), A = 1 - smooth(.55, 1, p), a = [t.x, .6, t.z], b = [t.tx, .6, t.tz], seed = hash(t.x * 3 + t.tz); if (Math.hypot(b[0] - a[0], b[2] - a[2]) < .05) return;
@@ -424,7 +422,7 @@ export function createPaintedSkillRenderer(gl) {
       if (sp > .4) { const d = [vx / sp, 0, vz / sp]; for (let j = 0; j < 3; j++) { const k = (j + 1) / 4, q = [c[0] - d[0] * R * (1.2 + j * .9), y - .03 * j, c[2] - d[2] * R * (1.2 + j * .9)]; trail(STREAK, q, [-d[0], 0, -d[2]], R * (.55 - j * .1), R * (.24 - j * .05), big ? P.orbitDeep : P.orbit, {alpha: .85 - k * .5, p: [1, 0, 0, 0], seed: j, shine: 1}); } }
       if (big) { // GRAVITY MACE: a heavy core wrapped in gravity rings
         bb(ARC, c, R * 1.6, R * .5, P.orbitDeep, {alpha: .9, p: [.9, Math.PI * .05 + time * .5, Math.PI * .9, .08], seed: 1, bias: -.02});
-        bb(BLOB, c, R, R, P.orbitDeep, {p: [1, .24, 0, 0], seed: 2, shine: .5});
+        bb(BLOB, c, R, R, P.orbitDeep, {p: [1, .24, 0, 0], seed: 2, shine: .5, wobble: .08});
         bb(ARC, c, R * 1.6, R * .5, P.orbit, {alpha: .95, p: [.9, Math.PI * 1.05 + time * .5, Math.PI * .9, .1], seed: 3, bias: .02});
         for (let j = 0; j < 3; j++) { const an = time * 3 + j * TAU / 3, q = addv(c, screenDir(an), R * 1.45); bb(BLOB, [q[0], q[1] * .7 + y * .3, q[2]], R * .16, R * .16, P.orbit, {p: [.8, .3, 0, 0], seed: j, bias: Math.sin(an) > 0 ? -.03 : .03}); }
       } else {
@@ -437,7 +435,8 @@ export function createPaintedSkillRenderer(gl) {
   function orbitArc(t, time) { // ARC HALO link between two cores
     const a = [t.x, .55, t.z], b = [t.tx, .55, t.tz], seed = hash(t.x + t.tz * 3); if (Math.hypot(b[0] - a[0], b[2] - a[2]) < .05) return;
     at([(a[0] + b[0]) / 2, .55, (a[2] + b[2]) / 2]);
-    span(RIBBON, a, b, .26, P.orbit, {alpha: .9, p: [.72, 3, .16, .22], seed, shine: .8});
+    span(RIBBON, a, b, .36, P.orbit, {alpha: .45, p: [.55, 3, .1, .25], seed: seed + 2, soft: .8});
+    for (const k of [0, 1]) span(RIBBON, a, b, .22, k ? P.foam : P.orbit, {alpha: .95, p: [.18, 3, .55, .22], seed: seed + k * 1.7, bias: .01 * (k + 1), shine: .5});
     for (let j = 0; j < 2; j++) { const u = (time * 1.5 + j * .5 + seed) % 1; bb(STAR, [mix(a[0], b[0], u), .6, mix(a[2], b[2], u)], .12, .12, P.sparkle, {alpha: Math.sin(u * Math.PI), p: [4, 8, .12, 0], bias: .02}); }
   }
   function orbitRing(t, time) {
@@ -447,118 +446,123 @@ export function createPaintedSkillRenderer(gl) {
     for (let j = 0; j < 6; j++) { const an = j * TAU / 6 + seed * 5, c = [t.x + Math.cos(an) * R * .86, .32, t.z + Math.sin(an) * R * .86]; at(c); bb(STAR, c, .15, .15, P.sparkle, {alpha: A, p: [4, 8, .12, 0], seed: j}); }
   }
   // ---------------------------------------------------------------- Fire: layered painted flames, warm smoke, a painted sun, meteors, a fire twister
-  function fireball(t, time) { // Inferno shot: the card's flame with its ember core, trailing sparks as it flies
-    const dx = t.vx ?? (t.tx - t.x), dz = t.vz ?? (t.tz - t.z), n = Math.hypot(dx, dz) || 1, d = [dx / n, 0, dz / n], y = (t.y ?? .36) + .16, c = [t.x, y, t.z], sd = hash(t.x * .7 + t.z * 1.3);
-    const sx = d[0] * cam.r[0] + d[2] * cam.r[2], rot = Math.PI / 2 + clamp(sx, -1, 1) * .5;
-    at(c); shadow(t.x, t.z, .36, .26);
-    for (let j = 0; j < 6; j++) { const k = (time * 3 + j / 6 + sd) % 1, q = [c[0] - d[0] * (.25 + k * .8) + Math.sin(j * 2.3) * .08, y + .05 + k * .4, c[2] - d[2] * (.25 + k * .8)], s = .065 * (1 - k); bb(BLOB, q, s, s, j % 2 ? P.fire : P.flame, {alpha: 1 - k, p: [.5, 0, 0, 0], seed: j, lift: .2}); }
-    flame(c, .78, .4, rot, P.flame, {p: [10, 1, 0, 0], seed: sd, lift: .2});
-    flame(c, .55, .28, rot, P.fire, {p: [12, .8, 0, .35], seed: sd + 1, bias: .01, lift: .2});
-    bb(BLOB, c, .19, .19, P.fire, {p: [0, 0, 0, 0], seed: sd, bias: .02, lift: .2});
-    bb(BLOB, c, .12, .12, P.ember, {p: [1, .26, 0, 0], seed: sd, bias: .03, lift: .2});
+  // A living flame (FIRE field) whose round base sits on `base`, rising along the screen angle `rot` (PI/2 = straight up).
+  function blaze(base, len, wid, rot, pal, o = {}) {
+    const c = Math.cos(rot), s = Math.sin(rot), R = cam.r, Q = cam.u, k = len - .02 * wid;
+    bb(FIRE, [base[0] + (R[0] * c + Q[0] * s) * k, base[1] + (R[1] * c + Q[1] * s) * k, base[2] + (R[2] * c + Q[2] * s) * k], len, wid, pal, {rot, asp: len / wid, p: [1.3, 1, 0, 0], ...o});
+  }
+  const screenAngle = v => Math.atan2(v[0] * cam.u[0] + v[1] * cam.u[1] + v[2] * cam.u[2], v[0] * cam.r[0] + v[1] * cam.r[1] + v[2] * cam.r[2]);
+  const behind = (x, z, cx, cz) => (x - cx) * cam.f[0] + (z - cz) * cam.f[2] < 0;
+  function fireball(t, time) { // Inferno shot: a living flame that leans back as it flies, dropping little flames and sparks
+    const dx = t.vx ?? (t.tx - t.x), dz = t.vz ?? (t.tz - t.z), n = Math.hypot(dx, dz) || 1, d = [dx / n, 0, dz / n], y = (t.y ?? .36) + .02, sd = hash(t.x * .7 + t.z * 1.3);
+    const sx = d[0] * cam.r[0] + d[2] * cam.r[2], rot = Math.PI / 2 + clamp(sx, -1, 1) * .6, c = [t.x, y, t.z];
+    at(c); shadow(t.x, t.z, .34, .26);
+    for (let j = 0; j < 5; j++) { const k = (time * 3 + j / 5 + sd) % 1, q = [c[0] - d[0] * (.25 + k * .8) + Math.sin(j * 2.3) * .08, y + .2 + k * .4, c[2] - d[2] * (.25 + k * .8)], s = .05 * (1 - k); bb(BLOB, q, s, s, j % 2 ? P.fire : P.flame, {alpha: 1 - k, p: [.5, 0, 0, 0], seed: j, lift: .2}); }
+    for (let j = 0; j < 2; j++) { const k = (time * 2.2 + j * .5 + sd) % 1, q = [c[0] - d[0] * (.3 + k * .7), y + .05 + k * .15, c[2] - d[2] * (.3 + k * .7)], s = 1 - k; blaze(q, .26 * s + .04, .16 * s + .03, Math.PI / 2, P.fire, {alpha: s, p: [1.7, 1, 0, 0], seed: j + sd, lift: .15}); }
+    blaze(c, .6, .36, rot, P.fire, {p: [1.5, 1, 0, 0], seed: sd, lift: .2});
   }
   function fireEmber(t, time) {
-    const dx = t.vx ?? 0, dz = t.vz ?? 1, n = Math.hypot(dx, dz) || 1, c = [t.x, (t.y ?? .16) + .14, t.z], fade = Math.min(1, (t.life ?? 1) * 3), sd = hash(t.x * 3 + t.z); at(c);
-    trail(FLAME, c, [-dx / n, .3, -dz / n], .32, .15, P.flame, {alpha: fade, p: [12, 0, 0, 0], seed: sd});
-    bb(BLOB, c, .07, .07, P.fire, {alpha: fade, p: [.6, 0, 0, 0], bias: .01});
+    const dx = t.vx ?? 0, dz = t.vz ?? 1, n = Math.hypot(dx, dz) || 1, c = [t.x, (t.y ?? .16) + .04, t.z], fade = Math.min(1, (t.life ?? 1) * 3), sd = hash(t.x * 3 + t.z); at(c);
+    blaze(c, .26, .16, screenAngle([-dx / n, .6, -dz / n]), P.fire, {alpha: fade, p: [1.8, .8, 0, 0], seed: sd});
   }
-  function flameCrown(x, z, r, grow, fade, time, seed, count = 6, lean = .6, size = .6) { // flames radiating from a burst, like the leaves on the card
+  function flameRing(x, z, r, size, fade, time, seed, count = 6, lean = .5) { // living flames standing round a burst; the far ones are drawn first
     for (let j = 0; j < count; j++) {
-      const an = j * TAU / count + seed * 6, dist = r * .42 * grow, base = [x + Math.cos(an) * dist, .06, z + Math.sin(an) * dist];
-      const sx = Math.cos(an) * cam.r[0] + Math.sin(an) * cam.r[2], len = r * size * (.85 + .3 * hash(j + seed)) * grow, wid = Math.max(.02, len * .5); at(base);
-      flame(base, len, wid, Math.PI / 2 - sx * lean, j % 2 ? P.flame : P.fire, {alpha: fade, p: [10, 1, 0, 0], seed: j + seed, lift: .2});
+      const an = j * TAU / count + seed * 6, base = [x + Math.cos(an) * r, .03, z + Math.sin(an) * r], sx = Math.cos(an) * cam.r[0] + Math.sin(an) * cam.r[2];
+      const len = size * (.8 + .4 * hash(j + seed)); at(base);
+      blaze(base, len, len * .62, Math.PI / 2 - sx * lean, P.fire, {alpha: fade, p: [1.3, 1, 0, 0], seed: j + seed, lift: .2});
     }
   }
-  function smokeRise(x, z, r, k, time, seed, n = 4, alpha = .85) {
+  function smokeRise(x, z, r, k, time, seed, n = 4, alpha = .8) {
     if (k <= 0 || k >= 1) return;
     for (let j = 0; j < n; j++) {
-      const an = j * TAU / n + seed * 6, c = [x + Math.cos(an) * r * .35 * (1 + k), .55 + k * r * 1.1 + (j % 2) * .12, z + Math.sin(an) * r * .35 * (1 + k)], s = r * (.3 + .3 * k); at(c);
-      bb(PUFF, c, s, s * .75, P.smoke, {alpha: smooth(0, .12, k) * (1 - smooth(.62, 1, k)) * alpha, p: [time + j, 0, 0, 0], seed: j + seed, dissolve: smooth(.55, 1, k), lift: .2});
+      const an = j * TAU / n + seed * 6, c = [x + Math.cos(an) * r * .35 * (1 + k), .9 + k * r * 1.3 + (j % 2) * .15, z + Math.sin(an) * r * .35 * (1 + k)], s = r * (.32 + .32 * k); at(c);
+      bb(SMOKE, c, s, s * .8, P.smoke, {alpha: smooth(0, .12, k) * (1 - smooth(.6, 1, k)) * alpha, p: [.5, 0, 0, 0], seed: j + seed, dissolve: smooth(.55, 1, k), soft: .45, lift: .2});
     }
   }
-  function fireBlast(e, time) { // Inferno burst: a bouquet of flames, then warm smoke
+  function fireBurst(x, z, r, p, time, seed, big = 1) { // the heart of an explosion: a ball of licking fire and the flames around it
+    const g = smooth(0, .14, p) * (1 - smooth(.3, .62, p) * .75), f = 1 - smooth(.45, .62, p), sz = r * g;
+    if (f <= 0) return;
+    const ring = r * .5 * g, n = big > 1 ? 8 : 6;
+    for (const far of [true, false]) {
+      for (let j = 0; j < n; j++) {
+        const an = j * TAU / n + seed * 6, bx = x + Math.cos(an) * ring, bz = z + Math.sin(an) * ring; if (behind(bx, bz, x, z) !== far) continue;
+        const sx = Math.cos(an) * cam.r[0] + Math.sin(an) * cam.r[2], len = r * .62 * big * (.8 + .4 * hash(j + seed)) * g, base = [bx, .03, bz]; at(base);
+        blaze(base, len, len * .62, Math.PI / 2 - sx * .5, P.fire, {alpha: f, p: [1.3, 1, 0, 0], seed: j + seed, lift: .25, dissolve: smooth(.5, .62, p) * .8});
+      }
+      if (far) { const c = [x, .12 + .42 * sz, z]; at(c); bb(FIREBALL, c, sz * .9, sz * .85, P.fire, {alpha: f, p: [1.3, 1, 0, 0], seed, lift: .3, bias: .01, dissolve: smooth(.45, .62, p) * .8}); blaze([x, .04, z], r * .95 * big * g, r * .6 * big * g, Math.PI / 2, P.fire, {alpha: f, p: [1.2, 1, 0, 0], seed: seed + 9, lift: .32, bias: .02, dissolve: smooth(.5, .62, p) * .8}); }
+    }
+  }
+  function fireBlast(e, time) { // Inferno burst: a ball of licking fire, a ring of living flames, then warm smoke
     const D = cfg.blast, p = clamp(e.age / D), r = e.r || 1, seed = hash(e.x * .9 + e.z * 1.7);
-    disc(SPLAT, e.x, e.z, r * 1.05, P.scorch, {alpha: .6 * (1 - smooth(.62, 1, p)) * smooth(0, .1, p), p: [.2, 7, 5, 0], layer: 0, seed, dissolve: smooth(.7, 1, p)});
-    disc(RING, e.x, e.z, r * mix(.35, 1.2, smooth(0, .3, p)), P.flame, {alpha: 1 - smooth(.12, .42, p), p: [.86, .08, .6, .04], layer: 1, seed, rag: .6});
-    const grow = smooth(0, .16, p), fade = 1 - smooth(.32, .62, p);
-    if (fade > 0) flameCrown(e.x, e.z, r, grow, fade, time, seed);
-    if (p < .5) { const f = 1 - smooth(.25, .5, p); flame([e.x, .05, e.z], r * 1.05 * grow, r * .55 * grow, Math.PI / 2, P.flame, {alpha: f, p: [9, 1, 0, .3], seed, bias: .02, lift: .3}); flame([e.x, .05, e.z], r * .68 * grow, r * .36 * grow, Math.PI / 2, P.fire, {alpha: f, p: [11, .7, 0, .6], seed: seed + 1, bias: .03, lift: .3}); }
-    at([e.x, .45, e.z]); if (p < .2) bb(BURST, [e.x, .45, e.z], r * mix(.5, 1.2, p / .2), r * mix(.5, 1.2, p / .2), P.fire, {alpha: 1 - smooth(.08, .2, p), p: [11, 1.4, .56, 0], seed, lift: .4});
-    if (p < .42) { const b = smooth(0, .12, p), c = [e.x, .15 + .45 * r * b, e.z]; bb(BLOB, c, r * .6 * b, r * .52 * b, P.fire, {alpha: 1 - smooth(.22, .42, p), p: [1, 0, 0, 0], seed, lift: .35, bias: .04, wobble: .12, rag: .4}); }
-    smokeRise(e.x, e.z, r, clamp((p - .2) / .8), time, seed);
-    for (let j = 0; j < 8; j++) { const an = j * TAU / 8 + seed * 3, k = clamp(p / .5), c = [e.x + Math.cos(an) * r * (.2 + k * 1.1), .2 + Math.sin(k * Math.PI) * .6 * r, e.z + Math.sin(an) * r * (.2 + k * 1.1)]; at(c); bb(BLOB, c, .065, .065, P.fire, {alpha: 1 - k, p: [.5, 0, 0, 0], seed: j, lift: .2}); }
+    disc(LIQUID, e.x, e.z, r * 1.05, P.scorch, {alpha: .6 * (1 - smooth(.62, 1, p)) * smooth(0, .1, p), p: [.6, 2, 0, 0], layer: 0, seed, dissolve: smooth(.7, 1, p)});
+    disc(LIQUID, e.x, e.z, r * .9, P.flame, {alpha: .5 * (1 - smooth(.2, .55, p)), p: [.7, 2.4, 0, 0], layer: 1, seed: seed + 1, soft: .8});
+    fireBurst(e.x, e.z, r, p, time, seed);
+    smokeRise(e.x, e.z, r, clamp((p - .32) / .68), time, seed);
+    for (let j = 0; j < 8; j++) { const an = j * TAU / 8 + seed * 3, k = clamp(p / .5), c = [e.x + Math.cos(an) * r * (.2 + k * 1.1), .2 + Math.sin(k * Math.PI) * .6 * r, e.z + Math.sin(an) * r * (.2 + k * 1.1)]; at(c); bb(BLOB, c, .06, .06, P.fire, {alpha: 1 - k, p: [.5, 0, 0, 0], seed: j, lift: .2}); }
   }
-  function firePatch(t, time, i) {
+  function firePatch(t, time, i) { // burning ground: a scorched, glowing stain with low flames licking up
     const r = t.r || .8, fade = clamp((t.life ?? 1) * 2) * smooth(0, .15, t.age ?? 1), seed = hash(t.x * 1.3 + t.z * .7 + i);
-    disc(SPLAT, t.x, t.z, r, P.scorch, {alpha: .5 * fade, p: [.15, 6, 3, 0], layer: 0, seed});
-    disc(BLOB, t.x, t.z, r * .75, P.flame, {alpha: .3 * fade * (.8 + .2 * Math.sin(time * 7 + i)), p: [0, 0, .35, 0], layer: 1, wobble: .15, seed});
-    for (let j = 0; j < 4; j++) {
-      const an = hash(i * 7 + j + seed) * TAU, dd = r * (.15 + .55 * hash(i * 3 + j * 5 + seed)), base = [t.x + Math.cos(an) * dd, .04, t.z + Math.sin(an) * dd]; at(base);
-      flame(base, r * (.36 + .12 * hash(j + seed)) * (.85 + .15 * Math.sin(time * 8 + j)), r * .19, Math.PI / 2, j % 2 ? P.fire : P.flame, {alpha: fade, p: [11, .8, 0, 0], seed: j + seed, lift: .15});
+    disc(LIQUID, t.x, t.z, r, P.scorch, {alpha: .55 * fade, p: [.6, 2, 0, 0], layer: 0, seed});
+    disc(LIQUID, t.x, t.z, r * .8, P.flame, {alpha: .42 * fade * (.85 + .15 * Math.sin(time * 7 + i)), p: [.7, 2.4, 0, 0], layer: 1, seed: seed + 1, soft: .8});
+    for (let j = 0; j < 3; j++) {
+      const an = hash(i * 7 + j + seed) * TAU, dd = r * (.1 + .5 * hash(i * 3 + j * 5 + seed)), base = [t.x + Math.cos(an) * dd, .03, t.z + Math.sin(an) * dd]; at(base);
+      blaze(base, r * (.42 + .14 * hash(j + seed)), r * .3, Math.PI / 2, P.fire, {alpha: fade, p: [1.3, 1, 0, 0], seed: j + seed, lift: .15});
     }
   }
-  function burning(e, time) {
-    const fade = Math.min(.95, (e.burnTime || 0) / .3), rad = (e.radius || .5) * .6;
-    for (let j = 0; j < 2; j++) { const an = time * 1.3 + j * Math.PI, base = [e.x + Math.cos(an) * rad, .2, e.z + Math.sin(an) * rad * .5]; at(base); flame(base, .42 + j * .06, .22, Math.PI / 2, j ? P.fire : P.flame, {alpha: fade, p: [12, .8, 0, 0], seed: (e.id || 0) + j * 2.3, lift: .5}); }
+  function burning(e, time) { // a small living flame on a burning foe
+    const fade = Math.min(.95, (e.burnTime || 0) / .3), rad = (e.radius || .5) * .45, id = e.id || 0;
+    for (let j = 0; j < 2; j++) { const an = time * .9 + j * Math.PI + id, base = [e.x + Math.cos(an) * rad, .15 + j * .15, e.z + Math.sin(an) * rad * .5]; at(base); blaze(base, .4 - j * .1, .26 - j * .06, Math.PI / 2, P.fire, {alpha: fade, p: [1.6, 1, 0, 0], seed: id + j * 2.3, lift: .5}); }
   }
-  function paintedSun(c, sz, time, alpha, spin = .8) {
-    for (let j = 0; j < 10; j++) { const an = j * TAU / 10 + time * spin, base = addv(c, screenDir(an), sz * .42); flame(base, sz * .5, sz * .22, an, j % 2 ? P.flame : P.fire, {alpha, p: [10, 0, 0, 0], seed: j}); }
-    bb(BLOB, c, sz * .62, sz * .62, P.fire, {alpha, p: [1, .22, 0, 0], seed: 1, bias: .02});
-    bb(BLOB, c, sz * .36, sz * .36, tones('#fffbe0', '#fff1b0', '#ffd873'), {alpha, p: [.5, 0, 0, 0], seed: 2, bias: .03});
+  function paintedSun(c, sz, time, alpha) { // a sun of fire: a licking fireball wearing a crown of small living flames
+    for (let j = 0; j < 7; j++) { const an = j * TAU / 7 + time * .5, base = addv(c, screenDir(an), sz * .38); blaze(base, sz * .44, sz * .36, an, P.fire, {alpha, p: [1.5, .9, 0, 0], seed: j, bias: -.01}); }
+    bb(FIREBALL, c, sz * .66, sz * .66, P.fire, {alpha, p: [1, .7, 0, 0], seed: 7, bias: .01});
   }
-  function sunFall(e, time) { // SUNFALL CORE: a painted sun gathers, falls and bursts
-    const k = clamp(e.age / e.delay), R = e.s?.radius || 1.2, y = mix(4.4, .9, k * k), sz = mix(.55, 1, k) * R * .9;
-    disc(RING, e.x, e.z, R * 1.1, P.flame, {alpha: .3 + .6 * k, p: [.88, .05, .8, .03], layer: 1, seed: 1, rag: .6});
-    disc(BLOB, e.x, e.z, R * .95, P.fire, {alpha: .3 * k, p: [0, 0, .5, 0], layer: 0, seed: 2});
+  function sunFall(e, time) { // SUNFALL CORE: a sun of fire gathers, falls and bursts
+    const k = clamp(e.age / e.delay), R = e.s?.radius || 1.2, y = mix(4.2, 1, k * k), sz = mix(.6, 1, k) * R * .95;
+    disc(RING, e.x, e.z, R * 1.1, P.flame, {alpha: .3 + .6 * k, p: [.88, .05, .8, .03], layer: 1, seed: 1, rag: .7});
+    disc(LIQUID, e.x, e.z, R * .95, P.fire, {alpha: .35 * k, p: [.6, 2.2, 0, 0], layer: 0, seed: 2, soft: .9});
     shadow(e.x, e.z, sz * .7, .28 * k);
     const c = [e.x, y, e.z]; at(c); paintedSun(c, sz, time, 1);
   }
   function sunBurst(e, time) {
     const burst = cfg.sunBurst, total = burst + cfg.sunSmoke, t = e.age, R = e.r || 1.2, p = clamp(t / burst), seed = hash(e.x + e.z * 3);
-    disc(SPLAT, e.x, e.z, R * 1.1, P.scorch, {alpha: .65 * (1 - smooth(total * .7, total, t)), p: [.22, 8, 6, 0], layer: 0, seed, dissolve: smooth(total * .75, total, t)});
-    for (let j = 0; j < 2; j++) disc(RING, e.x, e.z, R * mix(.3, 1.35, smooth(0, .5, p - j * .15)), j ? P.fire : P.flame, {alpha: 1 - smooth(.3, 1, p), p: [.88, .07, .7, .04], layer: 1 + j, seed: seed + j, rag: .6});
-    if (t < burst) {
-      const grow = smooth(0, .22, p), fade = 1 - smooth(.5, 1, p);
-      flameCrown(e.x, e.z, R, grow, fade, time, seed, 9, .7, .62);
-      const c = [e.x, .55 + p * .3, e.z]; at(c);
-      if (p < .5) { flame([e.x, .05, e.z], R * 1.1 * grow, R * .6 * grow, Math.PI / 2, P.flame, {alpha: 1 - smooth(.3, .5, p), p: [9, 1, 0, .3], seed, bias: .02, lift: .3}); const b = smooth(0, .18, p); bb(BLOB, [e.x, .2 + R * .5 * b, e.z], R * .75 * b, R * .62 * b, P.fire, {alpha: 1 - smooth(.28, .5, p), p: [1, .2, 0, 0], seed, lift: .35, bias: .04, wobble: .1, rag: .4}); }
-      if (p < .22) bb(BURST, [e.x, .5, e.z], R * mix(.7, 1.45, p / .22), R * mix(.7, 1.45, p / .22), P.fire, {alpha: 1 - smooth(.1, .22, p), p: [13, 1.4, .58, 0], seed, lift: .45});
-    }
+    disc(LIQUID, e.x, e.z, R * 1.15, P.scorch, {alpha: .65 * (1 - smooth(total * .7, total, t)), p: [.6, 2, 0, 0], layer: 0, seed, dissolve: smooth(total * .75, total, t)});
+    disc(LIQUID, e.x, e.z, R * 1.05, P.flame, {alpha: .5 * (1 - smooth(.3, .8, p)), p: [.7, 2.4, 0, 0], layer: 1, seed: seed + 1, soft: .8});
+    disc(RING, e.x, e.z, R * mix(.3, 1.35, smooth(0, .5, p)), P.flame, {alpha: 1 - smooth(.3, 1, p), p: [.88, .06, .7, .04], layer: 2, seed, rag: .8});
+    if (t < burst) fireBurst(e.x, e.z, R * 1.05, p * .92, time, seed, 1.25);
     smokeRise(e.x, e.z, R * .85, clamp((t - burst * .55) / (total - burst * .55)), time, seed, 5);
   }
   function meteorFall(e, time) { // METEOR SHOWER: burning rocks streak in diagonally
     const fl = e.flight ?? .55, st = e.delay - fl; if (e.age < st || e.age >= e.delay) return;
     const a = clamp((e.age - st) / fl), o = 1 - (.35 * a + .65 * a * a), f = cam.f, s = Math.hypot(f[0], f[2]) || 1, side = [f[2] / s, 0, -f[0] / s], R = e.s?.radius || .8;
     const pos = [e.x + side[0] * 4.6 * o, .04 + 7 * o, e.z + side[2] * 4.6 * o], back = [side[0] * 4.6, 7, side[2] * 4.6], seed = hash(e.x * 2 + e.z);
-    disc(RING, e.x, e.z, R * .9, P.flame, {alpha: .25 + .55 * a, p: [.85, .05, .7, .03], layer: 1, seed, rag: .6}); shadow(e.x, e.z, R * .5 * (.4 + .6 * a), .3 * a);
+    disc(RING, e.x, e.z, R * .9, P.flame, {alpha: .25 + .55 * a, p: [.85, .05, .7, .03], layer: 1, seed, rag: .7}); shadow(e.x, e.z, R * .5 * (.4 + .6 * a), .3 * a);
     at(pos);
-    for (let j = 0; j < 3; j++) { const k = (time * 2.5 + j / 3) % 1, c = addv(pos, back, (.05 + k * .1)); bb(PUFF, c, .24 + k * .28, .19 + k * .22, P.smoke, {alpha: (1 - k) * .75, p: [time + j, 0, 0, 0], seed: j, dissolve: smooth(.5, 1, k)}); }
-    trail(FLAME, pos, back, R * 1.1, R * .46, P.flame, {p: [10, 1, 0, 0], seed, bias: .01});
-    trail(FLAME, pos, back, R * .78, R * .32, P.fire, {p: [12, .7, 0, .4], seed: seed + 1, bias: .02});
-    bb(BLOB, pos, R * .27, R * .27, P.ember, {p: [1, .2, 0, 0], seed, bias: .03});
+    for (let j = 0; j < 3; j++) { const k = (time * 2.5 + j / 3) % 1, c = addv(pos, back, (.05 + k * .1)); bb(SMOKE, c, .26 + k * .3, .21 + k * .24, P.smoke, {alpha: (1 - k) * .75, p: [.6, 0, 0, 0], seed: j, dissolve: smooth(.5, 1, k), soft: .4}); }
+    blaze(pos, R * 1.25, R * .62, screenAngle(back), P.fire, {p: [1.8, 1.1, 0, 0], seed, bias: .01});
+    bb(BLOB, pos, R * .24, R * .24, P.ember, {p: [1, .2, 0, 0], seed, bias: .03, wobble: .14});
   }
   function meteorImpact(e, time) {
     const D = cfg.meteorImpact, p = clamp(e.age / D), R = e.r || .8, seed = hash(e.x * 3 + e.z * 2);
-    disc(SPLAT, e.x, e.z, R * 1.05, P.scorch, {alpha: .62 * (1 - smooth(1.5, 2.3, e.age)), p: [.25, 8, 5, 0], layer: 0, seed, dissolve: smooth(1.6, 2.3, e.age)});
-    disc(RING, e.x, e.z, R * mix(.3, 1.25, smooth(0, .4, p)), P.flame, {alpha: 1 - smooth(.2, .6, p), p: [.86, .08, .6, .04], layer: 1, seed, rag: .6});
-    if (p < .7) flameCrown(e.x, e.z, R, smooth(0, .15, p), 1 - smooth(.35, .7, p), time, seed, 5, .6, .7);
-    at([e.x, .4, e.z]); if (p < .2) bb(BURST, [e.x, .4, e.z], R * mix(.5, 1.25, p / .2), R * mix(.5, 1.25, p / .2), P.fire, {alpha: 1 - smooth(.08, .2, p), p: [10, 2.4, .4, 0], seed, lift: .35});
+    disc(LIQUID, e.x, e.z, R * 1.05, P.scorch, {alpha: .62 * (1 - smooth(1.5, 2.3, e.age)), p: [.65, 2, 0, 0], layer: 0, seed, dissolve: smooth(1.6, 2.3, e.age)});
+    disc(RING, e.x, e.z, R * mix(.3, 1.25, smooth(0, .4, p)), P.flame, {alpha: 1 - smooth(.2, .6, p), p: [.86, .08, .6, .04], layer: 1, seed, rag: .7});
+    fireBurst(e.x, e.z, R, p, time, seed);
     smokeRise(e.x, e.z, R, clamp((e.age - .2) / 1.8), time, seed, 3);
   }
-  function cyclone(e, time) { // FLAME CYCLONE: a painted fire twister marching into the pack
-    const A = smooth(0, cfg.cycloneRise, e.age) * clamp((e.life ?? 1) / cfg.cycloneFade), r = e.r, seed = hash(e.x * .1 + (e.id || 0)), H = r * 1.9;
+  function cyclone(e, time) { // FLAME CYCLONE: living flames whirl in a rising spiral round a swirl of heat
+    const A = smooth(0, cfg.cycloneRise, e.age) * clamp((e.life ?? 1) / cfg.cycloneFade), r = e.r, seed = hash(e.x * .1 + (e.id || 0)), H = r * 1.8;
     disc(SPIRAL, e.x, e.z, r * 1.05, P.scorch, {alpha: .6 * A, p: [1.5, 3, -e.age * 3, .42], layer: 0, seed, rag: .5});
-    disc(RING, e.x, e.z, r, P.flame, {alpha: .55 * A, p: [.9, .05, .6, .05], layer: 1, seed, rag: .6});
-    const mid = [e.x, H * .5 + .1, e.z]; at(mid);
-    const sway = Math.sin(e.age * 2.2) * .12;
-    bb(DRILL, [e.x + sway * .5, H * .5 + .1, e.z], H * .5, r * .78, P.flame, {rot: -Math.PI / 2 + sway * .2, asp: H * .5 / (r * .78), alpha: .92 * A, p: [e.age * 2.6, 1.3, 0, 0], seed});
-    for (let j = 0; j < 6; j++) {
-      const u = j / 5, y = .2 + u * H * .95, rad = r * (.3 + .62 * u), spin = -e.age * 7 + u * 1.8 + j * .9, c = [e.x + sway * u, y, e.z];
-      bb(ARC, c, rad * 1.08, rad * .36, j % 2 ? P.fire : P.flame, {alpha: A, p: [.86, spin, 3.6, .2 + .06 * u], seed: j, bias: .01 + j * .001});
+    disc(LIQUID, e.x, e.z, r * .9, P.flame, {alpha: .4 * A, p: [.7, 2.4, 0, 0], layer: 1, seed: seed + 1, soft: .8});
+    const mid = [e.x, H * .5, e.z]; at(mid);
+    bb(TWISTER, [e.x, H * .5 + .1, e.z], H * .55, r * .8, P.flame, {rot: Math.PI / 2, alpha: .38 * A, p: [1, 0, 0, 0], seed, soft: .7, bias: -.05});
+    const n = 11;
+    for (let j = 0; j < n; j++) {
+      const f = j / (n - 1), an = e.age * 4.2 + j * 2.4, rad = r * (.28 + .6 * f), h = .02 + f * H * .82, base = [e.x + Math.cos(an) * rad, h, e.z + Math.sin(an) * rad];
+      const tangent = [-Math.sin(an), 0, Math.cos(an)], lean = clamp(tangent[0] * cam.r[0] + tangent[2] * cam.r[2], -1, 1), size = r * (.62 - .3 * f); at(base);
+      blaze(base, size, size * .62, Math.PI / 2 + lean * .55, P.fire, {alpha: A * (1 - smooth(.85, 1, f) * .5), p: [1.5, 1, 0, 0], seed: j + seed, lift: .1});
     }
-    for (let j = 0; j < 5; j++) { const an = e.age * 5 + j * TAU / 5, base = [e.x + Math.cos(an) * r * .5, .05, e.z + Math.sin(an) * r * .5]; flame(base, r * .5 * (.8 + .2 * Math.sin(e.age * 9 + j)), r * .25, Math.PI / 2 + Math.sin(an) * .3, j % 2 ? P.flame : P.fire, {alpha: A, p: [11, .8, 0, 0], seed: j + seed, bias: .02}); }
-    for (let j = 0; j < 8; j++) { const k = (e.age * .9 + j / 8) % 1, an = e.age * 6 + j * 2.4, c = [e.x + Math.cos(an) * r * (.3 + .6 * k), .2 + k * H, e.z + Math.sin(an) * r * (.3 + .6 * k)]; bb(BLOB, c, .07, .07, P.fire, {alpha: A * (1 - k), p: [.5, 0, 0, 0], seed: j, bias: .03}); }
-    bb(PUFF, [e.x + sway, H + .3, e.z], r * .9, r * .5, P.smoke, {alpha: .65 * A, p: [e.age * 2, 0, 0, 0], seed, bias: .04});
+    for (let j = 0; j < 8; j++) { const k = (e.age * .9 + j / 8) % 1, an = e.age * 6 + j * 2.4, c = [e.x + Math.cos(an) * r * (.3 + .6 * k), .2 + k * H, e.z + Math.sin(an) * r * (.3 + .6 * k)]; at(c); bb(BLOB, c, .06, .06, P.fire, {alpha: A * (1 - k), p: [.5, 0, 0, 0], seed: j}); }
+    const top = [e.x, H + .35, e.z]; at(top); bb(SMOKE, top, r * .85, r * .55, P.smoke, {alpha: .6 * A, p: [.6, 0, 0, 0], seed, soft: .45});
   }
   function fire(combat, world, time, visible, hideEnemies) {
     for (const t of combat.projectiles || []) { if (!Number.isFinite(t.x + t.z) || !visible(t.x, t.z, 2)) continue; note(t.ember ? 'fire:ember' : 'fire:fireball'); t.ember ? fireEmber(t, time) : fireball(t, time); }
@@ -645,7 +649,7 @@ float edge(vec2 p,vec2 a,vec2 b){vec2 e=b-a;return dot(p-a,normalize(vec2(e.y,-e
 void main(){
  int k=int(vA.x+.5);float seed=vA.y,asp=max(vE.x,.001),T=uTime+seed*7.31;
  vec2 q=vec2(vQ.x*asp,vQ.y);
- if(vD.w>0.)q+=(vec2(fbm(q*1.9+seed*7.1),fbm(q*1.9+seed*3.7+11.))-.5)*vD.w;
+ float wob=vD.w>0.?vD.w:(k>=23?0.:.035);if(wob>0.)q+=(vec2(vn(q*1.5+seed*7.1+T*.35),vn(q*1.5+seed*3.7+11.-T*.3))-.5)*2.*wob;
  vec4 P=vP;float d=1.,tone=.5,hd=9.,fill=1.,ink=9.;
  float r=length(q),an=atan(q.y,q.x+1e-7);vec2 dir=q/max(r,1e-4);
  if(k==0){ // droplet / orb / bubble: cel-shaded sphere
@@ -720,7 +724,6 @@ void main(){
  }else if(k==14){ // rune circle
   float a=an+P.y,sg=6.28318/P.x,am=mod(a+sg*.5,sg)-sg*.5;vec2 pm=abs(vec2(cos(am),sin(am))*r-vec2(.77,0.));
   d=min(min(abs(r-.9)-.04,abs(r-.64)-.025),min((pm.x/.085+pm.y/.05-1.)*.04,abs(r-.2)-.025));
-  float am2=mod(a,sg)-sg*.5;vec2 pt=vec2(cos(am2),sin(am2))*r;d=min(d,max(abs(pt.y)-.012,abs(pt.x-.42)-.18));
   tone=.72+.2*sin(a*3.+T);
  }else if(k==15){ // brush arc
   float da=mod(an-P.y,6.28318),u=da/max(P.z,1e-3),taper=u<=1.?pow(sin(u*3.14159),.55):0.;
@@ -749,29 +752,83 @@ void main(){
  }else if(k==21){ // burst star
   float fa=(an+3.14159)/6.28318*P.x,id=floor(fa),f=fract(fa),len=.6+.35*h21(vec2(id,seed)),sp=pow(1.-abs(f-.5)*2.,P.y);
   float R=mix(P.z,len,sp);d=(r-R)*.7;tone=1.-r/max(R,.01)*.8;
- }else if(k==22){ // rolling wave wall with a foamy, peaked crest (local y up)
-  float x=q.x/asp,ends=1.-pow(abs(x),2.6),pk=.5+.5*sin(q.x*1.9+T*2.6+seed*3.);
-  float crest=mix(-1.15,.02+.6*pk*pk+.1*sin(q.x*4.3-T*3.),ends);
+ }else if(k==22){ // rolling wave wall: a rounded, frothy crest that rolls along its length (local y up)
+  float x=q.x/asp,ends=1.-pow(abs(x),3.),c1=fbm(vec2(q.x*.55+T*.6,seed)),c2=vn(vec2(q.x*1.7-T*1.1,seed+3.));
+  float crest=mix(-1.25,-.1+.62*c1+.2*c2,ends);
   d=max(q.y-crest,-q.y-1.);
   float u=(q.y+1.)/max(crest+1.,.01);
-  tone=clamp(.64-u*.52+(fbm(vec2(q.x*.7-T*.5,q.y*2.6)+seed)-.5)*.55,0.,1.);
-  hd=min(crest-.22-.12*vn(vec2(q.x*3.3+seed,T*2.))-q.y,abs(q.y-(crest-.62-.08*sin(q.x*3.1+T*2.)))-.035*ends);
-  fill=smoothstep(-1.,-.6,q.y);
+  tone=clamp(.72-u*.5+(fbm(vec2(q.x*.35-T*.4,q.y*3.2)+seed)-.5)*.7,0.,1.);
+  hd=crest-.2-.14*fbm(vec2(q.x*2.6+seed,T*1.5))-q.y;
+  fill=smoothstep(-1.,-.55,q.y);
+ }else if(k==23){ // living flame: a round base with three curling, tapering tongues and drops that break away (base at -x, tip at +x)
+  float t=T*P.x,H=2.*asp;vec2 b0=vec2(-asp+.56,0.);
+  d=length((q-b0)*vec2(1.,.92))-.54-.04*sin(t*5.3+seed);
+  for(int j=0;j<3;j++){
+   vec4 g=j==0?vec4(1.,0.,.46,0.):j==1?vec4(.6,-.74,.27,2.1):vec4(.54,.78,.25,4.2);
+   float ph=g.w+seed*3.,dj=1e3,pr=g.z,side=sign(g.y);
+   vec2 a=b0+vec2(.2,g.y*.42),tip=vec2(-asp+g.x*H*(.88+.12*sin(t*3.1+ph)),g.y+sin(t*1.7+ph)*.14+P.z*g.x),cp=vec2(-asp+g.x*H*.45,g.y*.95+side*.12+sin(t*1.3+ph*2.)*.14),pv=a;
+   for(int k=1;k<=4;k++){float sk=float(k)*.25;vec2 pt=(1.-sk)*(1.-sk)*a+2.*(1.-sk)*sk*cp+sk*sk*tip;float rr=g.z*pow(1.-sk,.8)+.02;dj=min(dj,capsule(q,pv,pt,pr,rr));pv=pt;pr=rr;}
+   d=smin(d,dj,.13);
+  }
+  for(int i=0;i<2;i++){float ph=fract(t*.75+float(i)*.5+seed*.7);vec2 c=vec2(-asp+H*(.74+.28*ph),sin(ph*4.+float(i)*2.)*.3);d=min(d,length(q-c)-.12*(1.-ph));}
+  d+=(fbm(q*2.3+vec2(-t*1.2,seed*5.))-.5)*.13*P.y;
+  d=max(d,max(abs(vQ.y)-.97,vQ.x-.97));
+  tone=clamp(-d*2.4+.12-(q.x+asp)/H*.45,0.,1.);
+ }else if(k==24){ // ball of fire: radial flames licking outward (explosions, the sun, meteor heads)
+  float lr=length(vQ),rr=lr/.82,t=T*P.x;vec2 dr=vQ/max(lr,1e-4);
+  float n=fbm(dr*1.7+vec2(seed,t*.9))*.55+fbm(dr*(2.8+rr*2.2)+vec2(t*.7-seed,-t*.5))*.45;
+  float F=(1.-rr)*1.3+(n-.5)*P.y*1.3-smoothstep(.8,1.,lr)*.9;
+  if(P.z>0.)F+=P.z*.2*sin(atan(dr.y,dr.x+1e-7)*P.w+t*1.4+n*3.)*smoothstep(.2,.7,rr);
+  d=(.12-F)*.5;tone=clamp((F-.12)*1.2,0.,1.);
+ }else if(k==25){ // billowing smoke, mist and cloud: soft lobes that roll and breathe
+  float t=T*P.x;vec2 p=vQ;
+  p+=(vec2(fbm(p*1.3+vec2(seed,-t*.6)),fbm(p*1.3+vec2(-t*.5,seed*2.)))-.5)*.35;
+  float b=length(p-vec2(-.42,-.16)-.05*sin(t+seed))-.36;
+  b=smin(b,length(p-vec2(.05,.14)+.04*cos(t*1.2))-.46,.2);
+  b=smin(b,length(p-vec2(.45,-.1))-.34,.2);
+  b=smin(b,length(p-vec2(-.1,-.34))-.36,.2);
+  b=smin(b,length(p-vec2(.3,-.38))-.3,.2);
+  d=max(b+(fbm(p*3.2+vec2(t*.3,-t))-.5)*.1,max(abs(vQ.x),abs(vQ.y))-.98);
+  tone=clamp(.55+p.y*.55-p.x*.1+(fbm(p*2.2+seed)-.5)*.35,0.,1.);
+ }else if(k==26){ // liquid: splash, puddle or goo with drops breaking away at the rim (P.x wildness, P.y lobes)
+  float lr=length(vQ),rr=lr/.84;vec2 dr=vQ/max(lr,1e-4);
+  float n=fbm(dr*P.y+vec2(seed*7.,T*.1))*.8+fbm(vQ*2.2+seed*3.+T*.08)*.2;
+  float F=(1.-rr)*1.4+(n-.5)*P.x*1.3-smoothstep(.85,1.,lr)*.8;
+  d=(.1-F)*.5;tone=clamp(.12+(F-.1)*1.1,0.,1.);
+ }else if(k==27){ // fire twister: a flame funnel wrapped in swirling bands (base at -x, top at +x)
+  float u=(vQ.x+1.)*.5,t=T*P.x,w=mix(.26,.88,pow(u,1.15)),v=vQ.y+sin(u*5.5-t*1.6)*.1*u,m=1.-abs(v)/w;
+  float sw=sin((v/w)*2.4+u*13.-t*8.),n=fbm(vec2(v*1.8+seed,u*3.-t*1.4));
+  float F=m*.95+(n-.5)*.8+sw*.14*m-smoothstep(.86,.99,abs(vQ.y))-smoothstep(.93,1.,u);
+  d=(.1-F)*.5;tone=clamp((F-.1)*1.15+sw*.12,0.,1.);
+ }else if(k==28){ // gushing water: a stream that swells from its source and frays into spray at its edges (flows toward +x)
+  float x=(vQ.x+1.)*.5,t=T*P.x,v=vQ.y,grow=smoothstep(0.,.08,x)*(1.-smoothstep(.9,1.,x)),w=mix(.5,.86,x)*grow,a=abs(v)/max(w,.02);
+  float e=fbm(vec2(q.x*1.5-t*2.,abs(v)*1.5+seed)),n=fbm(vec2(q.x*.5-t*1.4,v*1.6+seed*2.));
+  float F=1.-a+(e-.5)*1.1*smoothstep(.2,1.,a)-(1.-grow)*1.5-smoothstep(.9,1.,abs(vQ.y));
+  d=(.08-F)*.45;tone=clamp(.28+(1.-a)*.4+(n-.5)*.9,0.,1.);
+ }else if(k==29){ // surging water seen from above: a sheet of water whose foamy front and foam lines race forward (front toward +y)
+  float x=q.x/asp,t=T*P.x,ends=1.-pow(abs(x),4.);
+  float front=mix(-1.05,.72+(fbm(vec2(q.x*1.3+seed,t*.4))-.5)*.28+.05*sin(q.x*7.+t*3.),ends);
+  d=max(q.y-front,-q.y-1.);
+  tone=clamp(.3+(front-q.y)*.22+(fbm(vec2(q.x*.6-t*.2,q.y*1.5-t))-.5)*.55,0.,1.);
+  float l1=abs(q.y-(front-.1))-.1*(.55+.45*vn(vec2(q.x*3.+seed,t)));
+  float l2=abs(q.y-(front-.45-.05*sin(q.x*4.+t*2.)))-.04+step(vn(vec2(q.x*2.2+seed,3.)),.3)*.2;
+  float l3=abs(q.y-(front-.85-.06*sin(q.x*3.+1.+t*1.5)))-.028+step(vn(vec2(q.x*2.6+seed,7.)),.4)*.2;
+  hd=min(l1,min(l2,l3));fill=smoothstep(-1.,-.25,q.y);
  }
  // All screen derivatives are taken before any discard (safe on every GPU, including iPad/Metal).
  float px=max(fwidth(d),1e-4),tw=max(fwidth(tone),.012),hpx=max(fwidth(hd),1e-4),ipx=max(fwidth(ink),1e-4),unitCss=1./(px*uDpr);
  if(d>px*uDpr*6.)discard;
  d+=(fbm(q*7.+seed*3.1)-.5)*px*uDpr*(2.4+vE.z*7.);
  if(d>px*1.5)discard;
- float cover=1.-smoothstep(-px,px,d);
+ float soft=vE.w,cover=1.-smoothstep(-max(px,soft*.22),px,d);
  float tn=clamp(tone+(fbm(q*1.6+seed*9.)-.5)*.2,0.,1.);
  float b1=smoothstep(.34-tw,.34+tw,tn),b2=smoothstep(.67-tw,.67+tw,tn);
  vec3 col=mix(mix(vD.rgb,vM.rgb,b1),vL.rgb,b2);
  col*=1.-max(0.,max(1.-abs(tn-.34)/(tw*2.2),1.-abs(tn-.67)/(tw*2.2)))*.12;
  float lum=dot(vD.rgb,vec3(.3,.59,.11));vec3 pig=clamp(mix(vec3(lum),vD.rgb,1.45)*.66,0.,1.);
  float ow=1.2*uDpr*px,iw=clamp(unitCss*.035,1.5,4.5)*uDpr*px;
- float line=(1.-smoothstep(ow*.45,ow*1.25,-d))*vM.w*(.72+.28*vn(q*5.+seed));
- float pool=(1.-smoothstep(0.,iw*1.6,-d))*vM.w;
+ float line=(1.-smoothstep(ow*.45,ow*1.25,-d))*vM.w*(1.-soft)*(.45+.55*smoothstep(.2,.6,vn(q*2.3+seed*4.)));
+ float pool=(1.-smoothstep(0.,iw*1.6,-d))*vM.w*(1.-soft*.6);
  col=mix(col,mix(col,vD.rgb*.92,.6),pool*.55);
  col=mix(col,pig,line*.88);
  float white=1.-smoothstep(-hpx,hpx,hd);

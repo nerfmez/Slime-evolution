@@ -42,7 +42,8 @@ Source of truth: `pacing/encounter-director.js`; details in `docs/COZY-PACING.md
 - **EXP:** every creature drops its matching EXP animal. See `docs/SPECIES-EXP-ELITES.md`.
 - **Skill effects (prototype, owner request):**
   - Every skill, fire and its evolutions included, is redrawn from its original concept and card art by `vfx/painted-renderer.mjs`, wired in by `vfx/painted-style.mjs`. A filter over the old effects was rejected.
-  - Look: flat painted shapes (droplets, flames, petals, clouds, ice facets, lightning strokes) with stepped cel tones, a thin darker same-hue edge (NO black outlines), white paper highlights, paper grain and a watercolour dissolve.
+  - Look: organic painted shapes (droplets, living flames, petals, soft clouds, ice facets, lightning strokes) with stepped cel tones, a thin darker same-hue edge (NO black outlines), white paper highlights, paper grain and a watercolour dissolve. Nothing should read as a rigid geometric solid.
+  - Fire (owner feedback): living flames with a round base and curling tongues that break away. Never stick, cone or pillar flames.
   - The renderer reads combat objects only. Shapes follow the gameplay hit areas; sizes, timing and damage are unchanged.
   - The old effects stay behind Settings > Test > "สีน้ำวาดมือแบบใหม่" (`slime.vfxStyle.v2`) until the owner approves.
   - See `docs/PAINTED-VFX.md`.

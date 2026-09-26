@@ -55,6 +55,22 @@ test('every skill, evolution and fire effect is painted by the new renderer', ()
   assert.equal(vfx.diagnostics.kinds['fire:burning'], undefined, 'hidden lab targets carry no flames');
 });
 
+test('fire is made of living flames, never rigid flame sticks or a solid pillar (owner feedback)', () => {
+  const vfx = createPaintedSkillRenderer(null), FLAME = 2, FIRE = 23, TWISTER = 27;
+  const states = [{projectiles: [{x: 0, z: 0, y: .36, tx: 3, tz: 0, life: 1.5}]}, {fx: [{type: 'blast', x: 0, z: 0, r: 1, age: .3}]}, {patches: [{x: 0, z: 0, r: .8, age: .5, life: 1}]},
+    {events: [{type: 'sun', x: 0, z: 0, age: .2, delay: .5, s: {radius: 1.4}}]}, {fx: [{type: 'sun', x: 0, z: 0, r: 1.4, age: .3}]},
+    {events: [{type: 'meteor', x: 2, z: 0, age: .3, delay: .55, flight: .55, s: {radius: .8}}]}, {fx: [{type: 'meteor', x: 2, z: 0, r: .8, age: .1}]},
+    {cyclones: [{x: 0, z: 0, r: 1.2, life: 3, age: .5}]}, {projectiles: [{x: 1, z: 0, vx: 5.8, vz: 0, life: .5, ember: true}]}];
+  for (const st of states) {
+    const items = vfx.plan(st, {}, 1, () => true, {vp: VP}), shapes = items.map(it => it.v[3]);
+    assert.ok(shapes.includes(FIRE), JSON.stringify(Object.keys(st)) + ' uses living flames');
+    assert.ok(!shapes.includes(FLAME), JSON.stringify(Object.keys(st)) + ' has no teardrop flame sticks');
+    for (const it of items.filter(it => it.v[3] === TWISTER)) assert.ok(it.v[11] <= .4 && it.v[31] >= .5, 'cyclone heat swirl stays soft and see-through');
+  }
+  vfx.plan({}, {enemies: [{x: 1, z: 1, hp: 5, burnTime: 1, radius: .5}]}, 1, () => true, {vp: VP});
+  assert.ok(vfx.diagnostics.kinds['fire:burning'] > 0);
+});
+
 test('effects keep the gameplay sizes (rings, cones, lines and waves match their hit areas)', () => {
   const vfx = createPaintedSkillRenderer(null);
   const ground = items => items.filter(it => it.g === 0);
@@ -68,11 +84,11 @@ test('effects keep the gameplay sizes (rings, cones, lines and waves match their
   assert.ok(Math.abs(len - 4.4) < .01 && Math.abs(fan.v[12] - .55) < 1e-6, 'cone ' + len);
   // Aqua Railgun: the stream runs the whole line once extended.
   items = vfx.plan({abilities: [ability('water', 'beam', {dx: 1, dz: 0, r: .6, length: 12, age: .15, life: .3})]}, {}, 1, () => true, {vp: VP});
-  const stream = items.find(it => it.g === 1 && it.v[3] === 17), reach = stream.v[0] + Math.hypot(stream.v[4], stream.v[5], stream.v[6]);
+  const stream = items.find(it => it.g === 1 && it.v[3] === 28), reach = stream.v[0] + Math.hypot(stream.v[4], stream.v[5], stream.v[6]);
   assert.ok(Math.abs(reach - 12) < .01, 'railgun reach ' + reach);
-  // Tidal Surge: the wave wall spans the full gameplay width.
+  // Tidal Surge: the rushing water spans the full gameplay width.
   items = vfx.plan({abilities: [ability('water', 'wave', {dx: 0, dz: -1, r: 1.6, age: .3, life: .8})]}, {}, 1, () => true, {vp: VP});
-  const wave = items.find(it => it.v[3] === 22), half = Math.hypot(wave.v[4], wave.v[5], wave.v[6]);
+  const wave = items.find(it => it.v[3] === 29), half = Math.hypot(wave.v[4], wave.v[5], wave.v[6]);
   assert.ok(half >= 1.6, 'wave half width ' + half);
 });
 
