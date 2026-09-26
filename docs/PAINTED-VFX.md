@@ -72,13 +72,13 @@ The owner rejected a filter over the old effects ("it only adjusts the old skill
 | Frost Spike | ice spike | A six-sided ice crystal (clear, cold cyan, bright ridges) trailing cold mist. Frozen foes are encased in a faceted block of ice that grows up from the ground, with crystals at their feet; chilled foes get a few small crystals. |
 | GLACIAL BORER | big ice drill | A spinning drill (flutes slide toward the tip) wrapped in two spirals of frosty wind, with a mist trail. |
 | WHITEOUT BREATH | ice breath cone | Soft snowy cone (same half-angle and length as the hit area), rolling breath clouds and blowing snow. |
-| CRYSTAL CHAINBURST | embedded crystals burst in chains (1.4x radius, owner request) | A cluster of big ice crystals bursts out of a frozen patch, the outer ones leaning away, then shatters into shards and cold mist. |
+| CRYSTAL CHAINBURST | embedded crystals burst in chains (1.4x radius, owner request) | A thicket of ice spikes (owner request): sharp spikes stab up out of a frozen patch, rippling out from the centre, the outer ones leaning outward, then shatter into shards and cold mist. |
 | Chain Spark | chaining lightning | Thin jagged bolt with a soft glow and a flash where it lands. |
 | JUDGMENT BOLT | sky lightning, three strikes | Bolt from the sky, a flash and a spreading ring. |
 | LIGHTNING NETWORK | foes linked by electricity | The caster glows as the first node; bolts link the foes. |
 | TESLA DOMAIN | stunning field around the slime | Soft electric field with crackling bolts on its rim. |
 | Orbit Core | orbiting cores | Glossy cores (no faces) with a glow and a tail that curves along the orbit. |
-| GRAVITY MACE | one big mace orb | A small star (bright round core, licking corona) with three moons circling it on tilted orbits, each with a short trail. |
+| GRAVITY MACE | one big mace orb | A clean, round star with no aura, no trail and no ring pulse, and three moons circling close to it, slowly, on tilted orbits (hidden while they pass behind it). |
 | HUNTING SATELLITES | cores dart out and return | Tails trace every dart and return. |
 | ARC HALO | cores linked into a wall | Twisting strands of light between the cores. |
 | Inferno (basic) | fireball | Round ball of fire, white-hot inside, flames licking back into a short tail. |

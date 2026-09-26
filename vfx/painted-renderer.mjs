@@ -33,7 +33,7 @@ export function createPaintedSkillRenderer(gl) {
     petal: tones('#f3daf7', '#cc93e2', '#8a4fae'), spore: tones('#fdfbe0', '#eef3a4', '#b3c455'),
     frost: tones('#f6fdff', '#c2ecf8', '#72c3e3'), frostDeep: tones('#e2f7fd', '#8fd6ef', '#3f9ccb'), ice: tones('#fbfeff', '#cdeff9', '#7fc9e6'),
     chain: tones('#ffffff', '#e8e2fc', '#aa9de6'), chainBlue: tones('#e5ecff', '#a8baf6', '#627ad8'),
-    orbit: tones('#f2fbff', '#a6dff8', '#58b0e6'), orbitDeep: tones('#c8e9fb', '#70bbea', '#3c84c8'), star: tones('#ffffff', '#d4f1fd', '#8fd2f2'),
+    orbit: tones('#f2fbff', '#a6dff8', '#58b0e6'), orbitDeep: tones('#c8e9fb', '#70bbea', '#3c84c8'), star: tones('#ffffff', '#9fd8f5', '#4ea8e0'),
   };
   const Z4 = [0, 0, 0, 0], NO_RIBBON = [0, 0, 0, 0, 0, 0, 0, 0];
   let items = [], seq = 0, depth = 0, cfg = {}, now = 0;
@@ -412,16 +412,17 @@ export function createPaintedSkillRenderer(gl) {
       mote([t.x + Math.sin(yaw + a) * dist, .2 + .5 * hash(j * 3) + k * .2, t.z + Math.cos(yaw + a) * dist], .03 + .03 * hash(j + 5), j % 3 ? P.foam : P.frost, A * smooth(0, .1, k) * (1 - smooth(.75, 1, k)), {lift: .25, bias: .03});
     }
   }
-  function frostCluster(t) { // CRYSTAL CHAINBURST: a cluster of big ice crystals bursts out of a frozen patch, glints, then shatters into shards and cold mist
-    const p = clamp(t.age / t.life), r = t.r, A = 1 - smooth(.8, 1, p), grow = 1 - Math.pow(1 - smooth(0, .35, p), 2.5), seed = hash(t.x * 1.7 + t.z * .3), g = t.generation || 0;
-    disc(LIQUID, t.x, t.z, r * (.6 + .5 * grow), P.frost, {alpha: .65 * A, p: [.6, 3, 0, 0], layer: 1, seed, shine: .7, edge: .4});
-    glowDecal(t.x, t.z, r * 1.1, P.frost, .5 * A);
-    const n = g > 0 ? 5 : 8, gone = smooth(.72, .95, p);
-    for (let j = 0; j < n; j++) {
-      const an = j ? j / (n - 1) * TAU + hash(j * 5.1 + seed) * .6 : 0, dist = j ? r * (.3 + .35 * hash(j * 2.3 + seed)) : 0, h = r * (j ? .55 + .3 * hash(j * 1.7 + seed) : 1.05) * grow, w = Math.max(.01, h * (j ? .3 : .34));
-      const base = [t.x + Math.cos(an) * dist, 0, t.z + Math.sin(an) * dist]; at(base);
-      const tilt = j ? Math.cos(an) * .55 + (hash(j + seed) - .5) * .3 : 0, u = screenDir(Math.PI / 2 + tilt); // the outer crystals lean away from the centre
-      bb(CRYSTAL, addv(base, u, h / 2), h / 2, w, j % 3 ? P.ice : P.frostDeep, {rot: Math.PI / 2 + tilt, asp: h / 2 / w, alpha: A * (1 - gone), p: [.22, .6, 0, 0], seed: j, lift: .15, edge: .5});
+  function frostCluster(t) { // CRYSTAL CHAINBURST as a thicket of ice spikes (owner request): sharp spikes stab up out of a frozen patch, rippling out from the centre, the outer ones leaning outward; then they shatter into shards and cold mist
+    const p = clamp(t.age / t.life), r = t.r, A = 1 - smooth(.8, 1, p), seed = hash(t.x * 1.7 + t.z * .3), g = t.generation || 0, gone = smooth(.72, .95, p);
+    disc(LIQUID, t.x, t.z, r * (.55 + .55 * smooth(0, .3, p)), P.frost, {alpha: .65 * A, p: [.6, 3, 0, 0], layer: 1, seed, shine: .7, edge: .4});
+    glowDecal(t.x, t.z, r * 1.1, P.frost, .45 * A);
+    const n = g > 0 ? 11 : 18;
+    for (let j = 0; j < n; j++) { // spikes on a sunflower spiral, so they fill the patch evenly
+      const f = Math.sqrt((j + .5) / n), an = j * 2.39996 + seed * 6, dist = r * .92 * f, rise = 1 - Math.pow(1 - smooth(f * .18, f * .18 + .16, p), 3); // the outer ring stabs up a moment later
+      if (rise <= 0) continue;
+      const h = r * (1.05 - .5 * f) * (.8 + .4 * hash(j * 1.7 + seed)) * rise, w = Math.max(.01, h * .15), base = [t.x + Math.cos(an) * dist, 0, t.z + Math.sin(an) * dist]; at(base);
+      const tilt = Math.cos(an) * f * .75 + (hash(j + seed) - .5) * .2, u = screenDir(Math.PI / 2 + tilt);
+      bb(CRYSTAL, addv(base, u, h / 2), h / 2, w, j % 3 ? P.ice : P.frostDeep, {rot: Math.PI / 2 + tilt, asp: h / 2 / w, alpha: A * (1 - gone), p: [.4, .35, 0, 0], seed: j, lift: .15, edge: .5});
     }
     if (p > .6) { const k = smooth(.6, 1, p); at([t.x, .4, t.z]); fog([t.x, .4, t.z], r * (.5 + .7 * k), r * (.35 + .4 * k), P.frost, .6 * (1 - k), {seed, lift: .3, dissolve: smooth(.4, 1, k)});
       for (let j = 0; j < 8; j++) { const an = j * TAU / 8 + seed * 4, c = [t.x + Math.cos(an) * r * (.3 + k * 1.1), .25 + Math.sin(k * Math.PI) * .6, t.z + Math.sin(an) * r * (.3 + k * 1.1)]; at(c); aim(CRYSTAL, c, [Math.cos(an), .5, Math.sin(an)], .2, .08, P.ice, {alpha: 1 - k, p: [.35, .5, 0, 0], seed: j, lift: .2}); } }
@@ -480,18 +481,17 @@ export function createPaintedSkillRenderer(gl) {
       const big = style === 'power', R = big ? o.r * 1.15 : Math.max(.22, o.r * 1.4), y = (big ? .7 : .55) + .05 * Math.sin(now * 5.4 + (o.angle || 0)), c = [o.x, y, o.z];
       const pal = big ? P.orbitDeep : P.orbit, trail = pathBehind(track(o, c), big ? .28 : .32, 12), seed = hash(o.angle || 0);
       at(c); shadow(o.x, o.z, R * .85, .2);
-      if (trail.length > 2) ribbon(GLOW_R, trail, trail.map((_, i) => R * .8 * Math.pow(1 - i / (trail.length - 1), .8) + .005), pal, {alpha: .8, seed, soft: .35, edge: .2, bias: -.02});
-      glow(c, R * 1.9, pal, big ? .5 : .4, {bias: -.03});
-      if (big) { // GRAVITY MACE: a small star, its corona licking out, with moons circling it on tilted orbits
-        glow(c, R * 3, P.orbit, .4, {bias: -.04, lift: R * 2});
-        bb(SUN, c, R * 1.45, R * 1.45, P.star, {p: [1.6, 1, 0, 0], seed, bias: .01, edge: .2, lift: R * 2});
-        bb(BLOB, c, R * .78, R * .78, P.star, {p: [1, .3, 0, 0], seed, bias: .02, lift: R * 2, edge: .2}); // its bright, round core
+      if (!big && trail.length > 2) ribbon(GLOW_R, trail, trail.map((_, i) => R * .8 * Math.pow(1 - i / (trail.length - 1), .8) + .005), pal, {alpha: .8, seed, soft: .35, edge: .2, bias: -.02});
+      if (!big) glow(c, R * 1.9, pal, .4, {bias: -.03});
+      if (big) { // GRAVITY MACE (owner round 2): a clean, round star with no aura, and moons circling close to it, slowly, on tilted orbits
+        bb(BLOB, c, R, R, P.star, {p: [.15, .16, 0, 0], seed, bias: .02, lift: R * 2, edge: .3, wobble: 1e-4, soft: .15}); // wobble must be > 0 to switch the default edge wobble off
         for (let k = 0; k < 3; k++) {
-          const rad = R * (1.75 + .55 * k), tl = [.45, -.6, .9][k], sp = [2.6, -1.9, 1.4][k], ph = k * 2.1 + seed * 5, e1 = [Math.cos(k * 1.3), 0, Math.sin(k * 1.3)], e2 = norm([-e1[2] * Math.cos(tl), Math.sin(tl), e1[0] * Math.cos(tl)]);
+          const rad = R * (1.3 + .18 * k), tl = [.45, -.6, .9][k], sp = [1.1, -.8, .6][k], ph = k * 2.1 + seed * 5, e1 = [Math.cos(k * 1.3), 0, Math.sin(k * 1.3)], e2 = norm([-e1[2] * Math.cos(tl), Math.sin(tl), e1[0] * Math.cos(tl)]);
           const pt = a => [c[0] + (e1[0] * Math.cos(a) + e2[0] * Math.sin(a)) * rad, c[1] + e2[1] * Math.sin(a) * rad, c[2] + (e1[2] * Math.cos(a) + e2[2] * Math.sin(a)) * rad], a0 = now * sp + ph, m = pt(a0), mr = R * [.3, .24, .19][k];
-          const tp = [], tw = []; for (let i = 0; i <= 10; i++) { tp.push(pt(a0 - Math.sign(sp) * i * .12)); tw.push(mr * .7 * (1 - i / 10) + .004); }
-          at(m); ribbon(GLOW_R, tp, tw, k % 2 ? P.foam : P.orbit, {alpha: .7, seed: seed + k, soft: .4, edge: 0});
-          glow(m, mr * 2.2, P.orbit, .45, {bias: -.01}); bb(BLOB, m, mr, mr, k % 2 ? P.orbit : P.foam, {p: [1, .3, 0, 0], seed: seed + k, bias: .01});
+          const tp = [], tw = []; for (let i = 0; i <= 10; i++) { tp.push(pt(a0 - Math.sign(sp) * i * .09)); tw.push(mr * .6 * (1 - i / 10) + .004); }
+          const dm = [m[0] - c[0], m[1] - c[1], m[2] - c[2]], zb = dm[0] * cam.f[0] + dm[1] * cam.f[1] + dm[2] * cam.f[2], lat = Math.hypot(dm[0] - cam.f[0] * zb, dm[1] - cam.f[1] * zb, dm[2] - cam.f[2] * zb), vis = zb > 0 ? smooth(R * .75, R * 1.05, lat) : 1; // hidden while it passes behind the star
+          at(m); ribbon(GLOW_R, tp, tw, k % 2 ? P.foam : P.orbit, {alpha: .55 * vis, seed: seed + k, soft: .4, edge: 0, lift: R * 2});
+          bb(BLOB, m, mr, mr, k % 2 ? P.orbit : P.foam, {p: [1, .3, 0, 0], seed: seed + k, bias: .01, lift: R * 2, wobble: 1e-4, alpha: vis});
         }
       } else bb(BLOB, c, R, R, pal, {p: [1, .3, .2, 0], seed, bias: .01});
     }
@@ -715,7 +715,7 @@ export function createPaintedSkillRenderer(gl) {
         case 'chain:arc': chainArc(t); break; case 'chain:strike': chainStrike(t); break;
         case 'chain:network': chainNetwork(t); break; case 'chain:tesla': chainTesla(t); break;
         case 'chain:ring': chainRing(t); break;
-        case 'orbit:arc': orbitArc(t); break; case 'orbit:ring': orbitRing(t); break;
+        case 'orbit:arc': orbitArc(t); break; case 'orbit:ring': if (combat.skills?.orbit?.evo !== 'power') orbitRing(t); break; // Gravity Mace draws no ring round it (owner)
         default: diagnostics.kinds[k]--; if (!diagnostics.kinds[k]) delete diagnostics.kinds[k];
       }
     }
