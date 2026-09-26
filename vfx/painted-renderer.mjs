@@ -21,7 +21,7 @@ export function createPaintedSkillRenderer(gl) {
   const BLOB = 0, RING = 1, DROP = 2, SHARD = 4, SPIRAL = 9, BOLT = 11, FAN = 12, FLOWER = 13, RIBBON = 17, DOME = 18,
     DRILL = 19, COLUMN = 20, LIQUID = 26, SURF = 29,
     WATER_R = 30, FIRE_R = 31, GLOW_R = 32, GOO_R = 33, FOG = 35, FIRELINE = 37, GLOW = 38, ROCK = 39,
-    FLAMEBALL = 40, SUN = 41, EXPLODE = 42, TORNADO = 43, PUFF = 44, DOME_FIRE = 45;
+    FLAMEBALL = 40, SUN = 41, EXPLODE = 42, TORNADO = 43, PUFF = 44, DOME_FIRE = 45, CRATER = 46;
   // Palettes: light / mid / dark wash. The pigment edge is derived from the dark wash.
   const P = {
     shadow: tones('#6f8a4c', '#5f7a40', '#4c6533'),
@@ -484,7 +484,7 @@ export function createPaintedSkillRenderer(gl) {
   }
   function fireBlast(e) { // Inferno burst: a white-hot dome swells on the ground, turns to fire and dissolves; the blast throws spinning balls of smoke outward and dust rolls along the ground
     const t = e.age, r = e.r || 1, seed = hash(e.x * .9 + e.z * 1.7), sq = Math.abs(cam.u[1]) > .05 ? Math.abs(cam.f[1]) : .62;
-    disc(LIQUID, e.x, e.z, r * 1.05, P.scorch, {alpha: .55 * smooth(0, .08, t) * (1 - smooth(1.2, 1.65, t)), p: [.1, 2, 1, 0], wobble: .01, layer: 0, seed, dissolve: smooth(1.2, 1.65, t), edge: .5});
+    disc(CRATER, e.x, e.z, r * 1.1 * (.6 + .4 * smooth(0, .15, t)), P.scorch, {alpha: .7 * smooth(0, .06, t) * (1 - smooth(1.2, 1.65, t)), p: [4, 1, 0, 0], layer: 0, seed, dissolve: smooth(1.2, 1.65, t), edge: .6});
     glowDecal(e.x, e.z, r * 1.8, P.fire, .8 * (1 - smooth(.08, .6, t)));
     const hz = 1 - smooth(.1, .7, t); if (hz > 0) { const g = [e.x, r * .45, e.z]; at(g); glow(g, r * 2.4, P.ember, .45 * hz, {lift: .2, bias: -.2}); } // red-hot haze
     const R = r * (.25 + .8 * (1 - Math.pow(1 - clamp(t / .14), 3)) + .1 * smooth(.14, .6, t)), fl = smooth(.06, .22, t), heat = 1 - smooth(.08, .45, t), ero = smooth(.32, .85, t);
@@ -494,7 +494,7 @@ export function createPaintedSkillRenderer(gl) {
       const a = (j / 10 + hash(j * 3.1 + seed) * .06) * TAU, u = hash(j * 1.7 + seed), el = .1 + .8 * u, born = .15 + .05 * hash(j * 4.4 + seed), sp = r * (3.5 + 2 * hash(j * 9.1 + seed));
       const dir = [Math.cos(a) * Math.cos(el), Math.sin(el), Math.sin(a) * Math.cos(el) * .8], p0 = [e.x + dir[0] * r * 1.05, .15 + dir[1] * r, e.z + dir[2] * r * 1.05];
       puff(p0, [dir[0] * sp, dir[1] * sp * .8, dir[2] * sp], t - born, .8 + .3 * hash(j * 6.7 + seed), r * .2, r * .42, P.smoke, 0,
-        {drag: 5, rise: .2, seed: j * 7 + seed * 11, erode: 0, smoke: 1, spin: (hash(j * 2.2 + seed) < .5 ? -1 : 1) * (1.2 + hash(j * 5.3 + seed)), edge: .5, bias: -.02});
+        {drag: 5, rise: .2, seed: j * 7 + seed * 11, erode: 0, smoke: 1, spin: -(dir[0] * cam.r[0] + dir[2] * cam.r[2]) * .9, edge: .5, bias: -.02});
     }
     { const k = clamp((t - .06) / .5); if (k > 0 && k < 1) disc(RING, e.x, e.z, r * mix(1, 2.1, 1 - Math.pow(1 - k, 2)), P.dust, {alpha: .8 * (1 - smooth(.5, 1, k)), p: [.8, .12 * (1 - k) + .03, .5, 0], layer: 1, seed, soft: .35, edge: .4}); } // a round ring of dust rolling out
     for (let j = 0; j < 14; j++) { // ground dust rolling out from the dome's base
@@ -837,6 +837,11 @@ void main(){
   float lit=clamp(dot(vec3(pp/.9,sqrt(max(0.,1.-rho*rho))),vec3(-.35,.55,.76)),0.,1.);
   tone=clamp(.12+lit*.45+(n-.5)*1.3*P.x+(P.y-.5)*.5+(1.-rho)*.2,0.,1.);
   hd=1.05-P.y*1.2-lit*P.y*.3-(n-.5)*.9*P.x-up*.15*P.x;
+ }else if(k==46){ // a blasted crater on the ground: rings step down to a dark, deep centre, a raised lip round the rim (P.x ring count, P.y rim lip)
+  float w=r+(fbm(dir*2.2+seed)-.5)*.1+(vn(q*3.+seed)-.5)*.04;
+  d=w-.92;float bands=floor(w*P.x)/P.x;
+  tone=clamp(.05+bands*.85+(fbm(q*2.4+seed*3.)-.5)*.15,0.,1.);
+  hd=P.y>0.?abs(w-.86)-.035*P.y:9.;
  }else if(k==38){ // soft glow: light without edges
   float lr=length(vQ);d=lr-.98;tone=clamp(1.-lr*1.15,0.,1.);fill=pow(clamp(1.-lr,0.,1.),1.5);
  }else if(k==39){ // meteor rock: a lumpy stone with glowing cracks
