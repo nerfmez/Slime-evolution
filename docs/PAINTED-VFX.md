@@ -138,11 +138,10 @@ The owner liked toxin least: the lime goo vanished into the green grass. Toxin i
 - **Walking in the skill lab** (owner request, 2026-09-26): the slime can move in the lab with the keyboard or the on-screen joystick (left side of the screen), and skills are cast from where it stands, so moving skills (poison seeds, Pressure Jet, orbit) can be tried as in play.
 - **Poison withers the grass** (owner request, 2026-09-26): every toxin skill (pools, Neurotoxin and its burst, Plague Bloom, the poison-flower trail) stamps the game's burnt-grass map only up to its lightest layer, so grass and meadow flowers there turn brown, shorter and dead-looking on a khaki-brown ground, but are never charred or removed like fire does. It is refreshed while the poison lasts and grows back about a second after.
 
-## Tide, with more motion (owner request, 2026-09-26)
+## Tide as a purple force field (owner request, 2026-09-26)
 
-The owner found tide plain and under-animated. Every tide effect now has a raised crest of lilac water with a white foam lip (two ribbons round the circle, in true perspective):
-- Tide Ring: the crest runs outward over a wet shine with a smaller ripple behind it, throwing spray, then sinks back.
-- Repulsion Dome: the bubble (now lifted so the ground never clips it) swells on each pulse, a shockwave crest rolls out over the ground and drops are flung away; bubbles drift up inside it.
-- Vacuum Collapse: spiral water arms wind inward, a water funnel rises at its heart, spray is dragged in, then it bursts in a flash, a crest and a crown of water.
-- Resonance Chain: layered echo crests spread in rhythm with bright beads racing round each one.
-
+The owner corrected round 6: tide is an energy field, not water, and Vacuum Collapse is not a storm (the card shows rings of force round the slime with glints of light). Every tide effect is drawn as energy: rings of force in true perspective (a soft deep-purple glow round a bright stroke that trembles), watercolour bands of purple on the ground, force lines streaking along the field and glinting points.
+- Tide Ring: layered bands of force spread out, force lines streak outward and glints ride the front; the outer band marks the damage radius.
+- Repulsion Dome: a translucent purple dome of force with a bright rim and rings of light round it like a cage; each push it flares, a ring of force runs out over the ground and force lines shoot outward.
+- Vacuum Collapse: a ring of force swells, then contracts as the field winds inward, dragging force lines and motes to a purple gravity core that grows at the centre; it implodes in a flash and bursts outward.
+- Resonance Chain: layered rings of force that tremble like a struck bell, bright points racing round them.
