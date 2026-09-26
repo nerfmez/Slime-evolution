@@ -119,3 +119,12 @@ The owner rejected a filter over the old effects ("it only adjusts the old skill
 - Chain Spark: the bolt jumps between foes; a flash and a spray of yellow sparks where it lands. Judgment Bolt: a thick forked bolt from the sky, a white flash, a shock ring, arcs crawling over the ground and a burst of sparks. Tesla Domain: arcs crawl along the curve of its rim and jump in from the middle. Lightning Network: little arcs hum round the caster.
 - Stunned foes (the game reuses the frozen timer for the lightning stun) crackle with yellow arcs; the ice block is only drawn for foes that are frozen and chilled by frost.
 
+## Toxin, reinterpreted (owner request, 2026-09-26)
+
+The owner liked toxin least: the lime goo vanished into the green grass. Toxin is now deep purple venom lit by glowing acid green, which reads clearly on grass.
+- Toxin Spit: a glossy venom glob with a glowing acid heart arcs over, shedding drips; it splats into a glossy pool with a dark rim, acid bubbles that rise and pop with a ring, and thin acid vapour.
+- Neurotoxin Injection: a heavy pulsing venom drop over the foe ringed by orbiting droplets, acid veins creeping over the ground; the burst is a purple splash, flung drops and wisps of acid vapour.
+- Plague Bloom: a dark venom flower with a glowing acid heart that breathes out glowing spores each beat.
+- Corrosive Miasma: a creeping cloud of wispy purple venom fog with an acid glow inside and acid bubbles on the ground.
+- Poisoned foes glow acid green with venom and acid bubbles rising off them.
+

@@ -29,8 +29,8 @@ export function createPaintedSkillRenderer(gl) {
     tide: tones('#f5eeff', '#d2baf5', '#9f7bdb'), tideDeep: tones('#e0cdf9', '#ae8ee8', '#7753c2'),
     fire: tones('#ffdc7a', '#ff9838', '#e4502a'), flame: tones('#ffcd6a', '#f7853a', '#d4422a'), ember: tones('#ffa45c', '#b93a2b', '#5e1d1a'),
     hot: tones('#fffbe6', '#fff0b0', '#ffc860'), dust: tones('#eadfce', '#bfa98f', '#86705c'), stone: tones('#d8c6ad', '#a68e74', '#76604c'), dustLight: tones('#f6efe4', '#dccbb4', '#ad977e'), blaze: tones('#fff3b8', '#ffb22e', '#f0561e'), smoke: tones('#f7f1e8', '#ddd1c3', '#b4a292'), scorch: tones('#cda57e', '#9d6c4d', '#6d4433'),
-    toxin: tones('#eef8a2', '#b9d64c', '#6d9a26'), toxinDeep: tones('#cfe274', '#8aae34', '#4a6e1d'), toxinShade: tones('#ecdcf6', '#be9fdc', '#7c58a8'),
-    petal: tones('#f3daf7', '#cc93e2', '#8a4fae'), spore: tones('#fdfbe0', '#eef3a4', '#b3c455'),
+    toxin: tones('#f1d6ff', '#b25ae6', '#5e1f8f'), toxinDeep: tones('#d7a3f4', '#8633c2', '#40106a'), toxinShade: tones('#dcb8f2', '#9a55cc', '#5a2488'), acid: tones('#f6ffd0', '#bdf545', '#62a818'),
+    petal: tones('#e2b6f7', '#9a45cf', '#4c1478'), spore: tones('#f8ffd8', '#c8f55a', '#6fb21e'),
     frost: tones('#f6fdff', '#c2ecf8', '#72c3e3'), frostDeep: tones('#e2f7fd', '#8fd6ef', '#3f9ccb'), ice: tones('#fbfeff', '#cdeff9', '#7fc9e6'),
     chain: tones('#fffef4', '#ffe35c', '#e8a51c'), chainGlow: tones('#fff8cf', '#ffd84a', '#e39a17'),
     orbit: tones('#f2fbff', '#a6dff8', '#58b0e6'), orbitDeep: tones('#c8e9fb', '#70bbea', '#3c84c8'), star: tones('#ffffff', '#9fd8f5', '#4ea8e0'),
@@ -313,70 +313,93 @@ export function createPaintedSkillRenderer(gl) {
       if (q > 0) disc(RING, t.x, t.z, R * 1.08, j ? P.tide : P.tideDeep, {alpha: A * (1 - smooth(.7, 1, q) * .6), p: [.86, .065 - j * .014, .7, .03], layer: 2 + j, seed: seed + j, rag: .4, soft: .2});
     }
   }
-  // ---------------------------------------------------------------- Toxin: lime goo on purple shadows, a plague flower, acid fog
-  function toxinLob(t) { // a ball of goo arcing through the air, stretching a sticky strand behind it
-    const p = clamp(t.age / t.life), r = .28, sd = hash(t.tx * 1.3 + t.tz), pos = q => [mix(t.x, t.tx, q), .32 + Math.sin(q * Math.PI) * 1.1, mix(t.z, t.tz, q)], c = pos(p);
-    decal(BLOB, c[0] + .05, c[2] - .04, 1, 0, r * (1.25 - .45 * Math.sin(p * Math.PI)), r * .8, P.toxinShade, {alpha: .4, asp: 1, layer: 0, edge: 0, soft: .6});
+  // ---------------------------------------------------------------- Toxin: deep purple venom lit by glowing acid green (owner round 4:
+  // the old lime goo vanished into the grass). Venom is glossy and heavy; the acid glows, bubbles, pops and gives off thin vapour.
+  function acidBubbles(x, z, r, n, age, A, seed, h = .12) { // acid-green bubbles rising out of venom and popping with a little ring
+    for (let j = 0; j < n; j++) {
+      const k = (age * (1 + .4 * hash(seed + j * 2)) + hash(seed + j)) % 1, an = hash(seed * 3 + j) * TAU, rr = r * .65 * Math.sqrt(hash(seed + j * 7)), x0 = x + Math.cos(an) * rr, z0 = z + Math.sin(an) * rr;
+      if (k < .8) mote([x0, .04 + k * h, z0], (.035 + .05 * hash(j + seed)) * (.4 + .6 * k / .8), P.acid, A, {p: [.7, .35, .5, 0], lift: .3, seed: j, shine: .6});
+      else disc(RING, x0, z0, .05 + (k - .8) * .6, P.acid, {alpha: A * (1 - (k - .8) / .2), p: [.8, .12, .6, 0], layer: 3, seed: j, soft: .3});
+    }
+  }
+  function vapour(x, z, r, n, age, A, seed) { // thin acid vapour curling up off the venom
+    for (let j = 0; j < n; j++) { const k = (age * .5 + j / n + hash(seed + j)) % 1, an = hash(seed + j * 5) * TAU, rr = r * .5 * hash(seed * 2 + j), c = [x + Math.cos(an) * rr, .1 + k * .9, z + Math.sin(an) * rr]; at(c);
+      fog(c, .18 + .3 * k, .28 + .35 * k, P.acid, A * .38 * smooth(0, .2, k) * (1 - smooth(.5, 1, k)), {seed: seed + j, lift: .2, dissolve: smooth(.4, 1, k), p: [.6, .9, .35, 0]}); }
+  }
+  function toxinLob(t) { // Toxin Spit: a glossy glob of venom with a glowing acid heart arcs through the air, shedding drips that fall away
+    const p = clamp(t.age / t.life), r = .3, sd = hash(t.tx * 1.3 + t.tz), pos = q => [mix(t.x, t.tx, q), .32 + Math.sin(q * Math.PI) * 1.2, mix(t.z, t.tz, q)], c = pos(p);
+    shadow(c[0], c[2], r * (1.1 - .35 * Math.sin(p * Math.PI)), .35);
     at(c);
-    const pts = [], ws = [];
-    for (let i = 0; i <= 6; i++) { pts.push(pos(Math.max(0, p - .05 * i))); ws.push(r * .55 * (1 - i / 6 * .8)); }
+    const pts = [], ws = []; for (let i = 0; i <= 6; i++) { pts.push(pos(Math.max(0, p - .05 * i))); ws.push(r * .5 * (1 - i / 6 * .85)); }
     ribbon(GOO_R, pts, ws, P.toxin, {seed: sd, bias: -.01});
-    bb(BLOB, c, r * 1.05, r * (1.05 + .1 * Math.sin(t.age * 18)), P.toxin, {p: [1, .3, 0, 0], seed: sd, bias: .01, wobble: .05});
+    for (let j = 0; j < 3; j++) { const q = Math.max(0, p - .12 - j * .1), d0 = pos(q), fall = (p - q) * t.life; const dq = [d0[0], d0[1] - 5 * fall * fall, d0[2]]; if (dq[1] > .05) { at(dq); mote(dq, .05, P.toxin, 1, {bias: .01, seed: j, p: [.8, .3, 0, 0]}); } } // drips falling off
+    glow(c, r * 1.6, P.acid, .35, {bias: -.02});
+    bb(BLOB, c, r * 1.05, r * (1.05 + .1 * Math.sin(t.age * 18)), P.toxin, {p: [1, .35, 0, 0], seed: sd, bias: .01, wobble: .05, shine: .5});
+    bb(BLOB, c, r * .45, r * .45, P.acid, {p: [.4, 0, 0, 0], seed: sd + 1, bias: .02, soft: .6, edge: 0, alpha: .9}); // its glowing acid heart
   }
-  function toxinPool(t) { // a lime puddle on a purple shadow, bubbles rising and popping
-    const p = clamp(t.age / t.life), r = t.r || .8, g = .35 + .65 * smooth(0, .12, p), A = 1 - smooth(.8, 1, p), seed = hash(t.x * 1.9 + t.z * .7), dis = smooth(.8, 1, p);
-    disc(LIQUID, t.x + .1, t.z - .08, r * 1.12 * g, P.toxinShade, {alpha: .7 * A, p: [.45, 2, 0, 0], layer: 0, seed, dissolve: dis, edge: .4});
-    disc(LIQUID, t.x, t.z, r * g, P.toxin, {alpha: .95 * A, p: [.45, 2.2, 0, 0], layer: 1, seed, dissolve: dis, shine: .5});
-    for (let j = 0; j < 4; j++) {
-      const k = (t.age * 1.1 + j * .27 + hash(seed + j)) % 1, an = hash(seed * 3 + j) * TAU, rr = r * .6 * hash(seed + j * 7);
-      mote([t.x + Math.cos(an) * rr, .05 + k * .1, t.z + Math.sin(an) * rr], .05 + .06 * Math.sin(k * Math.PI), P.toxin, A * (1 - smooth(.8, 1, k)), {p: [.7, .35, .5, 0], lift: .3, seed: j});
-    }
+  function toxinPool(t) { // a glossy pool of venom with a dark rim and an acid-green sheen; bubbles rise and pop, vapour curls off it
+    const p = clamp(t.age / t.life), r = t.r || .8, g = .3 + .7 * (1 - Math.pow(1 - smooth(0, .14, p), 2)), A = 1 - smooth(.8, 1, p), seed = hash(t.x * 1.9 + t.z * .7), dis = smooth(.8, 1, p);
+    if (t.age < .2) { const k = t.age / .2; for (let j = 0; j < 6; j++) { const an = j * TAU / 6 + seed * 4, sp = 1.4 + hash(j + seed); thrown([t.x, .1, t.z], [Math.cos(an) * sp, 1.8 + hash(j * 3 + seed), Math.sin(an) * sp], t.age, P.toxin, .05, GOO_R, {alpha: 1 - k, seed: j, g: 10, tail: .06}); } } // the splat as it lands
+    glowDecal(t.x, t.z, r * 1.2 * g, P.acid, .35 * A);
+    disc(LIQUID, t.x + .06, t.z - .05, r * 1.1 * g, P.toxinShade, {alpha: .85 * A, p: [.45, 2, 0, 0], layer: 0, seed, dissolve: dis, edge: .4});
+    disc(LIQUID, t.x, t.z, r * g, P.toxin, {alpha: .95 * A, p: [.45, 2.2, 0, 0], layer: 1, seed, dissolve: dis, shine: .8});
+    acidBubbles(t.x, t.z, r * g, 6, t.age, A, seed);
+    vapour(t.x, t.z, r * g, 2, t.age, A, seed);
   }
-  function toxinInfection(t) { // NEUROTOXIN INJECTION: a pulsing poison drop hangs over the target, then pops
-    const p = clamp(t.age / t.life), A = smooth(0, .1, p) * (1 - smooth(.9, 1, p)), beat = 1 + (.08 + .14 * p) * Math.sin(t.age * (6 + p * 18)), seed = hash(t.x + t.z);
-    disc(RING, t.x, t.z, t.r, P.toxinShade, {alpha: .8 * A, p: [.86, .07, .4, .04], layer: 2, seed, rag: .4, soft: .2});
-    disc(LIQUID, t.x, t.z, t.r * .62, P.toxin, {alpha: .5 * A, p: [.5, 2.2, 0, 0], layer: 1, seed, shine: .4});
+  function toxinInfection(t) { // NEUROTOXIN INJECTION: a venom mark over the foe (a heavy pulsing drop ringed by orbiting droplets); acid veins creep out over the ground under it
+    const p = clamp(t.age / t.life), A = smooth(0, .1, p) * (1 - smooth(.9, 1, p)), beat = 1 + (.08 + .16 * p) * Math.sin(t.age * (6 + p * 18)), seed = hash(t.x + t.z);
+    glowDecal(t.x, t.z, t.r * 1.1, P.acid, .35 * A * beat);
+    disc(RING, t.x, t.z, t.r, P.toxinDeep, {alpha: .85 * A, p: [.86, .07, .4, .04], layer: 2, seed, rag: .4, soft: .2});
+    for (let j = 0; j < 5; j++) { const an = j * TAU / 5 + seed * 3, len = t.r * (.4 + .6 * smooth(0, .6, p)) * (.7 + .3 * hash(j + seed)), pts = [], ws = []; // acid veins spreading over the ground
+      for (let m = 0; m <= 5; m++) { const f = m / 5, a2 = an + Math.sin(f * 5 + j) * .25; pts.push([t.x + Math.cos(a2) * len * f, .03, t.z + Math.sin(a2) * len * f]); ws.push(.035 * (1 - f * .8) + .004); }
+      ribbon(GLOW_R, pts, ws, P.acid, {alpha: .85 * A, seed: seed + j, soft: .35, edge: 0, lift: .05}); }
     const top = [t.x, 1.55 + Math.sin(t.age * 4) * .06, t.z]; at(top);
-    glow(top, .5 * beat, P.toxin, .35 * A, {lift: .8, bias: -.01});
-    bb(DROP, [top[0], top[1] + .05, top[2]], .3 * beat, .19 * beat, P.toxin, {alpha: A, rot: Math.PI / 2, asp: .3 / .19, lift: .8, seed, shine: .6});
-    for (let j = 0; j < 3; j++) { const an = t.age * 2.4 + j * TAU / 3, c = [t.x + Math.cos(an) * .6, .45 + .2 * Math.sin(t.age * 3 + j), t.z + Math.sin(an) * .6]; mote(c, .07, P.toxin, A, {p: [.7, .35, .45, 0], lift: .35, seed: j}); }
+    glow(top, .6 * beat, P.acid, .45 * A, {lift: .8, bias: -.01});
+    bb(DROP, [top[0], top[1] + .05, top[2]], .32 * beat, .2 * beat, P.toxin, {alpha: A, rot: Math.PI / 2, asp: .32 / .2, lift: .8, seed, shine: .7});
+    for (let j = 0; j < 4; j++) { const an = t.age * 2.6 + j * TAU / 4, c = [t.x + Math.cos(an) * .5, 1.5 + .12 * Math.sin(t.age * 3 + j), t.z + Math.sin(an) * .35]; at(c); mote(c, .065, j % 2 ? P.acid : P.toxin, A, {p: [.8, .35, .3, 0], lift: .8, seed: j}); }
   }
-  function toxinBurst(t) { // the injected poison bursts: a splash of goo, drops flung out and a puff of toxic fog
-    const p = clamp(t.age / t.life), r = t.r, A = 1 - smooth(.55, 1, p), g = smooth(0, .35, p), seed = hash(t.x * 3 + t.z);
-    disc(LIQUID, t.x + .1, t.z - .08, r * (.5 + g * 1.05), P.toxinShade, {alpha: .6 * A, p: [.55, 2.4, 0, 0], layer: 0, seed, dissolve: smooth(.5, 1, p), edge: .4});
-    disc(LIQUID, t.x, t.z, r * (.4 + g), P.toxin, {alpha: .95 * A, p: [.55, 2.6, 0, 0], layer: 1, seed, dissolve: smooth(.5, 1, p), shine: .5});
-    for (let j = 0; j < 6; j++) { const an = j * TAU / 6 + seed * 5, sp = 1.4 + .8 * hash(j + seed); thrown([t.x, .3, t.z], [Math.cos(an) * sp, 2.4 + hash(j * 3 + seed), Math.sin(an) * sp], t.age, P.toxin, .06, GOO_R, {alpha: A, seed: j, g: 10, tail: .08}); }
-    const c = [t.x, .55 + p * .5, t.z]; at(c); fog(c, r * (.8 + p * .7), r * (.6 + p * .5), P.toxinShade, .75 * (1 - smooth(.3, 1, p)), {seed, dissolve: smooth(.4, 1, p), lift: .3});
+  function toxinBurst(t) { // the injected venom bursts: a purple splash, acid drops flung out, a cloud of acid vapour
+    const p = clamp(t.age / t.life), r = t.r, A = 1 - smooth(.55, 1, p), g = 1 - Math.pow(1 - smooth(0, .3, p), 2), seed = hash(t.x * 3 + t.z);
+    if (t.age < .08) { const c = [t.x, .5, t.z]; at(c); glow(c, r * 2.2, P.acid, 1 - t.age / .08, {lift: .8, bias: .5}); }
+    glowDecal(t.x, t.z, r * 1.6 * g, P.acid, .45 * A);
+    disc(LIQUID, t.x + .08, t.z - .06, r * (.5 + g * 1.1), P.toxinShade, {alpha: .8 * A, p: [.55, 2.4, 0, 0], layer: 0, seed, dissolve: smooth(.5, 1, p), edge: .4});
+    disc(LIQUID, t.x, t.z, r * (.4 + g), P.toxin, {alpha: .95 * A, p: [.55, 2.6, 0, 0], layer: 1, seed, dissolve: smooth(.5, 1, p), shine: .8});
+    for (let j = 0; j < 8; j++) { const an = j * TAU / 8 + seed * 5, sp = 1.6 + hash(j + seed); thrown([t.x, .35, t.z], [Math.cos(an) * sp, 2.8 + hash(j * 3 + seed), Math.sin(an) * sp], t.age, j % 2 ? P.acid : P.toxin, .065, GOO_R, {alpha: A, seed: j, g: 10, tail: .08}); }
+    for (let j = 0; j < 4; j++) { const an = j * TAU / 4 + seed, q = 1 - Math.exp(-3 * t.age), c = [t.x + Math.cos(an) * r * 1.2 * q, .4 + .6 * q, t.z + Math.sin(an) * r * 1.2 * q]; at(c); fog(c, r * (.5 + .5 * q), r * (.4 + .4 * q), P.spore, .6 * A, {seed: seed + j, lift: .3, dissolve: smooth(.3, 1, p), p: [.6, .9, .3, 0]}); } // wisps of acid vapour
   }
-  function toxinBloom(t) { // PLAGUE BLOOM: a poison flower that puffs clouds of spores in rhythm
-    const p = clamp(t.age / t.life), r = t.r, A = smooth(0, .08, p) * (1 - smooth(.86, 1, p)), open = smooth(0, .22, p), seed = hash(t.x * .9 + t.z * 1.3);
-    disc(GLOW, t.x, t.z, r, P.toxin, {alpha: .3 * A, layer: 0, edge: 0, soft: 1});
-    disc(RING, t.x, t.z, r, P.toxinShade, {alpha: .7 * A, p: [.9, .025, .6, .03], layer: 1, seed, rag: .8, soft: .2});
-    const fr = 1.5 * (.35 + .65 * open), pulse = 1 + .06 * Math.sin(t.age * TAU / .45);
-    disc(FLOWER, t.x + .08, t.z - .06, fr * 1.06 * pulse, P.toxinShade, {alpha: .45 * A, p: [6, 1.7, .28, seed * 6 + .26], layer: 2, seed, wobble: .1});
-    disc(FLOWER, t.x, t.z, fr * pulse, P.petal, {alpha: .85 * A, p: [6, 1.7, .28, seed * 6], layer: 3, seed, rag: .3, wobble: .1});
-    disc(BLOB, t.x, t.z, fr * .24, P.toxin, {alpha: A, p: [1, .3, 0, 0], layer: 4, seed, wobble: .08});
-    const k = (t.age % .45) / .45, wave = Math.floor(t.age / .45);
-    for (let j = 0; j < 4; j++) { // a cloud of spores rising from the flower each beat
-      const an = j * TAU / 4 + wave * .9, dist = r * k * .55, c = [t.x + Math.cos(an) * dist, .3 + k * .8, t.z + Math.sin(an) * dist], s = .25 + .35 * k; at(c);
-      fog(c, s, s * .8, P.spore, A * smooth(0, .15, k) * (1 - smooth(.55, 1, k)) * .85, {seed: j + wave * 3, lift: .2, dissolve: smooth(.6, 1, k)});
+  function toxinBloom(t) { // PLAGUE BLOOM: a dark venom flower with a glowing acid heart opens on a stained patch and breathes out glowing spores in rhythm
+    const p = clamp(t.age / t.life), r = t.r, A = smooth(0, .08, p) * (1 - smooth(.86, 1, p)), open = 1 - Math.pow(1 - smooth(0, .25, p), 2), seed = hash(t.x * .9 + t.z * 1.3);
+    const k = (t.age % .45) / .45, wave = Math.floor(t.age / .45), beat = Math.exp(-k * 5);
+    glowDecal(t.x, t.z, r, P.acid, (.2 + .25 * beat) * A);
+    disc(RING, t.x, t.z, r, P.toxinDeep, {alpha: .75 * A, p: [.9, .025, .6, .03], layer: 1, seed, rag: .8, soft: .2});
+    const fr = 1.5 * (.3 + .7 * open), pulse = 1 + .07 * beat;
+    disc(FLOWER, t.x + .08, t.z - .06, fr * 1.08 * pulse, P.toxinShade, {alpha: .6 * A, p: [6, 1.7, .28, seed * 6 + .26], layer: 2, seed, wobble: .1});
+    disc(FLOWER, t.x, t.z, fr * pulse, P.petal, {alpha: .95 * A, p: [6, 1.7, .28, seed * 6], layer: 3, seed, rag: .3, wobble: .1, shine: .4});
+    disc(GLOW, t.x, t.z, fr * .45, P.acid, {alpha: (.6 + .4 * beat) * A, layer: 4, edge: 0, soft: 1});
+    disc(BLOB, t.x, t.z, fr * .22, P.acid, {alpha: A, p: [1, .3, 0, 0], layer: 5, seed, wobble: .08});
+    for (let j = 0; j < 7; j++) { // glowing spores breathed out each beat, drifting up and out
+      const an = j * TAU / 7 + wave * .9, dist = r * (.15 + k * .6), c = [t.x + Math.cos(an) * dist, .3 + k * 1.1 + .1 * Math.sin(j + wave), t.z + Math.sin(an) * dist]; at(c);
+      glow(c, .16, P.acid, .5 * A * (1 - smooth(.6, 1, k)), {lift: .2}); mote(c, .05 + .02 * hash(j + wave), P.spore, A * smooth(0, .1, k) * (1 - smooth(.7, 1, k)), {lift: .2, bias: .01, seed: j});
     }
+    { const c = [t.x, .5 + k * .6, t.z]; at(c); fog(c, fr * (.5 + .6 * k), fr * (.35 + .4 * k), P.spore, A * .45 * beat, {seed: seed + wave, lift: .2, dissolve: smooth(.3, 1, k), p: [.6, .9, .3, 0]}); } // the breath itself
   }
-  function toxinArc(t) { // a spore drifting to a new victim
+  function toxinArc(t) { // a glowing spore drifting to a new victim
     const p = clamp(t.age / t.life), pos = q => [mix(t.x, t.tx, q), .35 + Math.sin(q * Math.PI) * .8, mix(t.z, t.tz, q)], c = pos(p); at(c);
     const pts = [], ws = []; for (let i = 0; i <= 5; i++) { pts.push(pos(Math.max(0, p - .06 * i))); ws.push(.07 * (1 - i / 5 * .8)); }
-    ribbon(GLOW_R, pts, ws, P.spore, {alpha: .8, soft: .5, edge: 0, lift: .3});
-    mote(c, .09, P.spore, 1, {lift: .3, bias: .01});
+    ribbon(GLOW_R, pts, ws, P.acid, {alpha: .8, soft: .5, edge: 0, lift: .3});
+    glow(c, .22, P.acid, .6, {lift: .3}); mote(c, .08, P.spore, 1, {lift: .3, bias: .01});
   }
-  function toxinMiasma(t) { // CORROSIVE MIASMA: a low, wispy acid fog that creeps after the pack
-    const p = clamp(t.age / t.life), r = t.r, A = smooth(0, .12, p) * (1 - smooth(.8, 1, p)), seed = hash(t.x * .37 + t.z * .11), dis = smooth(.82, 1, p);
-    fogDecal(t.x, t.z, r * 1.25, P.toxinShade, .75 * A, {seed, dissolve: dis});
-    fogDecal(t.x, t.z, r * .85, P.toxin, .45 * A, {seed: seed + 1, dissolve: dis, layer: 1});
-    for (let j = 0; j < 3; j++) {
-      const an = j * TAU / 3 + t.age * .4, rr = r * .35, c = [t.x + Math.cos(an) * rr, .45 + .1 * Math.sin(t.age * 1.3 + j), t.z + Math.sin(an) * rr]; at(c);
-      fog(c, r * .95, r * .55, j ? P.toxinShade : P.toxin, .6 * A, {seed: seed + j * 2, dissolve: dis, lift: .2, p: [.5, .8, .15, 0]});
+  function toxinMiasma(t) { // CORROSIVE MIASMA: a heavy, rolling cloud of purple venom fog with an acid glow inside it, eating a dark, bubbling stain into the ground as it creeps after the pack
+    const p = clamp(t.age / t.life), r = t.r, A = smooth(0, .12, p) * (1 - smooth(.82, 1, p)), seed = hash(t.x * .37 + t.z * .11);
+    disc(LIQUID, t.x, t.z, r * 1.05, P.toxinShade, {alpha: .6 * A, p: [.5, 2.6, 0, 0], layer: 0, seed, edge: .3, shine: .3});
+    glowDecal(t.x, t.z, r * 1.1, P.acid, .35 * A);
+    acidBubbles(t.x, t.z, r, 5, t.age, A, seed, .1);
+    for (let j = 0; j < 6; j++) { // wisps of venom fog curling round inside the cloud
+      const ph = t.age * .45 + j / 6, an = j * TAU / 6 + t.age * .5, rr = r * (.2 + .4 * hash(j + seed)), c = [t.x + Math.cos(an) * rr, .4 + .2 * Math.sin(ph * TAU), t.z + Math.sin(an) * rr * .8]; at(c);
+      fog(c, r * (.8 + .2 * Math.sin(ph * TAU + j)), r * (.5 + .1 * Math.sin(ph * TAU)), j % 3 ? P.toxin : P.toxinShade, .7 * A, {seed: seed + j * 2, lift: .25});
     }
-    for (let j = 0; j < 3; j++) { const k = (t.age * 1.3 + j / 3) % 1, an = hash(seed + j * 4) * TAU, rr = r * .7 * hash(j + seed); mote([t.x + Math.cos(an) * rr, .06 + k * .12, t.z + Math.sin(an) * rr], .05 + .05 * Math.sin(k * Math.PI), P.toxin, A * (1 - smooth(.8, 1, k)), {p: [.7, .35, .5, 0], lift: .3, seed: j}); }
+    const c = [t.x, .55, t.z]; at(c); glow(c, r * 1.1, P.acid, .3 * A * (.8 + .2 * Math.sin(t.age * 5)), {lift: .6, bias: .02}); // acid glowing inside the cloud
+    vapour(t.x, t.z, r, 3, t.age, A, seed + 5);
   }
   // ---------------------------------------------------------------- Frost: faceted crystals, a spinning drill, snowy breath
   function frostCrystal(t) { // Frost Spike: a faceted ice shard drawing a trail of cold mist
@@ -696,8 +719,8 @@ export function createPaintedSkillRenderer(gl) {
       if (!(e.hp > 0) || !cfg.visible(e.x, e.z, 1)) continue;
       const rad = e.radius || .5;
       if (e.poisonTime > 0) {
-        note('status:poison'); glowDecal(e.x, e.z, rad * 1.1, P.toxin, .4);
-        for (let j = 0; j < 2; j++) { const k = (now * .9 + j * .5 + hash(e.id || 0)) % 1; mote([e.x + (j - .5) * rad * .8, .35 + k * .7, e.z], .05 + .02 * j, P.toxin, (1 - smooth(.7, 1, k)) * smooth(0, .15, k), {p: [.7, .35, .5, 0], lift: .5, seed: j}); }
+        note('status:poison'); glowDecal(e.x, e.z, rad * 1.1, P.acid, .4);
+        for (let j = 0; j < 2; j++) { const k = (now * .9 + j * .5 + hash(e.id || 0)) % 1; mote([e.x + (j - .5) * rad * .8, .35 + k * .7, e.z], .05 + .02 * j, j ? P.acid : P.toxin, (1 - smooth(.7, 1, k)) * smooth(0, .15, k), {p: [.7, .35, .5, 0], lift: .5, seed: j}); }
       }
       if (e.frozen > 0 && !(e.chill > 0)) { // stunned by lightning (the game uses the same frozen timer): yellow arcs crackle over it
         note('status:stun'); const key = Math.floor(now * 16), h = rad * 2.2;
