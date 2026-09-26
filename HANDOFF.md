@@ -1,17 +1,18 @@
-# Handoff — current status (2026-09-25)
+# Handoff — current status (2026-09-26)
 
 Rules live in `AGENTS.md`; repository layout in `README.md`. This file only tracks where work stands. Earlier handoffs are in Git history.
 
-## In progress (branch `claude/check-organize-files-vqyx02`)
+## Merged in PR #46 (2026-09-26, owner approved)
 
-- **Painted skill effects.** The owner rejected the watercolour filter prototype ("it only adjusts the old skills"), so every skill effect is now redrawn from its concept and card art by `vfx/painted-renderer.mjs`, fire included. Design table: `docs/PAINTED-VFX.md`.
-  - Owner feedback (round 2): fire looked like rigid sticks and many effects like hard geometric shapes. Fire is now built from living flames; streams, surge, fog, lightning and links are organic. Review captures hide the target monsters (the lab has a hide-targets switch).
-  - Owner feedback round 3: fire was built from one flame stick in every branch, water looked frayed, the wave had too many layers plus smoke and bits, fog was lumpy, the drill did not spin, orbs had faces and stiff tails, and small fragments looked geometric. Rebuilt with path ribbons, a different fire form per branch, wispy fog, a spinning drill and soft particles.
-    - Follow-up self-review before sending: blasts became clusters of lit puffs (they had been flat, banded discs), scorch marks became mottled stains, sparks became glowing embers (they had been needles), and Sunfall gained a pillar of sunlight on impact.
-  - Owner feedback round 4 (fire only; the owner now reviews one element line at a time): only the burning ground was liked. Blast looked like smoke puffs, Sunfall nothing like a sun, Meteor weak, Cyclone swirling ribbons instead of a tornado. Fire was redrawn around clear forms (fireball, explosion, sun, burning rock, tornado).
-  - The owner reviews on the iPad preview. Settings > Test switches back to the old effects.
-  - Next: refine per owner feedback, then remove the switch and the old draw path once approved.
+- **Painted skill effects.** Every skill effect is redrawn from its concept by `vfx/painted-renderer.mjs` (wired by `vfx/painted-style.mjs`). Design and owner rules: `docs/PAINTED-VFX.md`.
+  - Fire was reviewed line by line against the owner's reference clips: Blast is a fire dome that dissolves and throws spinning smoke; Sunfall is a big sun falling for 1 s (fall time changed from .5 s at the owner's request) into a lingering fire dome; Meteor throws stones on impact; Flame Cyclone is an hourglass tornado drawn in the game camera's perspective with wind streaks and a burning foot. Burn (fire on the ground) was approved earlier.
+  - Burnt ground uses the game's own burn map, now layered (scorch, burnt, charred); the effects draw no craters of their own.
+  - Other elements (water, tide, toxin, frost, chain, orbit) are on the round-3 design and have not had a line-by-line review yet.
+  - The old effects stay behind Settings > Test > "สีน้ำวาดมือแบบใหม่" until the owner asks to remove them.
+- **Review shortcut:** `?lab=<skill>` opens the skill lab on that skill, repeating, monsters hidden. The owner checks effects on the iPad preview this way.
+- **Reference skill:** `.claude/skills/shader-dev` (MIT, see its `SOURCE.md`).
 - **Removed:** the filter prototype (`vfx/watercolor-style.mjs`, its tests and workflow).
+- **Next:** review the remaining elements line by line, as with fire.
 
 ## Merged in PR #45 (2026-09-25)
 
