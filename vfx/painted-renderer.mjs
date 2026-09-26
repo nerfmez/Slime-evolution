@@ -824,7 +824,7 @@ void main(){
   float nz=fbm(wq+seed*7.3)*(.7+.25*P.w)+fbm(wq*2.1-seed*2.9)*(.3-.25*P.w),rr=r/.92,lump=fbm(dir*2.3+seed*5.)-.5;
   float lit=clamp(dot(vec3(q/.92,sqrt(max(0.,1.-rr*rr))),vec3(-.42,.56,.72)),0.,1.);
   float F=(1.-rr)*1.05+(nz-.5)*(.55+P.x*.7+P.z*.45)*(1.-P.w)+lump*.35*P.w-P.x*1.05*(1.-P.w);
-  if(P.w>0.){ // smoke: the outline stays lumpy while the inside is eaten first, leaving a ring, then curling wisps
+  if(P.w>0.){ // smoke: the silhouette stays lumpy while the inside is eaten first, leaving a ring, then curling wisps
     float body=(1.-rr)*1.1+lump*.45,e=P.x,rim=pow(1.-abs(nz-.5)*2.,2.5);
     float keep=mix(nz,rim,smoothstep(.3,.7,e))+(rr-.5)*e*.5;
     F=min(body,(keep-mix(.2,1.05,pow(e,.8)))*1.6);
