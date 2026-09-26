@@ -109,6 +109,11 @@ export function applyPaintedVfx(bundle, html) {
   b = replaceOne(b, 'a=Z.active?0:Math.hypot(r,i)', 'a=Math.hypot(r,i)', 'lab walking input');
   b = replaceOne(b, 'Z.active?Z.sync():(J.playerRadius=_r()', 'Z.active?(Z.lab.player[0]=W.player[0],Z.lab.player[2]=W.player[2],Z.sync()):(J.playerRadius=_r()', 'lab follows the slime');
   b = replaceOne(b, 'V.addEventListener(`pointerdown`,e=>{Z.active||e.clientX>innerWidth*.55', 'V.addEventListener(`pointerdown`,e=>{e.clientX>innerWidth*.55', 'lab joystick');
+  // Owner request (2026-09-26): every toxin skill withers the grass and flowers it touches. Toxin stamps the game's own burnt-
+  // grass map only up to its first, lightest layer (brown dead grass, shorter blades, a khaki-brown ground), never deep enough
+  // to char or remove the grass the way fire does. It is refreshed while the poison lasts and grows back about a second after.
+  b = replaceOne(b, 'for(let e of s.projectiles)c(e.x,e.z,e.ember?.16:.3,e.ember?.18:1)}',
+    'for(let e of s.projectiles)c(e.x,e.z,e.ember?.16:.3,e.ember?.18:1);for(let e of s.abilities||[])if(e.family===`toxin`&&!(e.delay>0)){let k=e.kind;k===`pool`||k===`infection`?c(e.x,e.z,e.r||.8,.2):k===`bloom`?c(e.x,e.z,e.r*.9,.2):k===`burst`&&e.age<.2?c(e.x,e.z,e.r*1.3,.2):k===`miasma`&&e.puffs&&e.puffs.forEach(p=>e.age-p.t>.4&&c(p.x,p.z,e.r*.8,.2))}}', 'toxin withers the grass');
   b = replaceOne(b, 'if([`beam`,`jet`,`wave`,`borer`,`cone`].includes(i.kind)){i.speed',
     'if(i.kind===`jet`&&i.follow&&r){i.x=r[0];i.z=r[2];let T=i.lock&&i.lock.hp>0&&Math.hypot(i.lock.x-r[0],i.lock.z-r[2])<i.range+i.lock.radius?i.lock:n.enemies.filter(e=>e.hp>0&&Math.hypot(e.x-r[0],e.z-r[2])<i.range+e.radius).sort((e,t)=>Math.hypot(e.x-r[0],e.z-r[2])-Math.hypot(t.x-r[0],t.z-r[2]))[0];if(T){i.lock=T;let o=T.x-r[0],s=T.z-r[2],c=Math.hypot(o,s)||1;i.dx=o/c;i.dz=s/c;i.length=Math.max(.8,c)}else i.length=i.range}if([`beam`,`jet`,`wave`,`borer`,`cone`].includes(i.kind)){i.speed',
     'pressure jet follows the slime');
