@@ -107,3 +107,9 @@ The owner rejected a filter over the old effects ("it only adjusts the old skill
 - **Old style switch.** The old style stays behind Settings > Test > "สีน้ำวาดมือแบบใหม่ (ปิด = เอฟเฟกต์เดิม)", saved as `slime.vfxStyle.v2`, until the owner approves.
 - **Review shortcut.** `?lab=<skill>` (e.g. `?lab=sun`, `?lab=cyclone`, `?lab=inferno`) opens the skill lab on that skill, repeating, with the target monsters hidden.
 - **QA hook.** `?qa=1` exposes `__slimePaintedVfx` with `plan`, `draw`, `diagnostics` and `camera`.
+
+## Damage numbers and orbit hit area (owner request, 2026-09-26)
+
+- Damage numbers take the colour of the skill that dealt them: water blue, tide lilac, toxin green, frost icy white on cyan, chain yellow, orbit pink. Fire (and anything without a skill) keeps the original cream on brown. Patched in `vfx/painted-style.mjs`; the number records the game's own `damageSource`.
+- Orbit orbs hit exactly where they are drawn: a core's hit radius is .24 (was .17 while drawn at .24) and Gravity Mace's is 1.15x wider (it was drawn 1.15x larger than its hit area). The moons round Gravity Mace are decoration only.
+
