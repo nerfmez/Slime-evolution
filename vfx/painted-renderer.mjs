@@ -256,14 +256,14 @@ export function createPaintedSkillRenderer(gl) {
   function waterWave(t) { // TIDAL SURGE: water gathers and swells out of the ground, curls into a giant wave with a rolling foam lip, rushes forward, then the lip crashes down in a flood of foam.
     // The wave is its cross-section (back slope, crest, curling lip) swept along the crest line as a stack of ribbons, so it keeps its true 3D shape from any camera angle.
     const p = clamp(t.age / t.life), d = [t.dx, 0, t.dz], side = [-t.dz, 0, t.dx], w = t.r, seed = hash(t.x * .3 + t.z * .7);
-    const rise = smooth(0, .3, p), curl = smooth(.12, .42, p), crash = smooth(.7, 1, p), H = w * .95 * (.12 + .88 * rise) * (1 - .55 * crash), A = smooth(0, .05, p) * (1 - smooth(.93, 1, p)), base = [t.x, 0, t.z];
+    const rise = smooth(0, .3, p), curl = smooth(.12, .42, p), crash = smooth(.7, 1, p), H = Math.min(w * .95, 1.5 + w * .15) * (.12 + .88 * rise) * (1 - .55 * crash), A = smooth(0, .05, p) * (1 - smooth(.93, 1, p)), base = [t.x, 0, t.z];
     for (let j = 0; j < 3; j++) { const q = clamp((p - j * .07) / .26); if (q > 0 && q < 1) decal(RING, base[0] + d[0] * .2, base[2] + d[2] * .2, side[0], side[2], w * mix(1.8, 1, q), w * mix(1, .35, q), P.water, {alpha: .8 * Math.sin(q * Math.PI), p: [.85, .06, .6, .02], layer: 2, seed: seed + j, soft: .35, asp: 1}); } // ripples drawn in as the water gathers
     if (crash > 0) decal(SURF, base[0] + d[0] * (.3 + 1.2 * crash), base[2] + d[2] * (.3 + 1.2 * crash), side[0], side[2], w * 1.15, .6 + 1.3 * crash, P.foam, {alpha: .9 * A, p: [1.4, 0, 0, 0], layer: 3, seed: seed + 3, dissolve: smooth(.82, 1, p), edge: .2, soft: .2}); // the flood of foam it throws forward
     // the cross-section in (forward, up) units of H: a short back slope, the crest, and a lip that curls over and, when it crashes, reaches the ground
     const lipF = .15 + .45 * curl + .5 * crash, lipY = mix(1, .55, curl) * (1 - .9 * crash);
     const prof = [[-.75, .02], [-.5, .36], [-.25, .68], [-.05, .9], [.12, 1], [.12 + lipF * .55, mix(1, .98, curl)], [.12 + lipF * .9, mix(.9, .82, curl) * (1 - .5 * crash)], [.12 + lipF, lipY]];
-    const tones = [.08, .3, .5, .66, .8], n = 13, rows = prof.length;
-    const at3 = (i, u) => { const e = 1 - Math.pow(Math.abs(u), 2.6), [f, y] = prof[i]; const g = f * H * .8 * (.3 + .7 * e); return [base[0] + side[0] * w * 1.08 * u + d[0] * g, .02 + y * H * e, base[2] + side[2] * w * 1.08 * u + d[2] * g]; };
+    const tones = [.08, .3, .5, .66, .8], n = 19, rows = prof.length;
+    const at3 = (i, u) => { const e = 1 - Math.pow(Math.abs(u), 4), [f, y] = prof[i]; const g = f * H * .8 * (.3 + .7 * e); return [base[0] + side[0] * w * 1.08 * u + d[0] * g, .02 + y * H * e, base[2] + side[2] * w * 1.08 * u + d[2] * g]; };
     const row = (i0, i1, style, pal, o) => { // one strip of the surface between two points of the cross-section
       const pts = [], ws = [], a0 = at3(i0, 0), a1 = at3(i1, 0), s = cross3(cam.f, side), dir = Math.sign((a1[0] - a0[0]) * s[0] + (a1[1] - a0[1]) * s[1] + (a1[2] - a0[2]) * s[2]) || 1;
       for (let m = 0; m < n; m++) { const u = (m / (n - 1) - .5) * 2, q0 = at3(i0, u), q1 = at3(i1, u); pts.push([(q0[0] + q1[0]) / 2, (q0[1] + q1[1]) / 2, (q0[2] + q1[2]) / 2]); ws.push(Math.hypot(q1[0] - q0[0], q1[1] - q0[1], q1[2] - q0[2]) * (o.wide ?? .75) + .02); }
@@ -271,10 +271,10 @@ export function createPaintedSkillRenderer(gl) {
     };
     for (let i = 0; i < 4; i++) row(i, i + 1, SHEET, P.waterDeep, {alpha: A * (1 - smooth(.8, 1, p)), seed, edge: 0, soft: .5, wide: 1, bias: i * .004}); // the body
     for (let i = 4; i < rows - 1; i++) row(i, i + 1, GLOW_R, P.foam, {alpha: A * (.6 + .4 * curl) * (1 - smooth(.8, 1, p)), seed: seed + i, edge: 0, soft: .35, p: [0, 1, 0, 0], bias: .02 + i * .004}); // the curling lip of foam
-    for (let m = 0; m < 9; m++) { const u = (m / 8 - .5) * 1.9 + .06 * Math.sin(now * 3 + m), q = at3(rows - 2, u); at(q); mote(q, H * (.13 + .05 * Math.sin(now * 6 + m * 2.3)), P.foam, A * curl, {bias: .03}); } // foam boiling along the lip
-    for (let j = 0; j < 12; j++) { const k = (now * 1.7 + j / 12) % 1, u = (hash(j + seed) - .5) * 1.8, c0 = at3(4, u); // spray blown back off the crest
-      const q = [c0[0] - d[0] * k * .9, c0[1] + k * .6 - k * k * .5, c0[2] - d[2] * k * .9]; at(q); mote(q, w * .08 * (1 - .5 * k), P.foam, A * rise * (1 - k), {bias: .02}); }
-    if (crash > 0) for (let j = 0; j < 8; j++) { const u = (j / 7 - .5) * 1.9, q0 = at3(rows - 1, u); puff(q0, [d[0] * 3, -.5, d[2] * 3], (p - .7) * t.life, .5, w * .2, w * .4, P.foam, 0, {drag: 4, seed: seed * 9 + j, erode: .2, lift: .1}); } // the lip crashes down in foam
+    for (let m = 0; m < 13; m++) { const u = (m / 12 - .5) * 1.9 + .05 * Math.sin(now * 3 + m), q = at3(rows - 2, u); at(q); mote(q, H * (.13 + .05 * Math.sin(now * 6 + m * 2.3)), P.foam, A * curl, {bias: .03}); } // foam boiling along the lip
+    for (let j = 0; j < 18; j++) { const k = (now * 1.7 + j / 18) % 1, u = (hash(j + seed) - .5) * 1.8, c0 = at3(4, u); // spray blown back off the crest
+      const q = [c0[0] - d[0] * k * .9, c0[1] + k * .6 - k * k * .5, c0[2] - d[2] * k * .9]; at(q); mote(q, H * .09 * (1 - .5 * k), P.foam, A * rise * (1 - k), {bias: .02}); }
+    if (crash > 0) for (let j = 0; j < 12; j++) { const u = (j / 11 - .5) * 1.9, q0 = at3(rows - 1, u); puff(q0, [d[0] * 3, -.5, d[2] * 3], (p - .7) * t.life, .5, H * .25, H * .5, P.foam, 0, {drag: 4, seed: seed * 9 + j, erode: .2, lift: .1}); } // the lip crashes down in foam
   }
   // ---------------------------------------------------------------- Tide: lilac ripples, a bubble dome, a whirlpool
   function tideRing(t) { // Tide Ring: two soft ripples spreading over the ground

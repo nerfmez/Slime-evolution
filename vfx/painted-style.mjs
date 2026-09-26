@@ -66,6 +66,15 @@ export function applyPaintedVfx(bundle, html) {
   b = replaceOne(b, 'c>-t.radius&&c<i.length+t.radius&&l<i.r+t.radius', 'c>-t.radius&&c<(i.kind===`beam`?i.length*Math.min(1,i.age/(i.life*.6)):i.length)+t.radius&&l<i.r+t.radius', 'railgun ball reach');
   b = replaceOne(b, 'c===`burst`){let n=(.56+.05*s.burst)*o.D,', 'c===`burst`){let n=Math.max((.56+.05*s.burst)*o.D,o.cooldown+.06),', 'continuous jet');
   b = replaceOne(b, 'speed:5+.25*s.flow,life:.8,damage:L(o.ref*1.02)', 'speed:5+.25*s.flow,life:1.1,damage:L(o.ref*1.02)', 'tidal surge life');
+  // Owner request (2026-09-26, round 2): each evolution has its own job. Railgun reaches far (above). Tidal Surge is WIDE and
+  // SHORT: 1.7x the width, and it travels 2.6 units/s (was 5), so it sweeps about 3 units in front of the slime. Pressure Jet is
+  // single-target: it hits one foe at a time, locks onto the foe it was cast at (or the nearest one in reach), and its nozzle
+  // follows the slime every frame, so the stream stays on that foe while the slime moves.
+  b = replaceOne(b, 'r:(1.55+.23*s.flow)*o.A,speed:5+.25*s.flow', 'r:(1.55+.23*s.flow)*o.A*1.7,speed:2.6+.15*s.flow', 'tidal surge wide and short');
+  b = replaceOne(b, 'maxTargets:1+o.pierce,push:.32', 'maxTargets:1,push:.32,follow:1,lock:i,range:8.4+.45*s.flow', 'pressure jet single target');
+  b = replaceOne(b, 'if([`beam`,`jet`,`wave`,`borer`,`cone`].includes(i.kind)){i.speed',
+    'if(i.kind===`jet`&&i.follow&&r){i.x=r[0];i.z=r[2];let T=i.lock&&i.lock.hp>0&&Math.hypot(i.lock.x-r[0],i.lock.z-r[2])<i.range+i.lock.radius?i.lock:n.enemies.filter(e=>e.hp>0&&Math.hypot(e.x-r[0],e.z-r[2])<i.range+e.radius).sort((e,t)=>Math.hypot(e.x-r[0],e.z-r[2])-Math.hypot(t.x-r[0],t.z-r[2]))[0];if(T){i.lock=T;let o=T.x-r[0],s=T.z-r[2],c=Math.hypot(o,s)||1;i.dx=o/c;i.dz=s/c;i.length=Math.max(.8,c)}else i.length=i.range}if([`beam`,`jet`,`wave`,`borer`,`cone`].includes(i.kind)){i.speed',
+    'pressure jet follows the slime');
   // Owner request (2026-09-26): the game's own burnt-grass map marks the ground under fire, so the painted effects draw no
   // crater of their own. The burn is stamped deepest at the centre and the ground shows it in stepped layers (light
   // scorch, burnt, charred), with the grass shortest where it burnt deepest; the layers shrink toward the centre as it heals.
