@@ -29,7 +29,7 @@ export function createPaintedSkillRenderer(gl) {
     tide: tones('#f5eeff', '#d2baf5', '#9f7bdb'), tideDeep: tones('#e0cdf9', '#ae8ee8', '#7753c2'),
     fire: tones('#ffdc7a', '#ff9838', '#e4502a'), flame: tones('#ffcd6a', '#f7853a', '#d4422a'), ember: tones('#ffa45c', '#b93a2b', '#5e1d1a'),
     hot: tones('#fffbe6', '#fff0b0', '#ffc860'), dust: tones('#eadfce', '#bfa98f', '#86705c'), stone: tones('#d8c6ad', '#a68e74', '#76604c'), dustLight: tones('#f6efe4', '#dccbb4', '#ad977e'), blaze: tones('#fff3b8', '#ffb22e', '#f0561e'), smoke: tones('#f7f1e8', '#ddd1c3', '#b4a292'), scorch: tones('#cda57e', '#9d6c4d', '#6d4433'),
-    toxin: tones('#f1d6ff', '#b25ae6', '#5e1f8f'), toxinDeep: tones('#d7a3f4', '#8633c2', '#5a2a8a'), toxinShade: tones('#dcb8f2', '#9a55cc', '#5a2488'), acid: tones('#f6ffd0', '#bdf545', '#62a818'), fart: tones('#d8d690', '#a3a045', '#6b6a2b'), fartDeep: tones('#c2bf73', '#858236', '#5e5d27'),
+    toxin: tones('#f1d6ff', '#b25ae6', '#5e1f8f'), toxinDeep: tones('#d7a3f4', '#8633c2', '#5a2a8a'), toxinShade: tones('#dcb8f2', '#9a55cc', '#5a2488'), acid: tones('#f6ffd0', '#bdf545', '#62a818'), stem: tones('#dff2a0', '#8fbf45', '#4f7a22'),
     petal: tones('#e2b6f7', '#9a45cf', '#4c1478'), spore: tones('#f8ffd8', '#c8f55a', '#6fb21e'),
     frost: tones('#f6fdff', '#c2ecf8', '#72c3e3'), frostDeep: tones('#e2f7fd', '#8fd6ef', '#3f9ccb'), ice: tones('#fbfeff', '#cdeff9', '#7fc9e6'),
     chain: tones('#fffef4', '#ffe35c', '#e8a51c'), chainGlow: tones('#fff8cf', '#ffd84a', '#e39a17'),
@@ -394,15 +394,27 @@ export function createPaintedSkillRenderer(gl) {
     ribbon(GLOW_R, pts, ws, P.acid, {alpha: .8, soft: .5, edge: 0, lift: .3});
     glow(c, .22, P.acid, .6, {lift: .3}); mote(c, .08, P.spore, 1, {lift: .3, bias: .01});
   }
-  function toxinMiasma(t) { // CORROSIVE MIASMA as poison farts (owner request): a cloud of olive-drab gas puffs out behind the slime wherever it walks; each one bursts out, then hangs, swirls, rises a little and thins away
-    const seed = hash(t.x * .37 + t.z * .11), puffs = t.puffs || [{x: t.x, z: t.z, t: 0}], r = t.r;
+  function toxinMiasma(t) { // CORROSIVE MIASMA as a trail of poison flowers (owner request): the slime sows seeds as it walks; each seed drops and bounces, sprouts, opens into a small venom flower that puffs glowing poison pollen, then wilts
+    const puffs = t.puffs || [{x: t.x, z: t.z, t: 0}], r = t.r;
     puffs.forEach((q, i) => {
-      const a = t.age - q.t, k = clamp(a / 2.2); if (k >= 1) return; const sd = hash(q.x * 3.1 + q.z * 1.7 + i), burst = 1 - Math.pow(1 - smooth(0, .25, a), 3), A = 1 - smooth(.6, 1, k);
-      if (a < .3) { const c = [q.x, .3, q.z]; at(c); for (let j = 0; j < 5; j++) { const an = j * TAU / 5 + sd * 6; puff(c, [Math.cos(an) * 2.2, .6, Math.sin(an) * 2.2], a, .3, r * .15, r * .35, P.fart, 0, {drag: 6, seed: sd * 9 + j, erode: .1, soft: .5, edge: .3}); } } // pfft: the first push out
-      fogDecal(q.x, q.z, r * (.55 + .45 * burst), P.fartDeep, .28 * A, {seed: sd, layer: 0});
-      for (let j = 0; j < 5; j++) { const an = j * TAU / 5 + sd * 5 + a * (j % 2 ? .7 : -.7), rr = r * .4 * burst, c = [q.x + Math.cos(an) * rr, .55 + .3 * (j % 3) / 2 + a * .22, q.z + Math.sin(an) * rr * .8]; at(c); // round billows of gas turning in the air
-        fog(c, r * (.42 + .25 * burst) * (1 + .25 * k), r * (.36 + .22 * burst) * (1 + .25 * k), j % 2 ? P.fart : P.fartDeep, .72 * A, {seed: sd + j, lift: .3, dissolve: smooth(.4, 1, k), p: [.45, .05, .35, 0]}); }
-      if (i % 2 === 0) for (let j = 0; j < 2; j++) { const kk = (a * .8 + j * .5 + sd) % 1, c = [q.x + (j - .5) * r * .6, .15 + kk * .9, q.z + (hash(sd + j) - .5) * r * .5]; at(c); mote(c, .04, P.fart, A * (1 - kk), {lift: .2, seed: j}); } // little bubbles of gas drifting up
+      const a = t.age - q.t; if (a < 0 || a >= 3) return; const sd = hash(q.x * 3.1 + q.z * 1.7 + i), wilt = smooth(2.5, 3, a), A = 1 - wilt;
+      if (a < .3) { const k = a / .3, h = .55 * (1 - k * k) + .06 * Math.abs(Math.sin(k * Math.PI * 2)) * (1 - k), c = [q.x, .04 + h, q.z]; at(c); shadow(q.x, q.z, .08, .3); mote(c, .06, P.toxinDeep, 1, {p: [1, .3, 0, 0], seed: sd, bias: .01}); return; } // the seed drops and bounces
+      const grow = 1 - Math.pow(1 - smooth(.3, .7, a), 2), open = 1 - Math.pow(1 - smooth(.55, 1, a), 3), beat = Math.exp(-((a - .9) % .55 + .55) % .55 * 6);
+      if (a < .55) { const k = (a - .3) / .25; disc(RING, q.x, q.z, .1 + .35 * k, P.dust, {alpha: (1 - k) * .6, p: [.84, .1, .6, 0], layer: 2, seed: sd, soft: .4}); } // soil breaking as it sprouts
+      glowDecal(q.x, q.z, r * .9 * grow, P.acid, (.18 + .2 * beat * open) * A);
+      disc(RING, q.x, q.z, r * grow, P.toxinDeep, {alpha: .45 * A * grow, p: [.9, .025, .6, .03], layer: 1, seed: sd, rag: .8, soft: .3}); // the reach of its pollen
+      for (let j = 0; j < 3; j++) { const an = j * TAU / 3 + sd * 5, L = .28 * grow; decal(DROP, q.x + Math.cos(an) * L * .5, q.z + Math.sin(an) * L * .5, Math.cos(an), Math.sin(an), L * .5, L * .22, P.stem, {alpha: A, layer: 2, seed: sd + j}); } // leaves
+      const fr = r * .66 * (.15 + .85 * open) * (1 + .06 * beat * open) * (1 - .35 * wilt);
+      if (open > .02) {
+        disc(FLOWER, q.x + .04, q.z - .03, fr * 1.08, P.toxinShade, {alpha: .55 * A, p: [6, 1.7, .28, sd * 6 + .26], layer: 3, seed: sd, wobble: .1});
+        disc(FLOWER, q.x, q.z, fr, P.petal, {alpha: .95 * A, p: [6, 1.7, .28, sd * 6], layer: 4, seed: sd, rag: .3, wobble: .1, dissolve: wilt * .8});
+        disc(GLOW, q.x, q.z, fr * .45, P.acid, {alpha: (.5 + .5 * beat) * A * open, layer: 5, edge: 0, soft: 1});
+        disc(BLOB, q.x, q.z, fr * .22, P.acid, {alpha: A, p: [1, .3, 0, 0], layer: 6, seed: sd, wobble: .08});
+      } else { const c = [q.x, .12 * grow, q.z]; at(c); bb(DROP, c, .1 * grow, .06 * grow, P.petal, {rot: Math.PI / 2, asp: 1.6, seed: sd, lift: .1}); } // a closed bud
+      if (open > .5) for (let j = 0; j < 5; j++) { // glowing pollen puffed out on each beat, drifting up and away
+        const k = ((a - .9) / .55 + j * .2 + hash(sd + j)) % 1, an = j * TAU / 5 + sd * 4 + Math.floor((a - .9) / .55), dist = r * (.1 + .7 * k), c = [q.x + Math.cos(an) * dist, .15 + k * .9, q.z + Math.sin(an) * dist]; at(c);
+        glow(c, .2, P.acid, .6 * A * (1 - k), {lift: .2}); mote(c, .05 + .02 * hash(j + sd), P.spore, A * smooth(0, .1, k) * (1 - smooth(.7, 1, k)), {lift: .2, bias: .01, seed: j});
+      }
     });
   }
   // ---------------------------------------------------------------- Frost: faceted crystals, a spinning drill, snowy breath
