@@ -510,10 +510,10 @@ export function createPaintedSkillRenderer(gl) {
     disc(RING, e.x, e.z, R * 1.05, P.flame, {alpha: .35 + .5 * k, p: [.9, .04, .8, .03], layer: 2, seed, soft: .4, edge: .4});
     shadow(e.x, e.z, sz * .6, .25 * k);
     const c = [e.x, y, e.z]; at(c);
-    streak(GLOW_R, c, [0, 1, 0], .6 + 1.6 * k, sz * .8, P.fire, {alpha: .6, seed, flutter: .2, bias: -.04, soft: .7, edge: 0});
+    streak(GLOW_R, c, [0, 1, 0], .6 + 1.6 * k, sz * .8, P.fire, {alpha: .6, seed, flutter: .2, bias: -50, soft: .7, edge: 0});
     glow(c, sz * 1.9, P.fire, .5, {bias: -.03});
     bb(FIREBALL, c, sz, sz, P.fire, {p: [1, .9, 0, 0], seed, bias: .01});
-    bb(FIREBALL, c, sz * .55, sz * .55, P.hot, {p: [1.4, .5, 0, 0], seed: seed + 1, bias: .02, edge: 0});
+    glow(c, sz * .6, P.hot, .95, {bias: .02}); // a soft white-hot heart, no hard core shape
   }
   function sunBurst(e) { // the impact: a pillar of sunlight, a dome of fire, shock rings racing out, then a column of smoke
     const burst = cfg.sunBurst, total = burst + cfg.sunSmoke, t = e.age, R = e.r || 1.2, p = clamp(t / burst), seed = hash(e.x + e.z * 3);
@@ -523,7 +523,7 @@ export function createPaintedSkillRenderer(gl) {
     if (t < burst) {
       const g = smooth(0, .18, p), heat = 1 - smooth(.15, .8, p), fa = 1 - smooth(.6, 1, p); at([e.x, R * .5, e.z]);
       glow([e.x, R * .5, e.z], R * 2.3 * g, P.fire, .5 * fa, {lift: .3, bias: -.04});
-      if (p < .55) streak(GLOW_R, [e.x, .1, e.z], [0, 1, 0], R * (1.6 + 2.2 * g), R * .5 * (1 - p), P.hot, {alpha: .8 * (1 - smooth(.08, .55, p)), seed, flutter: .08, taper: .35, bias: -.05, soft: .9, edge: 0}); // the sun's light flares up as it lands
+      if (p < .55) streak(GLOW_R, [e.x, .1, e.z], [0, 1, 0], R * (1.6 + 2.2 * g), R * .5 * (1 - p), P.hot, {alpha: .8 * (1 - smooth(.08, .55, p)), seed, flutter: .08, taper: .35, bias: -50, soft: .9, edge: 0, p: [R * 1.4, 0, 0, 0]}); // the sun's light flares up as it lands
       bb(BLAST, [e.x, R * .55 * g, e.z], R * 1.2 * g, R * 1.05 * g, P.fire, {alpha: fa, p: [1, 1.2, heat, 0], seed, lift: .35, dissolve: smooth(.55, 1, p)});
       for (let j = 0; j < 8; j++) { const an = j * TAU / 8 + seed * 4 + hash(j * 7 + seed) * .5, sp = 3.2 + 2 * hash(j + seed); ember([e.x, .5, e.z], [Math.cos(an) * sp, 2.6 + 2 * hash(j * 5 + seed), Math.sin(an) * sp], t, .05 + .025 * hash(j * 3 + seed), 1 - smooth(.5, .9, t), j); }
     }
@@ -687,6 +687,7 @@ void main(){
   }else if(k==32){ // glow: a soft ribbon of light, mist, smoke or spores
    float n=fbm(vec2(ul*1.5-t*1.5,v+seed));
    float F=(1.-a)*(1.-u*.8)+(n-.5)*.35*(.3+u);
+   if(P.x>0.)F*=smoothstep(0.,P.x,ul); // optional soft start (P.x world units), so a beam never shows a flat end
    d=(.1-F)*.5;tone=clamp(.35+F*.7,0.,1.);
   }else{ // goo: a sticky strand that thins and beads toward the tail
    float bead=.2*sin(ul*9.-t*4.)*u;
@@ -790,11 +791,11 @@ void main(){
    c+=vec2(sin(t*.8+fj*1.7),cos(t*.7+fj*2.3))*.035;
    vec2 pq=(vQ-c)/rad;pq*=1.+(vn(normalize(pq+1e-4)*1.3+vec2(fj*3.7+seed*9.,t*.3))-.5)*.12;float pp=dot(pq,pq),dd=(sqrt(pp)-1.)*rad,h=clamp(.5+.5*(dm-dd)/.1,0.,1.);dm=mix(dm,dd,h)-.1*h*(1.-h);
    float z=sqrt(max(0.,1.-pp))*rad-c.y*.3;
-   if(pp<1.){float w=exp(z*28.);lw+=w*clamp(dot(vec3(pq,sqrt(1.-pp)),vec3(-.36,.56,.75)),0.,1.);ws+=w;}}
+   if(pp<1.){float w=exp(z*28.);lw+=w*clamp(dot(vec3(pq,sqrt(1.-pp)),vec3(-.5,.62,.6)),0.,1.);ws+=w;}}
   float lit=lw/ws; // puffs nearer the viewer win, blended so no seam shows between them
   float n=fbm(vQ*2.3+vec2(seed,-t*.5)),fl=fbm(vec2(vQ.x*3.2+seed,vQ.y*2.4-t*1.6));
   d=dm+(n-.5)*P.y*.08;
-  tone=clamp(.5+(lit-.55)*.95+(fl-.5)*.6+(P.z-.5)*.36-max(0.,-vQ.y-.3)*.35,0.,1.);
+  tone=clamp(.46+(lit-.5)*1.05+(fl-.5)*.6+(P.z-.5)*.24-max(0.,-vQ.y-.3)*.35,0.,1.);
  }else if(k==37){ // a bed of fire: flowing noise rises through a soft mask, so many tongues of different heights lick up and break away (base at -y)
   float t=T*P.x,y01=(vQ.y+1.)*.5,ax=abs(vQ.x);
   float n=fbm(vec2(q.x*1.9+seed,vQ.y*1.5-t*2.3))*.62+fbm(vec2(q.x*3.8-seed,vQ.y*3.1-t*3.7))*.38;
