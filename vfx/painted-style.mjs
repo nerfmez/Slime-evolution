@@ -34,6 +34,19 @@ const STATE_SCRIPT = '<script>(()=>{const K="slime.vfxStyle.v2";let s={on:!0};' 
   'globalThis.__slimeVfxStyle=s;const box=document.getElementById("vfx-style-on");if(!box)return;box.checked=s.on;' +
   'box.onchange=()=>{s.on=box.checked;try{localStorage.setItem(K,JSON.stringify(s))}catch{}}})()</script>';
 
+// Review shortcut (owner request, 2026-09-26): ?lab=<skill> opens the skill lab straight on that skill, repeating, with
+// the target monsters hidden, so the owner can check an effect on the iPad in one tap. Presentation only: it clicks the
+// same buttons a player would (Start, the first opening card, Skill test) and never changes combat values.
+const LAB_LINK_SCRIPT = '<script>(()=>{const q=new URLSearchParams(location.search);if(!q.has("lab"))return;const want=q.get("lab"),t0=Date.now();' +
+  'const $=id=>document.getElementById(id);const go=()=>{if(Date.now()-t0>30000)return;' +
+  'const menu=$("start-menu"),play=$("start-play");if(menu&&!menu.hidden&&play){play.click();return setTimeout(go,200)}' +
+  'const card=document.querySelector(".skill-card"),test=$("skill-test"),lab=$("skill-lab");if(!test)return setTimeout(go,200);' +
+  'if(!lab||lab.hidden){if(card)card.click();test.click();return setTimeout(go,300)}' +
+  'const pre=$("lab-preset"),tg=$("lab-targets"),rp=$("lab-repeat");' +
+  'if(pre&&want&&[...pre.options].some(o=>o.value===want)&&pre.value!==want){pre.value=want;pre.dispatchEvent(new Event("change"))}' +
+  'if(tg&&tg.checked){tg.checked=false;tg.dispatchEvent(new Event("change"))}if(rp&&!rp.checked){rp.checked=true;rp.dispatchEvent(new Event("change"))}};' +
+  'addEventListener("load",()=>setTimeout(go,300))})()</script>';
+
 export function applyPaintedVfx(bundle, html) {
   const renderer = read('./painted-renderer.mjs').replace('export function createPaintedSkillRenderer', 'function createPaintedSkillRenderer');
   if (/\bexport\b|\bimport\b/.test(renderer.replace(/\/\*[\s\S]*?\*\//g, ''))) throw Error('Painted renderer must be self-contained');
@@ -50,6 +63,6 @@ export function applyPaintedVfx(bundle, html) {
   b = replaceOne(b, 'Math.round(Math.max(0,1-e[i/4]/3)*255)', 'Math.round(Math.max(0,1-e[i/4]/9)*255)', 'burn depth range');
   b = replaceOne(b, 'c=mix(c,vec3(.19,.15,.115),burned*.78);', 'burned+=sin(vWorld.x*3.1+vWorld.z*1.3)*sin(vWorld.z*2.7-vWorld.x*.9)*.035;c=mix(c,vec3(.45,.38,.25),smoothstep(.06,.1,burned)*.55);c=mix(c,vec3(.27,.21,.145),smoothstep(.36,.4,burned)*.8);c=mix(c,vec3(.15,.11,.085),smoothstep(.7,.74,burned)*.9);', 'layered burnt ground');
   const h = replaceOne(replaceOne(html, '<h3>สกิลและภาพเอฟเฟกต์</h3>', '<h3>สกิลและภาพเอฟเฟกต์</h3>' + CONTROLS, 'style controls'),
-    '</body></html>', STATE_SCRIPT + '</body></html>', 'style state');
+    '</body></html>', STATE_SCRIPT + LAB_LINK_SCRIPT + '</body></html>', 'style state');
   return {bundle: b, html: h};
 }
