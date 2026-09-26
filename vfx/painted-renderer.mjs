@@ -523,8 +523,8 @@ export function createPaintedSkillRenderer(gl) {
     shadow(e.x, e.z, sz * .7, .15 + .2 * k);
     const c = [e.x, y, e.z]; at(c);
     const pulse = .5 + .5 * Math.sin(e.age * 22 + seed * 6), flash = Math.max(0, Math.sin(e.age * 9 + seed * 4)) ** 6; // the falling sun throbs and flashes, brighter as it nears the ground
-    glow(c, sz * (2.6 + .5 * pulse), P.fire, .45 + .2 * pulse, {bias: -.04});
-    glow(c, sz * (1.5 + .3 * pulse), P.hot, .4 + .25 * pulse, {bias: -.03});
+    glow(c, sz * (2.6 + .5 * pulse), P.fire, .45 + .2 * pulse, {bias: -.04, lift: sz * 4});
+    glow(c, sz * (1.5 + .3 * pulse), P.hot, .4 + .25 * pulse, {bias: -.03, lift: sz * 4});
     if (flash > .02) glow(c, sz * (3.4 + 1.2 * k), P.hot, flash * (.4 + .5 * k), {bias: .2, lift: sz * 5});
     glowDecal(e.x, e.z, R * (1.2 + .8 * k), P.hot, (.15 + .5 * k) * (.6 + .4 * pulse) + flash * .4 * k);
     flame(c, [0, 1, 0], sz * .78, sz * (1.2 + .6 * k), P.fire, {p: [2.6, 0, 0, 0], seed: seed + 3, bias: -.02, edge: .6}); // fire streams up behind the falling sun
@@ -535,9 +535,9 @@ export function createPaintedSkillRenderer(gl) {
     disc(CRATER, e.x, e.z, R * 1.75 * (.6 + .4 * smooth(0, .2, t)), P.scorch, {alpha: .75 * smooth(0, .08, t) * (1 - smooth(end - .45, end, t)), p: [6, 0, 0, 0], layer: 0, seed, dissolve: smooth(end - .45, end, t), edge: .6});
     glowDecal(e.x, e.z, R * 2.2, P.fire, .85 * (1 - smooth(.9, 1.5, t)));
     for (let j = 0; j < 2; j++) { const q = clamp((t - j * .12) / .55); if (q > 0 && q < 1) disc(RING, e.x, e.z, R * mix(.6, 2.3, 1 - Math.pow(1 - q, 2)), j ? P.dust : P.flame, {alpha: (1 - q) * .9, p: [.86, .06 * (1 - q) + .02, .6, 0], layer: 2 + j, seed: seed + j, soft: .35, edge: .4}); }
-    if (t < .1) { const g = [e.x, R * .6, e.z]; at(g); glow(g, R * 3.6, P.hot, 1 - t / .1, {lift: R, bias: 1}); } // the flash
+    if (t < .1) { const g = [e.x, R * .6, e.z]; at(g); glow(g, R * 3.6, P.hot, 1 - t / .1, {lift: R * 5, bias: 1}); } // the flash
     const D = R * (.3 + .85 * (1 - Math.pow(1 - clamp(t / .3), 2.2)) + .06 * Math.sin(Math.min(t, 1.1) * 9) * smooth(.3, .5, t)), heat = 1 - smooth(.1, .6, t), ero = smooth(1.05, end - .2, t);
-    if (ero < 1) { const c = [e.x, .02, e.z]; at([e.x, D * .4, e.z]); glow([e.x, D * .5, e.z], D * 2.4, P.fire, .45 * (1 - ero), {lift: D, bias: -.1}); bb(DOME_FIRE, c, D * 1.35 / .9, D * 1.35 / .9, P.blaze, {p: [smooth(.08, .3, t), heat * .8 + .2 * (1 - ero), sq, ero], seed, lift: D * 2.2, edge: .7}); }
+    if (ero < 1) { const c = [e.x, .02, e.z]; at([e.x, D * .4, e.z]); glow([e.x, D * .5, e.z], D * 2.4, P.fire, .45 * (1 - ero), {lift: D * 4, bias: -.1}); bb(DOME_FIRE, c, D * 1.35 / .9, D * 1.35 / .9, P.blaze, {p: [smooth(.08, .3, t), heat * .8 + .2 * (1 - ero), sq, ero], seed, lift: D * 2.2, edge: .7}); }
     if (t < 1.4) for (let j = 0; j < 10; j++) { const an = j * TAU / 10 + seed * 4 + hash(j * 7 + seed) * .5, sp = 3.5 + 2 * hash(j + seed); ember([e.x, R * .5, e.z], [Math.cos(an) * sp, 3 + 2 * hash(j * 5 + seed), Math.sin(an) * sp], Math.max(0, t - .1), .05 + .025 * hash(j * 3 + seed), 1 - smooth(.7, 1.4, t), j); }
   }
   function meteorPos(e, a) { // where the rock is at fall fraction a (0 = high in the sky, 1 = impact)
