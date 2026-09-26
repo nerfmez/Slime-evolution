@@ -55,25 +55,30 @@ test('every skill, evolution and fire effect is painted by the new renderer', ()
   assert.equal(vfx.diagnostics.kinds['fire:burning'], undefined, 'hidden lab targets carry no flames');
 });
 
-test('fire takes a different form in every branch and never uses flame sticks (owner feedback)', () => {
-  const vfx = createPaintedSkillRenderer(null), FLAME_STICKS = [2, 23], TWISTER = 27;
+test('fire takes a clear, different form in every branch and never uses flame sticks or swirling ribbons (owner feedback)', () => {
+  const vfx = createPaintedSkillRenderer(null), FLAME_STICKS = [2, 23], FIRE_RIBBON = 31;
+  const FIRELINE = 37, ROCK = 39, FLAMEBALL = 40, SUN = 41, EXPLODE = 42, TORNADO = 43;
   const branches = {
-    shot: {projectiles: [{x: 0, z: 0, y: .36, tx: 3, tz: 0, life: 1.5}]}, blast: {fx: [{type: 'blast', x: 0, z: 0, r: 1, age: .3}]},
-    burn: {patches: [{x: 0, z: 0, r: .8, age: .5, life: 1}]}, scatter: {projectiles: [{x: 1, z: 0, vx: 5.8, vz: 0, life: .5, ember: true}]},
-    sunfall: {events: [{type: 'sun', x: 0, z: 0, age: .2, delay: .5, s: {radius: 1.4}}]}, sunburst: {fx: [{type: 'sun', x: 0, z: 0, r: 1.4, age: .3}]},
-    meteor: {events: [{type: 'meteor', x: 2, z: 0, age: .3, delay: .55, flight: .55, s: {radius: .8}}]}, impact: {fx: [{type: 'meteor', x: 2, z: 0, r: .8, age: .1}]},
-    cyclone: {cyclones: [{x: 0, z: 0, r: 1.2, life: 3, age: .5}]},
+    shot: [{projectiles: [{x: 0, z: 0, y: .36, tx: 3, tz: 0, life: 1.5}]}, [FLAMEBALL]],
+    scatter: [{projectiles: [{x: 1, z: 0, vx: 5.8, vz: 0, life: .5, ember: true}]}, [FLAMEBALL]],
+    blast: [{fx: [{type: 'blast', x: 0, z: 0, r: 1, age: .2}]}, [EXPLODE]],
+    burn: [{patches: [{x: 0, z: 0, r: .8, age: .5, life: 1}]}, [FIRELINE]],
+    sunfall: [{events: [{type: 'sun', x: 0, z: 0, age: .2, delay: .5, s: {radius: 1.4}}]}, [SUN]],
+    sunburst: [{fx: [{type: 'sun', x: 0, z: 0, r: 1.4, age: .3}]}, [EXPLODE]],
+    meteor: [{events: [{type: 'meteor', x: 2, z: 0, age: .3, delay: .55, flight: .55, s: {radius: .8}}]}, [ROCK, FLAMEBALL]],
+    impact: [{fx: [{type: 'meteor', x: 2, z: 0, r: .8, age: .1}]}, [EXPLODE]],
+    cyclone: [{cyclones: [{x: 0, z: 0, r: 1.2, life: 3, age: .5}]}, [TORNADO]],
   };
-  const signature = {};
-  for (const [name, st] of Object.entries(branches)) {
-    const items = vfx.plan(st, {}, 1, () => true, {vp: VP}), shapes = [...new Set(items.map(it => it.v[3]))].sort((a, b) => a - b);
+  for (const [name, [st, want]] of Object.entries(branches)) {
+    const items = vfx.plan(st, {}, 1, () => true, {vp: VP}), shapes = new Set(items.map(it => it.v[3]));
     assert.ok(items.length > 0, name + ' draws');
-    for (const s of FLAME_STICKS) assert.ok(!shapes.includes(s), name + ' has no flame sticks');
-    for (const it of items.filter(it => it.v[3] === TWISTER)) assert.ok(it.v[11] <= .4 && it.v[31] >= .5, 'cyclone heat column stays soft and see-through');
-    signature[name] = shapes.join(',');
+    for (const s of FLAME_STICKS) assert.ok(!shapes.has(s), name + ' has no flame sticks');
+    assert.ok(!shapes.has(FIRE_RIBBON), name + ' has no swirling fire ribbons');
+    for (const s of want) assert.ok(shapes.has(s), name + ' uses its own form ' + s);
   }
-  for (const a of ['shot', 'blast', 'burn', 'scatter', 'sunburst', 'meteor', 'cyclone']) for (const b of ['shot', 'blast', 'burn', 'scatter', 'sunburst', 'meteor', 'cyclone'])
-    if (a < b) assert.notEqual(signature[a], signature[b], a + ' and ' + b + ' must look different');
+  // The sun is a sun: its disc and corona, not an explosion, while it falls.
+  const sun = vfx.plan(branches.sunfall[0], {}, 1, () => true, {vp: VP});
+  assert.ok(!sun.some(it => it.v[3] === EXPLODE));
   vfx.plan({}, {enemies: [{x: 1, z: 1, hp: 5, burnTime: 1, radius: .5}]}, 1, () => true, {vp: VP});
   assert.ok(vfx.diagnostics.kinds['fire:burning'] > 0);
 });

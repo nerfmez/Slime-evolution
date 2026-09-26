@@ -19,8 +19,9 @@ export function createPaintedSkillRenderer(gl) {
   const addv = (p, d, k) => [p[0] + d[0] * k, p[1] + d[1] * k, p[2] + d[2] * k];
   // Shape library (must match the fragment shader). Ribbons (30-33) are drawn along a path of points.
   const BLOB = 0, RING = 1, DROP = 2, SHARD = 4, SPIRAL = 9, BOLT = 11, FAN = 12, FLOWER = 13, RIBBON = 17, DOME = 18,
-    DRILL = 19, COLUMN = 20, FIREBALL = 24, LIQUID = 26, TWISTER = 27, SURF = 29,
-    WATER_R = 30, FIRE_R = 31, GLOW_R = 32, GOO_R = 33, FOG = 35, BLAST = 36, FIRELINE = 37, GLOW = 38, ROCK = 39;
+    DRILL = 19, COLUMN = 20, LIQUID = 26, SURF = 29,
+    WATER_R = 30, FIRE_R = 31, GLOW_R = 32, GOO_R = 33, FOG = 35, FIRELINE = 37, GLOW = 38, ROCK = 39,
+    FLAMEBALL = 40, SUN = 41, EXPLODE = 42, TORNADO = 43;
   // Palettes: light / mid / dark wash. The pigment edge is derived from the dark wash.
   const P = {
     shadow: tones('#6f8a4c', '#5f7a40', '#4c6533'),
@@ -444,32 +445,28 @@ export function createPaintedSkillRenderer(gl) {
     glowDecal(t.x, t.z, R, P.orbit, .4 * A);
     disc(RING, t.x, t.z, R, P.orbit, {alpha: A, p: [.86, .07, .7, .03], layer: 2, seed, rag: .4, soft: .25});
   }
-  // ---------------------------------------------------------------- Fire: a different form for every branch, never flame sticks
-  // Living fire made of puffs: each puff is born hot at the base, rises, shrinks and burns away, so
-  // overlapping puffs make a flickering body of flame with a soft, ever-changing outline.
-  function fireLicks(x, z, spread, size, height, n, alpha, seed, lift = .1, rate = 1.6) {
-    for (let j = 0; j < n; j++) {
-      const k = (now * rate + j / n + hash(seed + j) * .37) % 1, h = hash(j * 3.7 + seed), an = h * TAU, rr = spread * Math.sqrt(hash(j * 1.9 + seed)) * (1 - k * .4);
-      const c = [x + Math.cos(an) * rr + Math.sin(k * 5 + j) * spread * .12, size * .45 + k * height, z + Math.sin(an) * rr * .7], s = size * (1 - k * .7) * (.75 + .5 * hash(j + seed * 2)); at(c);
-      bb(FIREBALL, c, s, s * 1.15, k < .45 ? P.fire : P.flame, {alpha: alpha * smooth(0, .08, k) * (1 - smooth(.7, 1, k)), p: [2.2, .9, 0, 0], seed: seed + j, lift, dissolve: smooth(.5, 1, k) * .7, bias: -k * .01});
-    }
+  // ---------------------------------------------------------------- Fire: a clear, different form for every branch
+  // The living flame of the burning ground (noise rising through a soft mask, which the owner approved) is the
+  // shared language: a fireball is a ball of it licking back, a meteor a rock wrapped in it, a tornado a funnel of it.
+  // A ball of fire at `pos` whose flames lick back along `back` for `tail` world units (ball radius ~.8 * ball).
+  function flame(pos, back, ball, tail, pal, o = {}) {
+    const f = cam.f, k = back[0] * f[0] + back[1] * f[1] + back[2] * f[2], a = norm([back[0] - f[0] * k, back[1] - f[1] * k, back[2] - f[2] * k]) || cam.r;
+    const len = ball + tail / 2;
+    aim(FLAMEBALL, addv(pos, a, len - ball), a, len, ball, pal, o);
   }
-  function fireball(t) { // Inferno: a ball of fire that leaves a flowing trail of flame
+  function fireball(t) { // Inferno: a round ball of fire, white-hot inside, its flames licking back into a short tail
     const dx = t.vx ?? (t.tx - t.x), dz = t.vz ?? (t.tz - t.z), n = Math.hypot(dx, dz) || 1, d = [dx / n, 0, dz / n];
-    const c = [t.x, (t.y ?? .36) + .14, t.z], sd = hash(t.x * .7 + t.z * 1.3), len = Math.min(1.4, Math.max(0, 7.2 * (1.8 - (t.life ?? 1.8))) + .15);
+    const c = [t.x, (t.y ?? .36) + .14, t.z], sd = hash(t.x * .7 + t.z * 1.3), tail = Math.min(.75, Math.max(0, 6 * (1.8 - (t.life ?? 1.8)))) + .08;
     at(c); shadow(t.x, t.z, .3, .24);
-    glow(c, .6, P.fire, .35, {lift: .2, bias: -.03});
-    streak(FIRE_R, c, [-d[0], .15, -d[2]], len, .21, P.fire, {seed: sd, lift: .2, flutter: .55, p: [.9, 0, 0, 0]});
-    bb(FIREBALL, c, .26, .26, P.fire, {p: [1.8, .8, 0, 0], seed: sd, lift: .2, bias: .02});
+    glow(c, .65, P.fire, .4, {lift: .2, bias: -.03});
+    flame(c, [-d[0], .12, -d[2]], .3, tail, P.fire, {p: [1.6, .55, 0, 0], seed: sd, lift: .2, edge: .7});
   }
-  function fireEmber(t) { // SCATTER: sparks fanning out, each a hot bead leaving a soft smear of light along its wavy path
-    const dx = t.vx ?? 0, dz = t.vz ?? 1, sp = Math.hypot(dx, dz) || 1, d = [dx / sp, 0, dz / sp], life = t.life ?? 1, age = Math.max(0, 1.1 - life);
-    const sd = hash(Math.round(Math.atan2(dz, dx) * 100)), c = [t.x, (t.y ?? .16) + .12 * sd + .22 + .07 * Math.sin(age * 9 + sd * 7) + .04 * Math.sin(age * 23 + sd * 9), t.z], fade = Math.min(1, life * 3);
+  function fireEmber(t) { // SCATTER: a fan of small flames, each licking back along its wavy flight
+    const dx = t.vx ?? 0, dz = t.vz ?? 1, sp = Math.hypot(dx, dz) || 1, life = t.life ?? 1, age = Math.max(0, 1.1 - life);
+    const sd = hash(Math.round(Math.atan2(dz, dx) * 100)), wv = age * 9 + sd * 7, c = [t.x, (t.y ?? .16) + .12 * sd + .22 + .07 * Math.sin(wv) + .04 * Math.sin(age * 23 + sd * 9), t.z], fade = Math.min(1, life * 3);
     at(c);
-    glow(c, .3, P.fire, .55 * fade, {bias: -.02});
-    const tl = Math.min(.09 + .04 * sd, age), lift = .12 * sd + .22;
-    for (let i = 1; i <= 4; i++) { const a = age - tl * i / 4, q = [t.x - dx * (age - a), (t.y ?? .16) + lift + .07 * Math.sin(a * 9 + sd * 7) + .04 * Math.sin(a * 23 + sd * 9), t.z - dz * (age - a)]; glow(q, .2 * (1 - i * .16), P.fire, .5 * fade * (1 - i / 5), {bias: -.02 - i * .002}); }
-    mote(c, .07, P.hot, fade, {bias: .01});
+    glow(c, .32, P.fire, .45 * fade, {bias: -.02});
+    flame(c, [-dx / sp, -.63 * Math.cos(wv) / sp, -dz / sp], .12, .3, P.fire, {alpha: fade, p: [2.2, .5, 0, 0], seed: sd, edge: .6});
   }
   function smokeRise(x, z, r, k, seed, n = 3, alpha = .8) { // warm smoke rising and thinning out
     if (k <= 0 || k >= 1) return;
@@ -478,17 +475,18 @@ export function createPaintedSkillRenderer(gl) {
       fog(c, s, s * .8, P.smoke, alpha * .75 * smooth(0, .15, k) * (1 - smooth(.5, 1, k)), {seed: seed + j, dissolve: smooth(.45, 1, k), lift: .2, p: [.6, .7, .5, 0]});
     }
   }
-  function fireBlast(e) { // Inferno burst: a billowing fireball that cools into smoke, sparks flung out
+  function fireBlast(e) { // Inferno burst: a flash, then a round fireball bursting with flames that cools and breaks into smoke
     const t = e.age, p = clamp(t / cfg.blast), r = e.r || 1, seed = hash(e.x * .9 + e.z * 1.7);
     disc(LIQUID, e.x, e.z, r * 1.05, P.scorch, {alpha: .55 * smooth(0, .08, p) * (1 - smooth(.62, 1, p)), p: [.55, 2, 1, 0], layer: 0, seed, dissolve: smooth(.7, 1, p), edge: .5});
-    glowDecal(e.x, e.z, r * 1.5, P.fire, .6 * (1 - smooth(.05, .35, p)));
-    disc(RING, e.x, e.z, r * mix(.4, 1.3, smooth(0, .25, p)), P.fire, {alpha: .8 * (1 - smooth(.1, .3, p)), p: [.86, .05, .6, .03], layer: 2, seed, soft: .5, edge: .3});
-    const g = smooth(0, .16, p), heat = 1 - smooth(.08, .5, p), fa = 1 - smooth(.4, .6, p), c = [e.x, .25 + r * (.35 + .35 * p), e.z]; at(c);
+    glowDecal(e.x, e.z, r * 1.6, P.fire, .7 * (1 - smooth(.05, .35, p)));
+    disc(RING, e.x, e.z, r * mix(.4, 1.4, smooth(0, .22, p)), P.flame, {alpha: .85 * (1 - smooth(.1, .3, p)), p: [.86, .05, .6, .03], layer: 2, seed, soft: .4, edge: .4});
+    const g = .35 + .65 * smooth(0, .09, p), R0 = r * .8 * g * (1 + .1 * p), heat = 1 - smooth(.04, .38, p), fa = 1 - smooth(.3, .48, p), c = [e.x, .1 + R0 * .74, e.z]; at(c);
+    if (t < .09) glow(c, r * 2.3, P.hot, 1 - t / .09, {lift: .4, bias: .05}); // the flash
     if (fa > 0) {
-      glow(c, r * 1.6 * g, P.fire, .45 * fa, {lift: .3, bias: -.03});
-      bb(BLAST, c, r * .95 * g, r * .85 * g, P.fire, {alpha: fa, p: [1.3, 1.1, heat, 0], seed, lift: .3, dissolve: smooth(.36, .6, p)});
+      glow(c, R0 * 2, P.fire, .5 * fa, {lift: .3, bias: -.03});
+      bb(EXPLODE, c, R0, R0, P.fire, {alpha: fa, p: [1.4, 1.1, heat, 0], seed, lift: .3, dissolve: smooth(.3, .48, p), edge: .8});
     }
-    smokeRise(e.x, e.z, r, clamp((p - .2) / .8), seed);
+    smokeRise(e.x, e.z, r, clamp((p - .22) / .78), seed);
     if (t < .8) for (let j = 0; j < 6; j++) { const an = j * TAU / 6 + seed * 5 + hash(j * 7 + seed) * .6, sp = 2.6 + 1.6 * hash(j + seed); ember([e.x, .4, e.z], [Math.cos(an) * sp, 2.2 + 1.6 * hash(j * 3 + seed), Math.sin(an) * sp], t, .04 + .02 * hash(j * 5 + seed), 1 - smooth(.45, .8, t), j); }
   }
   function firePatch(t, i) { // BURN: the ground keeps burning — a scorched stain, a low line of licking fire, rising embers
@@ -504,27 +502,26 @@ export function createPaintedSkillRenderer(gl) {
     bb(FIRELINE, [e.x, .28, e.z], rad * .6, .32, P.fire, {alpha: fade, asp: 1.25, p: [1.6, 0, 0, 0], seed: id * 1.7, lift: .5, edge: .7});
     for (let j = 0; j < 2; j++) { const k = (now * .9 + j * .5 + hash(id)) % 1; mote([e.x + (j - .5) * rad * .6 + Math.sin(k * 7 + id) * .05, .3 + k * .9, e.z], .035 * (1 - k * .5), P.hot, fade * (1 - smooth(.6, 1, k)), {lift: .5}); }
   }
-  function sunFall(e) { // SUNFALL CORE: a sun of fire sinks from the sky, its heat streaming above it
-    const k = clamp(e.age / e.delay), R = e.s?.radius || 1.2, y = mix(Math.max(4.2, R * 2), R * .75 + .2, k * k), sz = mix(.55, .9, k) * R, seed = hash(e.x + e.z); // it lands without dipping into the ground
+  function sunFall(e) { // SUNFALL CORE: a small sun — a glowing disc in a corona of flame — sinks onto its target
+    const k = clamp(e.age / e.delay), R = e.s?.radius || 1.2, sz = mix(.5, .8, k) * R, y = mix(Math.max(4.2, R * 2), sz * .8 + .25, k * k), seed = hash(e.x + e.z); // it lands without dipping into the ground
     glowDecal(e.x, e.z, R * 1.4, P.fire, .25 + .45 * k);
     disc(RING, e.x, e.z, R * 1.05, P.flame, {alpha: .35 + .5 * k, p: [.9, .04, .8, .03], layer: 2, seed, soft: .4, edge: .4});
     shadow(e.x, e.z, sz * .6, .25 * k);
     const c = [e.x, y, e.z]; at(c);
-    streak(GLOW_R, c, [0, 1, 0], .6 + 1.6 * k, sz * .8, P.fire, {alpha: .6, seed, flutter: .2, bias: -50, soft: .7, edge: 0});
-    glow(c, sz * 1.9, P.fire, .5, {bias: -.03});
-    bb(FIREBALL, c, sz, sz, P.fire, {p: [1, .9, 0, 0], seed, bias: .01});
-    glow(c, sz * .6, P.hot, .95, {bias: .02}); // a soft white-hot heart, no hard core shape
+    glow(c, sz * 2.5, P.fire, .45, {bias: -.04});
+    glow(c, sz * 1.5, P.hot, .4, {bias: -.03});
+    bb(SUN, c, sz, sz, P.fire, {p: [.8, 1, 0, 0], seed, bias: .01, edge: .6});
   }
-  function sunBurst(e) { // the impact: a pillar of sunlight, a dome of fire, shock rings racing out, then a column of smoke
+  function sunBurst(e) { // the sun lands: a flash, a dome of white-hot fire, shock rings racing out, then a column of smoke
     const burst = cfg.sunBurst, total = burst + cfg.sunSmoke, t = e.age, R = e.r || 1.2, p = clamp(t / burst), seed = hash(e.x + e.z * 3);
     disc(LIQUID, e.x, e.z, R * 1.15, P.scorch, {alpha: .6 * smooth(0, .1, p) * (1 - smooth(total * .7, total, t)), p: [.55, 2, 1, 0], layer: 0, seed, dissolve: smooth(total * .75, total, t), edge: .5});
     glowDecal(e.x, e.z, R * 1.9, P.fire, .75 * (1 - smooth(.1, .7, p)));
     for (let j = 0; j < 2; j++) { const q = clamp(p * 1.3 - j * .22); if (q > 0 && q < 1) disc(RING, e.x, e.z, R * mix(.4, 1.6, smooth(0, 1, q)), j ? P.fire : P.flame, {alpha: (1 - q) * .9, p: [.88, .06 * (1 - q) + .015, .7, .03], layer: 2 + j, seed: seed + j, soft: .4, edge: .4}); }
     if (t < burst) {
-      const g = smooth(0, .18, p), heat = 1 - smooth(.15, .8, p), fa = 1 - smooth(.6, 1, p); at([e.x, R * .5, e.z]);
-      glow([e.x, R * .5, e.z], R * 2.3 * g, P.fire, .5 * fa, {lift: .3, bias: -.04});
-      if (p < .55) streak(GLOW_R, [e.x, .1, e.z], [0, 1, 0], R * (1.6 + 2.2 * g), R * .5 * (1 - p), P.hot, {alpha: .8 * (1 - smooth(.08, .55, p)), seed, flutter: .08, taper: .35, bias: -50, soft: .9, edge: 0, p: [R * 1.4, 0, 0, 0]}); // the sun's light flares up as it lands
-      bb(BLAST, [e.x, R * .72 * g, e.z], R * 1.2 * g, R * 1.05 * g, P.fire, {alpha: fa, p: [1, 1.2, heat, 0], seed, lift: .35, dissolve: smooth(.55, 1, p)});
+      const g = .45 + .55 * smooth(0, .15, p), W = R * 1.2 * g, Hh = R * g, heat = 1 - smooth(.12, .75, p), fa = 1 - smooth(.6, 1, p), c = [e.x, .12 + Hh * .42, e.z]; at(c);
+      if (t < .12) glow(c, R * 3, P.hot, 1 - t / .12, {lift: .4, bias: .05}); // the flash as the sun lands
+      glow(c, R * 2.3 * g, P.fire, .5 * fa, {lift: .3, bias: -.04});
+      bb(EXPLODE, c, W, Hh, P.fire, {alpha: fa, p: [1, 1.2, heat, .45], seed, lift: .35, dissolve: smooth(.55, 1, p), edge: .8});
       for (let j = 0; j < 8; j++) { const an = j * TAU / 8 + seed * 4 + hash(j * 7 + seed) * .5, sp = 3.2 + 2 * hash(j + seed); ember([e.x, .5, e.z], [Math.cos(an) * sp, 2.6 + 2 * hash(j * 5 + seed), Math.sin(an) * sp], t, .05 + .025 * hash(j * 3 + seed), 1 - smooth(.5, .9, t), j); }
     }
     const k = clamp((t - burst * .45) / (total - burst * .45));
@@ -538,47 +535,39 @@ export function createPaintedSkillRenderer(gl) {
     const f = cam.f, s = Math.hypot(f[0], f[2]) || 1, side = [f[2] / s, 0, -f[0] / s], o = 1 - (.35 * a + .65 * a * a);
     return [e.x + side[0] * 4.6 * o, .04 + 7 * o, e.z + side[2] * 4.6 * o];
   }
-  function meteorFall(e) { // METEOR SHOWER: burning rocks streak down, a flowing fire trail and smoke behind each
+  function meteorFall(e) { // METEOR SHOWER: a big burning rock wrapped in flame, its fire streaming back and smoke trailing far behind
     const fl = e.flight ?? .55, st = e.delay - fl; if (e.age < st || e.age >= e.delay) return;
-    const a = clamp((e.age - st) / fl), R = e.s?.radius || .8, seed = hash(e.x * 2 + e.z), pos = meteorPos(e, a);
+    const a = clamp((e.age - st) / fl), R = e.s?.radius || .8, seed = hash(e.x * 2 + e.z), pos = meteorPos(e, a), prev = meteorPos(e, Math.max(0, a - .06));
     disc(RING, e.x, e.z, R * .85, P.flame, {alpha: .25 + .5 * a, p: [.86, .04, .7, .03], layer: 2, seed, soft: .5, edge: .4});
     glowDecal(e.x, e.z, R, P.fire, .35 * a); shadow(e.x, e.z, R * .45 * (.4 + .6 * a), .3 * a);
     at(pos);
-    const fire = [], fw = [], smoke = [], sw = [];
-    const sv = norm(cross3(cam.f, [0, 1, 0])) || cam.r;
-    for (let i = 0; i <= 8; i++) { const q = meteorPos(e, Math.max(0, a - i * .04)), wv = Math.sin(i * .9 - now * 14 + seed * 5) * R * .16 * i / 8; fire.push(addv(q, sv, wv)); fw.push(R * .5 * Math.pow(1 - i / 8, .5) + .01); }
-    for (let i = 0; i <= 6; i++) { smoke.push(meteorPos(e, Math.max(0, a - .08 - i * .05))); sw.push(R * (.25 + i * .07)); }
-    ribbon(GLOW_R, smoke, sw, P.smoke, {alpha: .55, seed, soft: .6, edge: 0, bias: -.03});
-    ribbon(FIRE_R, fire, fw, P.fire, {seed, bias: -.01, p: [.75, 0, 0, 0]});
-    glow(pos, R * .9, P.fire, .55);
-    bb(FIREBALL, pos, R * .42, R * .42, P.fire, {p: [2, .9, 0, 0], seed, bias: .015});
-    bb(ROCK, pos, R * .2, R * .2, P.ember, {seed, bias: .02, edge: .5});
+    const smoke = [], sw = [];
+    for (let i = 0; i <= 7; i++) { smoke.push(meteorPos(e, Math.max(0, a - .06 - i * .05))); sw.push(R * (.22 + i * .08)); }
+    ribbon(GLOW_R, smoke, sw, P.smoke, {alpha: .6, seed, soft: .6, edge: 0, bias: -.05});
+    const back = norm([prev[0] - pos[0], prev[1] - pos[1], prev[2] - pos[2]]) || [0, 1, 0];
+    glow(pos, R * .95, P.fire, .5, {bias: -.03});
+    flame(pos, back, R * .62, R * 3, P.fire, {p: [2.2, .3, 0, 0], seed, bias: -.01, edge: .7});
+    bb(ROCK, pos, R * .36, R * .36, P.ember, {seed, bias: .02, edge: .6});
   }
-  function meteorImpact(e) { // a crater: a quick burst of fire, chips of rock and a cloud of dust
+  function meteorImpact(e) { // the rock lands: a crater, a burst of fire and a ring of dust
     const t = e.age, p = clamp(t / cfg.meteorImpact), R = e.r || .8, seed = hash(e.x * 3 + e.z * 2);
     disc(LIQUID, e.x, e.z, R * .95, P.scorch, {alpha: .62 * (1 - smooth(1.5, 2.3, t)), p: [.7, 2.6, 1, 0], layer: 0, seed, dissolve: smooth(1.6, 2.3, t), edge: .6});
     disc(RING, e.x, e.z, R * mix(.3, 1.2, smooth(0, .35, p)), P.scorch, {alpha: .7 * (1 - smooth(.15, .5, p)), p: [.86, .08, .4, .05], layer: 1, seed, soft: .3, edge: .5});
     glowDecal(e.x, e.z, R * 1.3, P.fire, .6 * (1 - smooth(.05, .4, p)));
-    const g = smooth(0, .1, p), fa = 1 - smooth(.2, .38, p), c = [e.x, .2 + R * .3 * g, e.z]; at(c);
-    if (fa > 0) bb(BLAST, c, R * .7 * g, R * .6 * g, P.fire, {alpha: fa, p: [1.6, 1.2, clamp(1 - p * 2), 0], seed, lift: .3, dissolve: smooth(.25, .38, p)});
-    const k = clamp((t - .1) / 1.6); if (k > 0 && k < 1) { const q = [e.x, .35 + k * .5, e.z]; at(q); fog(q, R * (.6 + .6 * k), R * (.35 + .3 * k), P.smoke, .65 * smooth(0, .15, k) * (1 - smooth(.5, 1, k)), {seed, dissolve: smooth(.45, 1, k), p: [.5, .8, .2, 0]}); }
+    const g = .4 + .6 * smooth(0, .08, p), W = R * .8 * g, fa = 1 - smooth(.2, .36, p), c = [e.x, .08 + W * .4, e.z]; at(c);
+    if (fa > 0) bb(EXPLODE, c, W, W * .85, P.fire, {alpha: fa, p: [1.6, 1.2, clamp(1 - p * 2.5), .5], seed, lift: .3, dissolve: smooth(.22, .36, p), edge: .8});
+    const k = clamp((t - .06) / 1.4); if (k > 0 && k < 1) for (let j = 0; j < 4; j++) { const an = j * TAU / 4 + seed * 6, q = [e.x + Math.cos(an) * R * (.4 + .5 * k), .3 + k * .35, e.z + Math.sin(an) * R * (.4 + .5 * k) * .8]; at(q); fog(q, R * (.4 + .3 * k), R * (.28 + .2 * k), P.smoke, .6 * smooth(0, .12, k) * (1 - smooth(.45, 1, k)), {seed: seed + j, dissolve: smooth(.4, 1, k), p: [.5, .8, .2, 0]}); }
   }
-  function cyclone(e) { // FLAME CYCLONE: ribbons of fire spiral up round a column of heat
-    const A = smooth(0, cfg.cycloneRise, e.age) * clamp((e.life ?? 1) / cfg.cycloneFade), r = e.r, seed = hash(e.x * .1 + (e.id || 0)), H = r * 2.1;
+  function cyclone(e) { // FLAME CYCLONE: a tornado of fire — a funnel narrow at the ground and wide at the top, bands of flame racing round it
+    const A = smooth(0, cfg.cycloneRise, e.age) * clamp((e.life ?? 1) / cfg.cycloneFade), r = e.r, seed = hash(e.x * .1 + (e.id || 0)), h = r * 1.25;
     disc(SPIRAL, e.x, e.z, r * 1.05, P.scorch, {alpha: .55 * A, p: [1.5, 3, -e.age * 3, .42], layer: 0, seed, rag: .5, edge: .5});
     glowDecal(e.x, e.z, r * 1.3, P.fire, .5 * A);
-    at([e.x, .3, e.z]); bb(FIRELINE, [e.x, r * .35, e.z], r * .75, r * .4, P.fire, {alpha: A, asp: 1.5, p: [1.6, 0, 0, 0], seed, lift: .2, edge: .7});
-    at([e.x, H * .5, e.z]);
-    bb(TWISTER, [e.x, H * .5 + .05, e.z], H * .52, r * .75, P.flame, {rot: Math.PI / 2, alpha: .4 * A, p: [1, 0, 0, 0], seed, soft: .8, edge: 0, bias: -.05});
-    glow([e.x, H * .45, e.z], r * 1.3, P.fire, .35 * A, {bias: -.06});
-    for (let s = 0; s < 3; s++) { // three fire ribbons winding up the funnel
-      const pts = [], ws = [];
-      for (let j = 0; j <= 16; j++) { const f = j / 16, an = s * TAU / 3 + f * 5.2 - e.age * 7, rad = r * (.22 + .72 * f);
-        pts.push([e.x + Math.cos(an) * rad, .05 + f * H, e.z + Math.sin(an) * rad * .9]); ws.push(r * (.1 + .2 * Math.sin(f * Math.PI))); }
-      ribbon(FIRE_R, pts, ws, P.fire, {alpha: .92 * A, seed: seed + s, lift: .05, p: [.6, 0, 0, 0]});
-    }
-    for (let j = 0; j < 6; j++) { const k = (e.age * .9 + j / 6) % 1, an = e.age * 6 + j * 2.4, c = [e.x + Math.cos(an) * r * (.3 + .6 * k), .2 + k * H, e.z + Math.sin(an) * r * (.3 + .6 * k)]; at(c); mote(c, .045, P.hot, A * (1 - k)); }
-    const top = [e.x, H + .3, e.z]; at(top); fog(top, r * .95, r * .55, P.smoke, .6 * A, {seed, p: [.6, .7, .4, 0]});
+    const c = [e.x, h * cam.u[1] + .02, e.z]; at(c);
+    glow([e.x, h * .5, e.z], r * 1.2, P.fire, .3 * A, {bias: -.06});
+    bb(TORNADO, c, r * .95, h, P.fire, {alpha: .92 * A, p: [1, 0, 0, 0], seed, lift: .1, edge: .7});
+    at([e.x, .2, e.z]); bb(FIRELINE, [e.x, r * .3, e.z], r * .8, r * .42, P.fire, {alpha: A, asp: 1.5, p: [1.6, 0, 0, 0], seed, lift: .45, edge: .7, bias: .02});
+    for (let j = 0; j < 7; j++) { const k = (e.age * .6 + j / 7) % 1, an = e.age * 7 + j * 2.4, rr = r * (.2 + .75 * k), q = [e.x + Math.cos(an) * rr, .15 + k * h * 1.5, e.z + Math.sin(an) * rr * .9]; at(q); glow(q, .16, P.fire, .5 * A * (1 - k)); mote(q, .045, P.hot, A * (1 - k)); }
+    const top = [e.x, h * 1.6 + .3, e.z]; at(top); fog(top, r * 1.05, r * .55, P.smoke, .55 * A, {seed, p: [.6, .7, .4, 0]});
   }
   function fire(combat, world, hideEnemies) {
     const visible = cfg.visible;
@@ -752,22 +741,12 @@ void main(){
   float rf=asp*2.*P.x;vec2 v0=vec2(asp,0.),v1=vec2(asp-rf,.95),v2=vec2(-asp,.95),v3=vec2(-asp,-.95),v4=vec2(asp-rf,-.95);
   d=max(max(max(edge(q,v0,v1),edge(q,v1,v2)),max(edge(q,v2,v3),edge(q,v3,v4))),edge(q,v4,v0));
   tone=(q.y>.32?.9:q.y>-.32?.55:.22)+(q.x>asp-rf?.1:0.);hd=seg(q,vec2(-asp*.75,.62),vec2(asp-rf-.1,.62))-.06;
- }else if(k==24){ // ball of fire: flames licking outward round a hot core
-  float lr=length(vQ),rr=lr/.82,t=T*P.x;vec2 dr=vQ/max(lr,1e-4);
-  float n=fbm(dr*1.7+vec2(seed,t*.9))*.55+fbm(dr*(2.8+rr*2.2)+vec2(t*.7-seed,-t*.5))*.45;
-  float F=(1.-rr)*1.3+(n-.5)*P.y*1.3-smoothstep(.8,1.,lr)*.9;
-  d=(.12-F)*.5;tone=clamp((F-.12)*1.2,0.,1.);
  }else if(k==26){ // liquid: splash, puddle, stain or frost patch (P.x wildness, P.y lobes)
   float lr=length(vQ),rr=lr/.84;vec2 dr=vQ/max(lr,1e-4);
   float n=fbm(dr*P.y+vec2(seed*7.,T*.1))*.8+fbm(vQ*2.2+seed*3.+T*.08)*.2;
   float F=(1.-rr)*1.4+(n-.5)*P.x*1.3-smoothstep(.85,1.,lr)*.8;
   d=(.1-F)*.5;tone=clamp(.12+(F-.1)*1.1,0.,1.);
   if(P.z>0.)tone=mix(tone,clamp(.5-(1.-rr)*.25+(fbm(vQ*3.1+seed*5.)-.5)*1.5,0.,1.),P.z); // a stain: mottled, not banded
- }else if(k==27){ // column of heat: a soft funnel with swirling bands (base at -x, top at +x)
-  float u=(vQ.x+1.)*.5,t=T*P.x,w=mix(.26,.88,pow(u,1.15)),v=vQ.y+sin(u*5.5-t*1.6)*.1*u,m=1.-abs(v)/w;
-  float sw=sin((v/w)*2.4+u*13.-t*8.),n=fbm(vec2(v*1.8+seed,u*3.-t*1.4));
-  float F=m*.95+(n-.5)*.8+sw*.14*m-smoothstep(.86,.99,abs(vQ.y))-smoothstep(.93,1.,u);
-  d=(.1-F)*.5;tone=clamp((F-.1)*1.15+sw*.12,0.,1.);
  }else if(k==29){ // a sheet of water rushing forward with one white foam lip (front toward +y)
   float x=q.x/asp,t=T*P.x,ends=1.-pow(abs(x),4.);
   float front=mix(-1.05,.7+(fbm(vec2(q.x*.8+seed,t*.35))-.5)*.2,ends);
@@ -784,18 +763,37 @@ void main(){
   float lr=length(p+w*.3);
   float F=(1.-lr)*1.3+(n-.5)*(.6+P.y);
   d=(.14-F)*.55;tone=clamp(.3+(F-.14)*.8+p.y*.18+(n-.5)*.35,0.,1.);
- }else if(k==36){ // billowing fire cloud: a cluster of round puffs, each lit on its own, that cools as it grows (P.x speed, P.y roughness, P.z heat 0..1)
-  float t=T*P.x,dm=1e3,lw=.45*1e-3,ws=1e-3;
-  for(int j=0;j<9;j++){float fj=float(j),a=fj*2.39996+seed*6.2831,rad=j==0?.4:.23+.13*h21(vec2(fj,seed));
-   vec2 c=j==0?vec2(0.,-.02):vec2(cos(a),sin(a)*.8)*(.8-rad);
-   c+=vec2(sin(t*.8+fj*1.7),cos(t*.7+fj*2.3))*.035;
-   vec2 pq=(vQ-c)/rad;pq*=1.+(vn(normalize(pq+1e-4)*1.3+vec2(fj*3.7+seed*9.,t*.3))-.5)*.12;float pp=dot(pq,pq),dd=(sqrt(pp)-1.)*rad,h=clamp(.5+.5*(dm-dd)/.1,0.,1.);dm=mix(dm,dd,h)-.1*h*(1.-h);
-   float z=sqrt(max(0.,1.-pp))*rad-c.y*.3;
-   if(pp<1.){float w=exp(z*28.);lw+=w*clamp(dot(vec3(pq,sqrt(1.-pp)),vec3(-.5,.62,.6)),0.,1.);ws+=w;}}
-  float lit=lw/ws; // puffs nearer the viewer win, blended so no seam shows between them
-  float n=fbm(vQ*2.3+vec2(seed,-t*.5)),fl=fbm(vec2(vQ.x*3.2+seed,vQ.y*2.4-t*1.6));
-  d=dm+(n-.5)*P.y*.08;
-  tone=clamp(.46+(lit-.5)*1.05+(fl-.5)*.6+(P.z-.5)*.24-max(0.,-vQ.y-.4)*.25,0.,1.);
+ }else if(k==40){ // a ball of fire licking back into a tail: the same living flame as the burning ground (ball at -x, tail toward +x; P.x speed, P.y white-hot core)
+  float t=T*P.x,x0=-asp+1.,s=q.x-x0,Lt=max(asp*2.-1.,.01),s01=clamp(s/Lt,0.,1.),rho=length(q-vec2(x0,0.));
+  float n=fbm(vec2(s*1.3-t*2.6,q.y*1.9+seed))*.62+fbm(vec2(s*2.7-t*4.1,q.y*3.7-seed))*.38;
+  float mb=1.-smoothstep(.45,.95,rho),w=.92*(1.-.6*s01),mt=s>0.?(1.-smoothstep(.2,1.,abs(q.y)/w))*pow(1.-s01,.9):0.;
+  float F=max(mb,mt)*1.25+(n-.5)*1.3*(.3+s01)-.34;
+  d=-F*.45;tone=clamp(F*1.25+(n-.5)*.5-s01*.25+(1.-rho)*.1,0.,1.);
+  hd=P.y>0.?rho-.42*P.y-(n-.5)*.25:9.;
+ }else if(k==41){ // a sun: a round glowing disc with a calm, mottled face, wrapped in a corona of flame flowing outward (P.x speed)
+  float t=T*P.x,Rd=.42,gr=fbm(q*2.6+vec2(seed,t*.25)),dd=r-Rd-(gr-.5)*.03;
+  float n=fbm(dir*3.+seed+vec2(t*.3,-t*.25))*.6+fbm(dir*6.4-seed+vec2(-t*.7,t*.6))*.4;
+  float F=(1.-smoothstep(Rd,.95,r))*1.3+(n-.5)*2.3*smoothstep(Rd-.05,.9,r)-.18-smoothstep(.86,.98,r)*1.6;
+  d=min(dd,-F*.35);
+  tone=dd<0.?clamp(1.-r*r*1.4+(gr-.5)*.45,0.,1.):clamp(F*.9+(n-.5)*.35,0.,.6);
+  hd=r-Rd*.36-(gr-.5)*.16;
+ }else if(k==42){ // an explosion: a round fireball, white-hot at the heart, flames bursting from its rim; it cools from the edge in (P.x speed, P.y roughness, P.z heat, P.w squashes the bottom into a dome)
+  float t=T*P.x;vec2 p=vQ;if(P.w>0.&&p.y<0.)p.y/=P.w;float rho=length(p);vec2 dr=p/max(rho,1e-4);
+  float n=fbm(dr*2.4+seed+vec2(t*.35,-t*.3))*.65+fbm(dr*5.2-seed+vec2(-t*.6,t*.5))*.35;
+  float F=(1.-rho/.8)*1.6+(n-.5)*P.y*1.25*smoothstep(.25,.85,rho)-.06-smoothstep(.84,.98,rho)*1.6;
+  d=-F*.45;
+  float lit=clamp(dot(vec3(p/.86,sqrt(max(0.,1.-rho*rho/.74))),vec3(-.35,.5,.79)),0.,1.);
+  tone=clamp(.1+(1.-rho)*.8+lit*.3+(n-.5)*.45+(P.z-.5)*.45,0.,1.);
+  hd=rho-.36*P.z*P.z-(n-.5)*.2+.04;
+ }else if(k==43){ // a tornado of fire: a funnel narrow at the ground and wide at the top, its bands of flame racing round it (base at -y; P.x speed)
+  float t=T*P.x,u=(vQ.y+1.)*.5;
+  float cx=(sin(u*3.1-t*.9+seed*6.)*.15+sin(u*7.3-t*1.7)*.035)*(.25+u)*.8;
+  float w=mix(.15,.78,pow(u,1.2)),v=(vQ.x-cx)/w,av=abs(v),th=asin(clamp(v,-1.,1.)),cz=sqrt(max(0.,1.-v*v));
+  float uy=u*24.-cz*.9,band=fbm(vec2(th*.9-t*4.5+seed,uy))*.7+fbm(vec2(th*1.8-t*6.5,uy*1.9+seed))*.3;
+  float ne=fbm(vec2(vQ.x*3.2+seed,vQ.y*2.4-t*2.2));
+  float F=(1.-av)*1.1+(ne-.5)*1.3*(.35+u*.6)-.12-smoothstep(.86,.99,u)*(2.-ne)-(1.-smoothstep(0.,.08,u))*.8;
+  d=-F*.45;tone=clamp(.18+cz*.5+(band-.5)*1.3+(1.-u)*.15,0.,1.);
+  hd=(.7-band)+av*.35+u*.15;
  }else if(k==37){ // a bed of fire: flowing noise rises through a soft mask, so many tongues of different heights lick up and break away (base at -y)
   float t=T*P.x,y01=(vQ.y+1.)*.5,ax=abs(vQ.x);
   float n=fbm(vec2(q.x*1.9+seed,vQ.y*1.5-t*2.3))*.62+fbm(vec2(q.x*3.8-seed,vQ.y*3.1-t*3.7))*.38;

@@ -13,26 +13,26 @@ The owner rejected a filter over the old effects ("it only adjusts the old skill
    - Small particles are soft dots with no outline (the pigment edge fades out on anything smaller than about 18 CSS px).
    - There are no star stickers, paint speckles or chips.
    - Sparks are glowing embers that leave a soft smear of light, never needles or cones.
-   - Big clouds (fire, smoke) are clusters of puffs with blended lighting, never flat discs with concentric bands. Scorch marks are mottled stains, not rings.
+   - Scorch marks are mottled stains, not rings.
 2. **Tails are never stiff.** Every tail is a ribbon painted along the path the object really took:
    - remembered positions for orbiting and darting cores;
    - the ballistic arc for thrown drops and sparks;
    - the fall curve for meteors.
 
    Straight shots get a tail that flutters like cloth.
-3. **Fire takes a different form in every branch, and never uses flame "sticks".**
+3. **Fire takes a clear, different form in every branch.** Round 4: the owner approved only the burning ground. Every other branch was redrawn around a form you can name at a glance, using the burning ground's living flame (noise rising through a soft mask) as the shared language. There are no flame sticks and no swirling fire ribbons.
 
    | Branch | Form |
    | --- | --- |
-   | Basic shot | A ball of fire with a flowing flame trail. |
-   | Blast | A cluster of round fire puffs, each lit on its own, that cools into smoke. |
-   | Scatter | Glowing embers leaving a soft smear of light along their wavy paths. |
-   | Burn | A bed of licking fire (noise rising through a soft mask). |
-   | Sunfall | A sun sinking under a heat trail, then a pillar of sunlight, a dome of fire, shock rings and a smoke column. |
-   | Meteor | A rock with a fluttering fire-and-smoke trail, then a crater burst. |
-   | Cyclone | Ribbons of fire spiralling up a heat column. |
+   | Basic shot | A round ball of fire, white-hot inside, its flames licking back into a short tail. |
+   | Scatter | A fan of small fireballs, each licking back along its wavy flight. |
+   | Burn (approved) | A bed of licking fire on a scorched patch. |
+   | Blast | A real explosion: a flash, a round fireball with a white-hot heart and flames bursting from its rim, a shock ring, then smoke. |
+   | Sunfall | A small sun (a round glowing disc in a corona of flame) sinks onto the target, then lands as a flash and a dome of fire with shock rings and a smoke column. |
+   | Meteor | A big burning rock wrapped in flame that streams back, with a long smoke trail, then a crater burst and dust. |
+   | Cyclone | A tornado of fire: a funnel narrow at the ground and wide at the top, bands of flame racing round it, fire at its foot and embers circling. |
 
-   A unit test checks that the branches' shape sets differ.
+   A unit test checks each branch's own form.
 4. **Water is one smooth body.** Streams are cohesive ribbons with a flowing highlight, not frayed spray.
 5. **One clean layer for the wave.** Tidal Surge is a single sheet of water with one foam lip. There is no smoke and there are no spray bits.
 6. **Smoke and fog are wispy, never lumps.** They use domain-warped noise with soft wet edges.
@@ -81,13 +81,13 @@ The owner rejected a filter over the old effects ("it only adjusts the old skill
 | GRAVITY MACE | one big mace orb | A heavy glossy core with a deeper glow and a curved tail. |
 | HUNTING SATELLITES | cores dart out and return | Tails trace every dart and return. |
 | ARC HALO | cores linked into a wall | Twisting strands of light between the cores. |
-| Inferno (basic) | fireball | Ball of fire with a flowing flame trail. |
-| Inferno blast | explosion | Cluster of lit fire puffs cooling into smoke, glowing embers flung out, a mottled scorch mark. |
-| Inferno scatter | sparks | Glowing embers flying out, each leaving a soft smear of light along its wavy path. |
+| Inferno (basic) | fireball | Round ball of fire, white-hot inside, flames licking back into a short tail. |
+| Inferno blast | explosion | Flash, round fireball with a white-hot heart and flames bursting from its rim, shock ring, embers, then smoke. |
+| Inferno scatter | sparks | Small fireballs fanning out, each licking back along its wavy flight. |
 | Inferno burn | burning ground | Bed of licking fire on a scorched, glowing patch, embers rising. |
-| SUNFALL CORE | charge a fire core, big explosion | A sun of fire sinks under a trail of heat onto a glowing circle. On impact a pillar of sunlight flares up, then come a dome of fire puffs, shock rings, embers and a mushroom column of smoke. |
-| METEOR SHOWER | meteors rain on many spots | Glowing rocks fall along their curve with fluttering fire and smoke trails, then a crater burst and dust. |
-| FLAME CYCLONE | fire storm moving to foes | Three ribbons of fire spiral up round a soft heat column, a fire bed at the base, embers and smoke on top. |
+| SUNFALL CORE | charge a fire core, big explosion | A small sun (glowing disc in a corona of flame) sinks onto a glowing circle, then lands as a flash and a dome of fire, shock rings, embers and a mushroom column of smoke. |
+| METEOR SHOWER | meteors rain on many spots | Big burning rocks wrapped in flame streaming back, long smoke trails, then a crater burst and dust. |
+| FLAME CYCLONE | fire storm moving to foes | A tornado of fire: a funnel narrow at the ground and wide at the top, bands of flame racing round it, fire at its foot, circling embers and smoke on top. |
 | Status | poison, chill, freeze, burn | Soft poison glow and bubbles, frost crystals at the feet, a small bed of fire on burning foes. |
 
 ## Technical notes
