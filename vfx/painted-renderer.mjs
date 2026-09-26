@@ -522,14 +522,17 @@ export function createPaintedSkillRenderer(gl) {
     disc(RING, e.x, e.z, R * 1.05, P.flame, {alpha: .3 + .5 * k, p: [.9, .04, .8, .03], layer: 2, seed, soft: .4, edge: .4});
     shadow(e.x, e.z, sz * .7, .15 + .2 * k);
     const c = [e.x, y, e.z]; at(c);
-    glow(c, sz * 2.6, P.fire, .5, {bias: -.04});
-    glow(c, sz * 1.5, P.hot, .45, {bias: -.03});
+    const pulse = .5 + .5 * Math.sin(e.age * 22 + seed * 6), flash = Math.max(0, Math.sin(e.age * 9 + seed * 4)) ** 6; // the falling sun throbs and flashes, brighter as it nears the ground
+    glow(c, sz * (2.6 + .5 * pulse), P.fire, .45 + .2 * pulse, {bias: -.04});
+    glow(c, sz * (1.5 + .3 * pulse), P.hot, .4 + .25 * pulse, {bias: -.03});
+    if (flash > .02) glow(c, sz * (3.4 + 1.2 * k), P.hot, flash * (.4 + .5 * k), {bias: .2, lift: sz});
+    glowDecal(e.x, e.z, R * (1.2 + .8 * k), P.hot, (.15 + .5 * k) * (.6 + .4 * pulse) + flash * .4 * k);
     flame(c, [0, 1, 0], sz * .78, sz * (1.2 + .6 * k), P.fire, {p: [2.6, 0, 0, 0], seed: seed + 3, bias: -.02, edge: .6}); // fire streams up behind the falling sun
     bb(SUN, c, sz, sz, P.fire, {p: [3.2, 1, 0, 0], seed, bias: .01, edge: .5});
   }
   function sunBurst(e) { // the sun lands: a flash, then a great dome of fire that swells, stays burning a while, and dissolves; shock rings race out and a ringed crater is left
     const t = e.age, R = e.r || 1.2, seed = hash(e.x + e.z * 3), sq = Math.abs(cam.u[1]) > .05 ? Math.abs(cam.f[1]) : .62, end = cfg.sunBurst + cfg.sunSmoke;
-    disc(CRATER, e.x, e.z, R * 1.2 * (.6 + .4 * smooth(0, .2, t)), P.scorch, {alpha: .75 * smooth(0, .08, t) * (1 - smooth(end - .45, end, t)), p: [5, 0, 0, 0], layer: 0, seed, dissolve: smooth(end - .45, end, t), edge: .6});
+    disc(CRATER, e.x, e.z, R * 1.75 * (.6 + .4 * smooth(0, .2, t)), P.scorch, {alpha: .75 * smooth(0, .08, t) * (1 - smooth(end - .45, end, t)), p: [6, 0, 0, 0], layer: 0, seed, dissolve: smooth(end - .45, end, t), edge: .6});
     glowDecal(e.x, e.z, R * 2.2, P.fire, .85 * (1 - smooth(.9, 1.5, t)));
     for (let j = 0; j < 2; j++) { const q = clamp((t - j * .12) / .55); if (q > 0 && q < 1) disc(RING, e.x, e.z, R * mix(.6, 2.3, 1 - Math.pow(1 - q, 2)), j ? P.dust : P.flame, {alpha: (1 - q) * .9, p: [.86, .06 * (1 - q) + .02, .6, 0], layer: 2 + j, seed: seed + j, soft: .35, edge: .4}); }
     if (t < .1) { const g = [e.x, R * .6, e.z]; at(g); glow(g, R * 3.6, P.hot, 1 - t / .1, {lift: R, bias: 1}); } // the flash
