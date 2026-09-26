@@ -505,7 +505,7 @@ export function createPaintedSkillRenderer(gl) {
     for (let j = 0; j < 2; j++) { const k = (now * .9 + j * .5 + hash(id)) % 1; mote([e.x + (j - .5) * rad * .6 + Math.sin(k * 7 + id) * .05, .3 + k * .9, e.z], .035 * (1 - k * .5), P.hot, fade * (1 - smooth(.6, 1, k)), {lift: .5}); }
   }
   function sunFall(e) { // SUNFALL CORE: a sun of fire sinks from the sky, its heat streaming above it
-    const k = clamp(e.age / e.delay), R = e.s?.radius || 1.2, y = mix(4.2, .9, k * k), sz = mix(.55, .9, k) * R, seed = hash(e.x + e.z);
+    const k = clamp(e.age / e.delay), R = e.s?.radius || 1.2, y = mix(Math.max(4.2, R * 2), R * .75 + .2, k * k), sz = mix(.55, .9, k) * R, seed = hash(e.x + e.z); // it lands without dipping into the ground
     glowDecal(e.x, e.z, R * 1.4, P.fire, .25 + .45 * k);
     disc(RING, e.x, e.z, R * 1.05, P.flame, {alpha: .35 + .5 * k, p: [.9, .04, .8, .03], layer: 2, seed, soft: .4, edge: .4});
     shadow(e.x, e.z, sz * .6, .25 * k);
@@ -524,7 +524,7 @@ export function createPaintedSkillRenderer(gl) {
       const g = smooth(0, .18, p), heat = 1 - smooth(.15, .8, p), fa = 1 - smooth(.6, 1, p); at([e.x, R * .5, e.z]);
       glow([e.x, R * .5, e.z], R * 2.3 * g, P.fire, .5 * fa, {lift: .3, bias: -.04});
       if (p < .55) streak(GLOW_R, [e.x, .1, e.z], [0, 1, 0], R * (1.6 + 2.2 * g), R * .5 * (1 - p), P.hot, {alpha: .8 * (1 - smooth(.08, .55, p)), seed, flutter: .08, taper: .35, bias: -50, soft: .9, edge: 0, p: [R * 1.4, 0, 0, 0]}); // the sun's light flares up as it lands
-      bb(BLAST, [e.x, R * .55 * g, e.z], R * 1.2 * g, R * 1.05 * g, P.fire, {alpha: fa, p: [1, 1.2, heat, 0], seed, lift: .35, dissolve: smooth(.55, 1, p)});
+      bb(BLAST, [e.x, R * .72 * g, e.z], R * 1.2 * g, R * 1.05 * g, P.fire, {alpha: fa, p: [1, 1.2, heat, 0], seed, lift: .35, dissolve: smooth(.55, 1, p)});
       for (let j = 0; j < 8; j++) { const an = j * TAU / 8 + seed * 4 + hash(j * 7 + seed) * .5, sp = 3.2 + 2 * hash(j + seed); ember([e.x, .5, e.z], [Math.cos(an) * sp, 2.6 + 2 * hash(j * 5 + seed), Math.sin(an) * sp], t, .05 + .025 * hash(j * 3 + seed), 1 - smooth(.5, .9, t), j); }
     }
     const k = clamp((t - burst * .45) / (total - burst * .45));
