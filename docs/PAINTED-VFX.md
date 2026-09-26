@@ -171,3 +171,23 @@ Before evolving, Orbit was hard to use early on: one small orb had to swing roun
 The owner found that evolving threw away what the base skill had been upgraded into, for example four orbs becoming one Gravity Mace. The mace still merges the orbs into one star, but every orb beyond the first stays on as a moon (up to four): moon count = orb count - 1. Each moon strikes a foe it touches for the base orb damage (again every .4 s while it stays on). The game places the moons (`moonN`, `moonT` on the orb) and the painted moons are drawn at those same spots. Skill-lab DPS: Multi 0 → 345 (no moons), Multi 2 → 367 (1 moon), Multi 4 → 412 (3 moons).
 
 Hunting Satellites and Arc Halo already keep the orb count (at least three). The other evolutions carry the base upgrades through their damage and size: water's evolutions deal the whole volley's damage, Tide's include the echo rings' damage, Glacial Borer scales from the crystal damage, and Chain Relay and Overcharge scale their chain count and arcs from Relay.
+
+## Evolutions keep every base upgrade (owner rule, 2026-09-26)
+
+Owner rule: whatever the base skill was upgraded into must keep showing, the same way, after it evolves. An evolution may transform its own branch, but the other branches must not be folded into bonus damage: that made the branch choices meaningless and felt like lost progress. Audit of every evolution against every branch, and what changed (`vfx/painted-style.mjs`, "evo keeps upgrades"):
+
+| Evolution | Was lost | Now |
+|---|---|---|
+| Sunfall Core | Scatter became +3.5% damage/radius per level | the sun's blast throws Scatter's embers |
+| Flame Cyclone | Scatter only sped the cyclone | also bursts into Scatter's embers when it dies |
+| Aqua Railgun | Burst's volley folded into damage | fires one water ball per volley shot (.14 s apart), sharing the damage |
+| Pressure Jet | Flow's pierce | the stream runs on through that many foes behind its target |
+| Tidal Surge | Burst's volley folded into damage | sends one wave per volley shot (.45 s apart), sharing the damage |
+| Repulsion Dome, Vacuum Collapse | Echo folded into damage | Echo's rings ring out from the slime after the field; the field deals the base ring damage |
+| Neurotoxin Injection | Contagion's extra pools | the burst splashes the extra pools round it |
+| Judgment Bolt | Relay's chain length (only 1 + Relay/2 arcs) | each strike chains through as many foes as the base chain |
+| Whiteout Breath | Drill's extra crystals | the extra crystals still fly out inside the breath |
+| Crystal Chainburst | Drill's crystals | two extra spikes per extra crystal, each crystal adding 15% total damage |
+| Gravity Mace | Multi's orbs | extra orbs are damaging moons (see above) |
+
+Already kept: damage, size, radius, range and status branches (they feed the shared stats every evolution reads), Hunting Satellites and Arc Halo orb counts, Pulse on every Orbit form, Static on every Chain form, Freeze and Shatter on every Frost form, Meteor Shower's Blast and Burn. Skill-lab DPS after the change: Railgun 485, Pressure Jet 263 (the lab's dummies stand in a row, so pierce hits several), Tidal Surge 377, Dome 319, Vacuum 306, Neurotoxin 289, Judgment Bolt 229, Whiteout Breath 455, Sunfall 181, Cyclone 186.

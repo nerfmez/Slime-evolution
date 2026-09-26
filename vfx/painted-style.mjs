@@ -157,6 +157,43 @@ export function applyPaintedVfx(bundle, html) {
   // one star, so the extra orbs stay on as its moons: one moon per orb beyond the first (up to four), each striking a foe it
   // touches for the base orb damage (again every .4 s while it stays on). The painted moons are drawn where the game places them.
   b = replaceOne(b, 'speed:(3.2+.1*i.multi)*(1+.045*n.haste*.65)', 'speed:(3.2+.1*i.multi)*(1+.1*n.haste)', 'haste spins orbit');
+  // Owner rule (2026-09-26): whatever a base skill was upgraded into keeps showing, the same way, after it evolves. The
+  // evolution may transform its own branch, but the other branches must not be folded into bonus damage (that made the
+  // branch choices meaningless and felt like lost progress). Totals stay close to before; the upgrades are now visible.
+  // Sunfall Core: Scatter's embers burst from the sun's blast, instead of +3.5% damage and radius per Scatter level.
+  b = replaceOne(b, 'damage:Math.round(n.damage*1.42*(1+this.branches.scatter*.035)),radius:n.radius*(1.25+this.branches.scatter*.015)', 'damage:Math.round(n.damage*1.42),radius:n.radius*1.25', 'evo keeps upgrades: sunfall damage');
+  b = replaceOne(b, 'this.explode(t,n.x,n.z,n.s,!1,n.type)', 'this.explode(t,n.x,n.z,n.s,n.type===`sun`,n.type)', 'evo keeps upgrades: sunfall embers');
+  // Flame Cyclone: Scatter's embers burst out when the cyclone dies.
+  b = replaceOne(b, 'n.tick<=0&&(n.tick=.25)}this.cyclones=this.cyclones.filter(e=>e.life>0)',
+    'n.tick<=0&&(n.tick=.25)}for(let n of this.cyclones)if(n.life<=0&&!n.burst){n.burst=1;for(let q=0;q<n.s.embers;q++){let g=q*Math.PI*2/n.s.embers;this.projectiles.push({x:n.x,z:n.z,y:.16,vx:Math.cos(g)*5.8,vz:Math.sin(g)*5.8,life:1.1,ember:!0,s:n.s,hitIds:new Set,left:1+n.s.pierce})}}this.cyclones=this.cyclones.filter(e=>e.life>0)',
+    'evo keeps upgrades: cyclone embers');
+  // Aqua Railgun: Burst's volley fires that many water balls in a row (the card: "Burst adds pulses"), sharing the damage.
+  b = replaceOne(b, 'R(e,t,`beam`,l,u,{...m,r:(.52+.06*s.power)*o.A,length:12.2+.58*s.flow,life:.8,damage:L(o.ref*1.15),push:1.05})',
+    '(()=>{for(let q=0;q<o.count;q++)R(e,t,`beam`,l,u,{...m,delay:q*.14,r:(.52+.06*s.power)*o.A,length:12.2+.58*s.flow,life:.8,damage:L(o.ref*1.15/o.count),push:1.05})})()',
+    'evo keeps upgrades: railgun volley');
+  // Pressure Jet: Flow's pierce carries on, the stream running on through that many foes behind the one it locks.
+  b = replaceOne(b, 'maxTargets:1,push:.32,follow:1,lock:i,range:8.4+.45*s.flow', 'maxTargets:1+o.pierce,pierce:o.pierce,push:.32,follow:1,lock:i,range:8.4+.45*s.flow', 'evo keeps upgrades: jet pierce');
+  b = replaceOne(b, 'i.length=Math.max(.8,c)}else i.length=i.range', 'i.length=Math.min(i.range,Math.max(.8,c)+(i.pierce||0)*1.2)}else i.length=i.range', 'evo keeps upgrades: jet reaches past');
+  // Tidal Surge: Burst's volley sends that many waves one after another, sharing the damage.
+  b = replaceOne(b, 'c===`flow`&&R(e,t,`wave`,l,u,{...m,r:(1.55+.23*s.flow)*o.A*1.7,speed:2.6+.15*s.flow,life:1.1,damage:L(o.ref*1.02*1.5),push:1.35+.2*s.power})',
+    'c===`flow`&&(()=>{for(let q=0;q<o.count;q++)R(e,t,`wave`,l,u,{...m,delay:q*.45,r:(1.55+.23*s.flow)*o.A*1.7,speed:2.6+.15*s.flow,life:1.1,damage:L(o.ref*1.02*1.5/o.count),push:1.35+.2*s.power})})()',
+    'evo keeps upgrades: surge waves');
+  // Repulsion Dome and Vacuum Collapse: Echo's rings still ring out from the slime after the field, with the echo damage,
+  // so the field itself deals the base ring damage instead of the echo-inclusive total.
+  b = replaceOne(b, 'R(e,t,`dome`,l,u,{follow:1,r:o.r*1.08,life:1.1+.06*e.mods.duration,damage:L(o.ref*.96/3)', 'R(e,t,`dome`,l,u,{follow:1,r:o.r*1.08,life:1.1+.06*e.mods.duration,damage:L(o.damage*.96/3)', 'evo keeps upgrades: dome base damage');
+  b = replaceOne(b, 'R(e,t,`vacuum`,l,u,{follow:1,r:o.r*1.34,life:1+.04*e.mods.duration,damage:L(o.ref*.96)', 'R(e,t,`vacuum`,l,u,{follow:1,r:o.r*1.34,life:1+.04*e.mods.duration,damage:L(o.damage*.96)', 'evo keeps upgrades: vacuum base damage');
+  b = replaceOne(b, ',c===`echo`&&R(e,t,`resonance`,l,u,{',
+    ',(c===`impact`||c===`radius`)&&(()=>{for(let q=1;q<=o.count;q++)R(e,t,`ring`,l,u,{follow:1,r:o.r*(.88+Math.min(.08,.01*s.echo)),delay:(c===`impact`?1.1+.06*e.mods.duration:1+.04*e.mods.duration)+(q-1)*o.interval,life:.46,damage:o.echo,push:o.push})})(),c===`echo`&&R(e,t,`resonance`,l,u,{',
+    'evo keeps upgrades: tide echoes');
+  // Neurotoxin Injection: Contagion's extra pools splash out round the burst, as they do round the base lob.
+  b = replaceOne(b, 'R(e,`toxin`,`burst`,i.x,i.z,{r:i.r,life:.5})', 'R(e,`toxin`,`burst`,i.x,i.z,{r:i.r,life:.5});for(let q=1;q<=i.s.extra;q++){let g=q*2.399,d=i.s.r*.85;R(e,`toxin`,`pool`,i.x+Math.cos(g)*d,i.z+Math.sin(g)*d,{s:i.s,r:i.s.r,life:i.s.life,interval:.25})}', 'evo keeps upgrades: neurotoxin pools');
+  // Judgment Bolt: Relay's chain length carries on; each strike's arc chains through as many foes as the base chain would.
+  b = replaceOne(b, 'arcs:1+Math.floor(s.relay/2)', 'arcs:Math.max(1+Math.floor(s.relay/2),o.count-1)', 'evo keeps upgrades: bolt chain');
+  // Whiteout Breath: Drill's extra crystals still fly out inside the breath.
+  b = replaceOne(b, 'c===`freeze`&&R(e,t,`cone`,l,u,{', 'c===`freeze`&&(()=>{for(let n=1;n<o.count;n++){let r=Math.atan2(m.dx,m.dz)+(n-o.count/2)*(.15+Math.min(.035,.004*s.drill));R(e,t,`crystal`,l,u,{dx:Math.sin(r),dz:Math.cos(r),s:o,r:.14,life:1.3,speed:o.speed,damage:o.damage,pierce:0})}})(),c===`freeze`&&R(e,t,`cone`,l,u,{', 'evo keeps upgrades: breath crystals');
+  // Crystal Chainburst: Drill's extra crystals become extra spikes (two per crystal); each extra crystal adds 15% to the
+  // thicket's total damage, shared across its spikes.
+  b = replaceOne(b, 'life:9*.16+.55,damage:o.ref*1.55*.55,generation:0,seen:new Set,spikes:9,every:.16', 'life:(7+2*o.count)*.16+.55,damage:o.ref*7.65*(1+.15*(o.count-1))/(7+2*o.count),generation:0,seen:new Set,spikes:7+2*o.count,every:.16', 'evo keeps upgrades: thicket spikes');
   // Owner request (2026-09-26): the game's own burnt-grass map marks the ground under fire, so the painted effects draw no
   // crater of their own. The burn is stamped deepest at the centre and the ground shows it in stepped layers (light
   // scorch, burnt, charred), with the grass shortest where it burnt deepest; the layers shrink toward the centre as it heals.
