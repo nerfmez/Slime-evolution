@@ -525,7 +525,7 @@ export function createPaintedSkillRenderer(gl) {
     const pulse = .5 + .5 * Math.sin(e.age * 22 + seed * 6), flash = Math.max(0, Math.sin(e.age * 9 + seed * 4)) ** 6; // the falling sun throbs and flashes, brighter as it nears the ground
     glow(c, sz * (2.6 + .5 * pulse), P.fire, .45 + .2 * pulse, {bias: -.04});
     glow(c, sz * (1.5 + .3 * pulse), P.hot, .4 + .25 * pulse, {bias: -.03});
-    if (flash > .02) glow(c, sz * (3.4 + 1.2 * k), P.hot, flash * (.4 + .5 * k), {bias: .2, lift: sz});
+    if (flash > .02) glow(c, sz * (3.4 + 1.2 * k), P.hot, flash * (.4 + .5 * k), {bias: .2, lift: sz * 5});
     glowDecal(e.x, e.z, R * (1.2 + .8 * k), P.hot, (.15 + .5 * k) * (.6 + .4 * pulse) + flash * .4 * k);
     flame(c, [0, 1, 0], sz * .78, sz * (1.2 + .6 * k), P.fire, {p: [2.6, 0, 0, 0], seed: seed + 3, bias: -.02, edge: .6}); // fire streams up behind the falling sun
     bb(SUN, c, sz, sz, P.fire, {p: [3.2, 1, 0, 0], seed, bias: .01, edge: .5});
