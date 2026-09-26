@@ -35,6 +35,7 @@ Everything in `game/` and `species/`, plus the build modules, is hash-locked by 
 | `docs/` | Per-creature design notes plus parent manifests and integration proofs. |
 | `baseline-manifest.json`, `roster-parent-manifest.json` | Baseline file manifests used by provenance tests. |
 | `.github/workflows/` | CI: canon build/tests, browser regressions, production verification. |
+| `.claude/skills/shader-dev/` | Third-party GLSL reference skill (MIT, source in `SOURCE.md`) used when drawing the painted skill effects. |
 
 ## Docs index
 
