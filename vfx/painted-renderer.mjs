@@ -578,12 +578,22 @@ export function createPaintedSkillRenderer(gl) {
     }
     if (t < .7) for (let j = 0; j < 6; j++) { const an = j * TAU / 6 + seed * 5, sp = 3 + 2 * hash(j + seed); ember([e.x, .3, e.z], [Math.cos(an) * sp, 3 + 2 * hash(j * 3 + seed), Math.sin(an) * sp], t, .035, 1 - smooth(.35, .7, t), j); }
   }
-  function cyclone(e) { // FLAME CYCLONE, drawn like the reference: an hourglass tornado of fire rises from a glow on the ground, streaks winding round it, sparks spiralling up
+  function cyclone(e) { // FLAME CYCLONE, drawn like the reference: an hourglass tornado of fire, dark and bright flame winding round it, streaks of wind circling it, a ring of fire where it meets the ground, sparks spiralling up
     const A = smooth(0, cfg.cycloneRise, e.age) * clamp((e.life ?? 1) / cfg.cycloneFade), r = e.r, seed = hash(e.x * .1 + (e.id || 0)), grow = smooth(.05, .45, e.age), h = r * 1.7 * (.25 + .75 * grow);
-    glowDecal(e.x, e.z, r * 1.6, P.fire, .65 * A);
+    const g0 = [e.x, .02, e.z], W = u => r * 1.05 * (.18 + .62 * Math.pow(smooth(.3, .9, u), 1.3) + .5 * Math.pow(1 - smooth(-.05, .35, u), 2)), at_u = u => addv(g0, cam.u, u / 1.25 * 2 * h); // the tornado's width and axis point at height u, matching its shader
+    glowDecal(e.x, e.z, r * 1.7, P.fire, .7 * A);
+    disc(SPIRAL, e.x, e.z, W(0) * 1.3, P.scorch, {alpha: .35 * A, p: [1.2, 4, -e.age * 6, .35], layer: 0, seed, rag: .2, edge: .5}); // a scorched whirl on the ground under it
     const c = addv([e.x, .02, e.z], cam.u, h * .68); at([e.x, h * .5, e.z]);
-    glow([e.x, h * .55, e.z], r * 1.5, P.fire, .45 * A, {bias: -.06});
+    glow([e.x, h * .55, e.z], r * 1.5, P.fire, .45 * A, {bias: -.06, lift: r * 2});
     bb(TORNADO, c, r * 1.05, h, P.blaze, {alpha: A, p: [1, r * 1.05 * Math.abs(cam.f[1]) / (2 * h) * 1.25, 0, 0], seed, lift: .1, edge: .6});
+    const ring = (u, rad, a0, len, wid, pal, alpha, sd, lift) => { // an arc of wind or fire circling the tornado at height u, in true perspective
+      const o = at_u(u), pts = [], ws = [];
+      for (let i = 0; i <= 14; i++) { const f = i / 14, an = a0 - f * len; pts.push([o[0] + Math.cos(an) * rad, o[1] + Math.sin(f * Math.PI) * rad * .06, o[2] + Math.sin(an) * rad]); ws.push(wid * Math.sin(Math.min(1, f * 1.3 + .05) * Math.PI) + .004); }
+      ribbon(GLOW_R, pts, ws, pal, {alpha, seed: sd, soft: .5, edge: 0, lift});
+    };
+    for (let j = 0; j < 6; j++) { const u = .12 + j * .14 + .04 * Math.sin(e.age * 2 + j), rad = W(u) * (1.25 + .15 * hash(j + seed)), a0 = e.age * (7 - j * .5) + j * 2.3; ring(u, rad, a0, 2.2 + .8 * hash(j * 3 + seed), r * (.045 + .02 * hash(j * 5 + seed)), j % 2 ? P.foam : P.hot, .8 * A * grow, seed + j, .15); } // streaks of wind circling it
+    for (let j = 0; j < 2; j++) ring(.015, W(0) * (1.05 + .25 * j), e.age * 8 + j * 3.1, 3.4, r * .09, j ? P.fire : P.hot, .9 * A, seed + 9 + j, .05); // fire whirling where it meets the ground
+    for (let j = 0; j < 6; j++) { const an = j * TAU / 6 + e.age * 3, q = [e.x + Math.cos(an) * W(0) * .95, .02, e.z + Math.sin(an) * W(0) * .95]; at(q); bb(FIRELINE, [q[0], r * .16, q[2]], r * .26, r * .2, P.fire, {alpha: A * grow, asp: 1.1, p: [1.8, 0, 0, 0], seed: seed + j, lift: .1, edge: .7}); } // tongues of fire round its foot
     for (let j = 0; j < 10; j++) { const k = (e.age * .5 + j / 10) % 1, an = e.age * 8 + j * 2.4, rr = r * (.25 + .8 * k * k), q = [e.x + Math.cos(an) * rr, .15 + k * h * 1.05, e.z + Math.sin(an) * rr * .9]; at(q); glow(q, .14, P.fire, .55 * A * (1 - k)); mote(q, .04, P.hot, A * (1 - k)); }
   }
   function fire(combat, world, hideEnemies) {
@@ -813,9 +823,9 @@ void main(){
   float uu=inside>0.?ub:uf,a=inside>0.?3.14159-th:th;
   float sp=uu*16.+a*1.6-t*5.,al=a*1.3-uu*4.;
   float sn=fbm(vec2(sp,al*.7+seed))*.7+fbm(vec2(sp*2.1,al*1.4-seed))*.3,str=smoothstep(.5,.66,sn),hot=smoothstep(.66,.78,sn);
-  float ne=fbm(vec2(vQ.x*3.+seed,vQ.y*2.6-t*2.));
+  float ne=fbm(vec2(vQ.x*3.+seed,vQ.y*2.6-t*2.)),dk=smoothstep(.55,.66,fbm(vec2(sp*.9+7.,al*.35-seed*2.)))*(1.-str);
   float F=(1.-av)*1.2+(ne-.5)*.8-.08-step(top,ub)*2.-(1.-smoothstep(-.02,.03,uf))*3.;
-  d=-F*.45;tone=clamp(.4+str*.38+cz*.1+(ne-.5)*.15+inside*.12,0.,1.);
+  d=-F*.45;tone=clamp(.4+str*.38+cz*.1+(ne-.5)*.15+inside*.12-dk*.42-(1.-cz)*.12,0.,1.);
   hd=(1.-hot)*1.3+av*.4-.12;
  }else if(k==37){ // a bed of fire: flowing noise rises through a soft mask, so many tongues of different heights lick up and break away (base at -y)
   float t=T*P.x,y01=(vQ.y+1.)*.5,ax=abs(vQ.x);
