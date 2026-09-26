@@ -41,6 +41,8 @@ export function applyPaintedVfx(bundle, html) {
   b = replaceOne(b, QA_HOOK, QA_HOOK + 'const painted=createPaintedSkillRenderer(e);if(new URLSearchParams(globalThis.location?.search||\'\').has(\'qa\'))globalThis.__slimePaintedVfx=painted;', 'painted instance');
   b = replaceOne(b, WRAPPER_DRAW, PAINTED_DRAW, 'painted draw');
   b = replaceOne(b, FIRE_OLD, FIRE_NEW, 'old fire switch');
+  // Owner request (2026-09-26): the Sunfall sun takes 1 s to fall (was .5 s), so it is clearly seen sinking. Its damage lands when it does.
+  b = replaceOne(b, 'fall:.5,burst:.72,smoke:1.18', 'fall:1,burst:.72,smoke:1.18', 'Sunfall fall time');
   const h = replaceOne(replaceOne(html, '<h3>สกิลและภาพเอฟเฟกต์</h3>', '<h3>สกิลและภาพเอฟเฟกต์</h3>' + CONTROLS, 'style controls'),
     '</body></html>', STATE_SCRIPT + '</body></html>', 'style state');
   return {bundle: b, html: h};
