@@ -145,6 +145,7 @@ The owner corrected round 6: tide is an energy field, not water, and Vacuum Coll
 - Repulsion Dome: a translucent purple dome of force with a bright rim and rings of light round it like a cage; each push it flares, a ring of force runs out over the ground and force lines shoot outward.
 - Vacuum Collapse: a ring of force swells, then contracts as the field winds inward, dragging force lines and motes to a purple gravity core that grows at the centre; it implodes in a flash and bursts outward.
 - Resonance Chain: layered rings of force that tremble like a struck bell, bright points racing round them.
+- Owner rule: the field stays on the slime. Every Tide cast (the rings, including echo rings still waiting, Repulsion Dome, Vacuum Collapse and Resonance Chain) moves with the slime every frame instead of staying where it was cast, and hits and pushes are measured from the slime's current spot (`follow:1`). Resonance's secondary rings on struck foes and the Nova pickup ring stay where they appear. Each field's look is seeded once, so it does not flicker while moving.
 
 ## Mods reach every skill (owner check, 2026-09-26)
 

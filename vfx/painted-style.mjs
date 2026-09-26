@@ -128,6 +128,14 @@ export function applyPaintedVfx(bundle, html) {
   b = replaceOne(b, 'if([`beam`,`jet`,`wave`,`borer`,`cone`].includes(i.kind)){i.speed',
     'if(i.kind===`jet`&&i.follow&&r){i.x=r[0];i.z=r[2];let T=i.lock&&i.lock.hp>0&&Math.hypot(i.lock.x-r[0],i.lock.z-r[2])<i.range+i.lock.radius?i.lock:n.enemies.filter(e=>e.hp>0&&Math.hypot(e.x-r[0],e.z-r[2])<i.range+e.radius).sort((e,t)=>Math.hypot(e.x-r[0],e.z-r[2])-Math.hypot(t.x-r[0],t.z-r[2]))[0];if(T){i.lock=T;let o=T.x-r[0],s=T.z-r[2],c=Math.hypot(o,s)||1;i.dx=o/c;i.dz=s/c;i.length=Math.max(.8,c)}else i.length=i.range}if([`beam`,`jet`,`wave`,`borer`,`cone`].includes(i.kind)){i.speed',
     'pressure jet follows the slime');
+  // Owner request (2026-09-26): Tide is a force field around the slime, so every Tide cast (the rings, Repulsion Dome,
+  // Vacuum Collapse and Resonance Chain) moves with the slime instead of staying where it was cast. Waiting echo rings
+  // follow too, so each one starts on the slime. Resonance's secondary rings on struck foes and the Nova pickup ring stay put.
+  for (const k of ['ring`,l,u,{r:o.r*(n?', 'dome`,l,u,{', 'vacuum`,l,u,{', 'resonance`,l,u,{'])
+    b = replaceOne(b, 'R(e,t,`' + k, 'R(e,t,`' + k.replace('{', '{follow:1,'), 'tide follows the slime: ' + k.split('`')[0]);
+  b = replaceOne(b, 'for(let i of[...e.abilities]){if(i.delay>0){i.delay-=t;continue}',
+    'for(let i of[...e.abilities]){if(i.family===`tide`&&i.follow&&r){i.x=r[0];i.z=r[2]}if(i.delay>0){i.delay-=t;continue}',
+    'tide field moves with the slime');
   // Owner request (2026-09-26): the game's own burnt-grass map marks the ground under fire, so the painted effects draw no
   // crater of their own. The burn is stamped deepest at the centre and the ground shows it in stepped layers (light
   // scorch, burnt, charred), with the grass shortest where it burnt deepest; the layers shrink toward the centre as it heals.

@@ -41,6 +41,7 @@ export function createPaintedSkillRenderer(gl) {
   const diagnostics = {version: 'painted-watercolor-v2', instances: 0, calls: 0, kinds: {}, invalid: 0};
   const note = tag => { diagnostics.kinds[tag] = (diagnostics.kinds[tag] || 0) + 1; };
   const impactStates = new WeakMap(), history = new WeakMap(), freezeStates = new WeakMap();
+  const seeds = new WeakMap(), seedOf = (t, v) => { if (!seeds.has(t)) seeds.set(t, v); return seeds.get(t); }; // a Tide field moves with the slime, so its look is seeded once, not from its position each frame
 
   function setCamera(vp) {
     const a = [vp[0], vp[4], vp[8]], b = [vp[1], vp[5], vp[9]];
@@ -296,7 +297,7 @@ export function createPaintedSkillRenderer(gl) {
       glow(c, .2 * tw, P.tide, A * .7 * tw); mote(c, .035 + .02 * tw, P.tideFoam, A * tw, {bias: .02}); }
   }
   function tideRing(t) { // Tide Ring: a wave of force spreads out from the slime in layered bands, force lines streaking outward, glints riding its front
-    const p = clamp(t.age / t.life), grow = 1 - Math.pow(1 - Math.min(1, p * 3), 2), R = Math.max(.05, t.r * grow), A = 1 - smooth(.55, 1, p), seed = hash(t.x + t.z * 1.7);
+    const p = clamp(t.age / t.life), grow = 1 - Math.pow(1 - Math.min(1, p * 3), 2), R = Math.max(.05, t.r * grow), A = 1 - smooth(.55, 1, p), seed = seedOf(t, hash(t.x + t.z * 1.7));
     disc(GLOW, t.x, t.z, R * 1.05, P.field, {alpha: .45 * A, layer: 0, edge: 0, soft: 1});
     disc(RING, t.x, t.z, R * 1.08, P.tideDeep, {alpha: .9 * A, p: [.86, .09, .7, .03], layer: 2, seed, rag: .5, soft: .2}); // the band of force on the ground, on the damage radius
     disc(RING, t.x, t.z, R * .72, P.field, {alpha: .75 * A * smooth(.1, .3, p), p: [.8, .1, .6, .03], layer: 2, seed: seed + 1, rag: .6, soft: .3});
@@ -306,7 +307,7 @@ export function createPaintedSkillRenderer(gl) {
     if (t.r < 6) { forceLines(t.x, t.z, R * .3, R * 1.1, 12, t.age, A, seed); glints(t.x, t.z, R, 6, t.age, A, seed); }
   }
   function tideDome(t) { // REPULSION DOME: a translucent dome of force with a bright rim and rings of light running round it like a cage; each push it flares, a wave of force runs out over the ground and force lines shoot outward
-    const p = clamp(t.age / t.life), r = t.r, A = smooth(0, .1, p) * (1 - smooth(.82, 1, p)), k = (t.age % .5) / .5, kick = Math.exp(-k * 7), R = r * (.35 + .65 * smooth(0, .16, p)) * (1 + .05 * kick), seed = hash(t.x * 1.3 + t.z);
+    const p = clamp(t.age / t.life), r = t.r, A = smooth(0, .1, p) * (1 - smooth(.82, 1, p)), k = (t.age % .5) / .5, kick = Math.exp(-k * 7), R = r * (.35 + .65 * smooth(0, .16, p)) * (1 + .05 * kick), seed = seedOf(t, hash(t.x * 1.3 + t.z));
     disc(GLOW, t.x, t.z, R * 1.1, P.field, {alpha: (.35 + .3 * kick) * A, layer: 0, edge: 0, soft: 1});
     disc(RING, t.x, t.z, R, P.tideDeep, {alpha: .9 * A, p: [.9, .055, .35, .02], layer: 2, seed, rag: .4, soft: .15});
     fieldRing(t.x, t.z, R * (1 + .8 * (1 - Math.pow(1 - k, 2))), A * (1 - k), seed + Math.floor(t.age * 2), .05, .05); // the push running out over the ground
@@ -317,7 +318,7 @@ export function createPaintedSkillRenderer(gl) {
     glints(t.x, t.z, R * .98, 8, t.age, A * (.6 + .4 * kick), seed, R * .3);
   }
   function tideVacuum(t) { // VACUUM COLLAPSE: a ring of force swells out, then contracts, dragging force lines and motes to a gravity core that grows at the centre; it implodes in a flash and bursts outward
-    const p = clamp(t.age / t.life), A = smooth(0, .06, p) * (1 - smooth(.94, 1, p)), R = Math.max(.08, t.r * Math.sin(p * Math.PI)), seed = hash(t.x + t.z * 2.1), pull = smooth(.4, .85, p);
+    const p = clamp(t.age / t.life), A = smooth(0, .06, p) * (1 - smooth(.94, 1, p)), R = Math.max(.08, t.r * Math.sin(p * Math.PI)), seed = seedOf(t, hash(t.x + t.z * 2.1)), pull = smooth(.4, .85, p);
     disc(GLOW, t.x, t.z, R, P.field, {alpha: .45 * A, layer: 0, edge: 0, soft: 1});
     disc(RING, t.x, t.z, R * 1.04, P.tideDeep, {alpha: .9 * A, p: [.88, .08, .3, .03], layer: 2, seed, rag: .5, soft: .2});
     disc(SPIRAL, t.x, t.z, R * .95, P.field, {alpha: .55 * A * pull, p: [1.9, 4, t.age * 4, .44], layer: 1, wobble: .05, seed, rag: .5}); // the field winding in as it pulls
@@ -334,7 +335,7 @@ export function createPaintedSkillRenderer(gl) {
       forceLines(t.x, t.z, .3, t.r * 1.3, 18, tt * 1.5, 1 - q, seed + 5); }
   }
   function tideResonance(t) { // RESONANCE CHAIN: layered, trembling rings of force spreading in rhythm, bright points racing round each one
-    const p = clamp(t.age / t.life), A = 1 - smooth(.62, 1, p), seed = hash(t.x * 2.3 + t.z);
+    const p = clamp(t.age / t.life), A = 1 - smooth(.62, 1, p), seed = seedOf(t, hash(t.x * 2.3 + t.z));
     disc(GLOW, t.x, t.z, t.r * .9, P.tide, {alpha: .3 * A * (1 - p), layer: 0, edge: 0, soft: 1});
     for (let j = 0; j < 3; j++) {
       const q = clamp(p * 1.6 - j * .18), R = Math.max(.05, t.r * (1 - Math.pow(1 - smooth(0, .6, q), 2))); if (q <= 0) continue; const a = A * (1 - smooth(.7, 1, q) * .6);
