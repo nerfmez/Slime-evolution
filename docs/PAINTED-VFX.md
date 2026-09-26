@@ -102,5 +102,6 @@ The owner rejected a filter over the old effects ("it only adjusts the old skill
 - **Inputs are read-only.** Hit areas, sizes, timing and damage are unchanged. Fire timings come from the live fire settings.
 - **Derivatives.** All screen derivatives are taken before any `discard`, which is required for iPad/Metal.
 - **Sunfall fall time.** Owner request (2026-09-26): the sun takes 1 s to fall (default `fall` in the fire settings, was .5 s); `vfx/painted-style.mjs` patches the default. Its damage lands when it does.
+- **Burnt ground.** The game already burns the grass under fire (a 96x96 burn map sampled by the ground and grass shaders). The painted effects draw no crater of their own; `vfx/painted-style.mjs` stamps the burn deepest at the centre and shows it in stepped layers (light scorch, burnt, charred), with the grass shortest where it burnt deepest. The layers shrink toward the centre as the ground heals. This applies in both effect styles.
 - **Old style switch.** The old style stays behind Settings > Test > "สีน้ำวาดมือแบบใหม่ (ปิด = เอฟเฟกต์เดิม)", saved as `slime.vfxStyle.v2`, until the owner approves.
 - **QA hook.** `?qa=1` exposes `__slimePaintedVfx` with `plan`, `draw`, `diagnostics` and `camera`.

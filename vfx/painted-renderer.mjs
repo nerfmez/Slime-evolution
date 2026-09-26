@@ -484,7 +484,6 @@ export function createPaintedSkillRenderer(gl) {
   }
   function fireBlast(e) { // Inferno burst: a white-hot dome swells on the ground, turns to fire and dissolves; the blast throws spinning balls of smoke outward and dust rolls along the ground
     const t = e.age, r = e.r || 1, seed = hash(e.x * .9 + e.z * 1.7), sq = Math.abs(cam.u[1]) > .05 ? Math.abs(cam.f[1]) : .62;
-    disc(CRATER, e.x, e.z, r * 1.1 * (.6 + .4 * smooth(0, .15, t)), P.scorch, {alpha: .7 * smooth(0, .06, t) * (1 - smooth(1.2, 1.65, t)), p: [4, 0, 0, 0], layer: 0, seed, dissolve: smooth(1.2, 1.65, t), edge: .6});
     glowDecal(e.x, e.z, r * 1.8, P.fire, .8 * (1 - smooth(.08, .6, t)));
     const hz = 1 - smooth(.1, .7, t); if (hz > 0) { const g = [e.x, r * .45, e.z]; at(g); glow(g, r * 2.4, P.ember, .45 * hz, {lift: .2, bias: -.2}); } // red-hot haze
     const R = r * (.12 + .93 * (1 - Math.pow(1 - clamp(t / .3), 2.2)) + .08 * smooth(.3, .7, t)), fl = smooth(.1, .3, t), heat = 1 - smooth(.15, .5, t), ero = smooth(.42, .95, t);
@@ -532,7 +531,6 @@ export function createPaintedSkillRenderer(gl) {
   }
   function sunBurst(e) { // the sun lands: a flash, then a great dome of fire that swells, stays burning a while, and dissolves; shock rings race out and a ringed crater is left
     const t = e.age, R = e.r || 1.2, seed = hash(e.x + e.z * 3), sq = Math.abs(cam.u[1]) > .05 ? Math.abs(cam.f[1]) : .62, end = cfg.sunBurst + cfg.sunSmoke;
-    disc(CRATER, e.x, e.z, R * 1.75 * (.6 + .4 * smooth(0, .2, t)), P.scorch, {alpha: .75 * smooth(0, .08, t) * (1 - smooth(end - .45, end, t)), p: [6, 0, 0, 0], layer: 0, seed, dissolve: smooth(end - .45, end, t), edge: .6});
     glowDecal(e.x, e.z, R * 2.2, P.fire, .85 * (1 - smooth(.9, 1.5, t)));
     for (let j = 0; j < 2; j++) { const q = clamp((t - j * .12) / .55); if (q > 0 && q < 1) disc(RING, e.x, e.z, R * mix(.6, 2.3, 1 - Math.pow(1 - q, 2)), j ? P.dust : P.flame, {alpha: (1 - q) * .9, p: [.86, .06 * (1 - q) + .02, .6, 0], layer: 2 + j, seed: seed + j, soft: .35, edge: .4}); }
     if (t < .1) { const g = [e.x, R * .6, e.z]; at(g); glow(g, R * 3.6, P.hot, 1 - t / .1, {lift: R * 5, bias: 1}); } // the flash
@@ -560,7 +558,6 @@ export function createPaintedSkillRenderer(gl) {
   }
   function meteorImpact(e) { // the meteor hits: a flash, a shockwave ring and a burst of dust; rocks are thrown out on real arcs, bounce once and settle; a ringed crater is left
     const t = e.age, R = e.r || .8, seed = hash(e.x * 3 + e.z * 2), end = cfg.meteorImpact + .8;
-    disc(CRATER, e.x, e.z, R * 1.1 * (.5 + .5 * smooth(0, .1, t)), P.scorch, {alpha: .75 * smooth(0, .05, t) * (1 - smooth(end - .5, end, t)), p: [4, 0, 0, 0], layer: 0, seed, dissolve: smooth(end - .5, end, t), edge: .6});
     glowDecal(e.x, e.z, R * 1.6, P.fire, .8 * (1 - smooth(.05, .5, t)));
     if (t < .08) { const g = [e.x, R * .4, e.z]; at(g); glow(g, R * 2.6, P.hot, 1 - t / .08, {lift: R, bias: 1}); }
     { const q = clamp(t / .35); if (q < 1) disc(RING, e.x, e.z, R * mix(.4, 2.6, 1 - Math.pow(1 - q, 2.5)), P.hot, {alpha: 1 - q, p: [.84, .09 * (1 - q) + .02, .7, 0], layer: 3, seed, soft: .3, edge: .3}); } // shockwave
@@ -582,7 +579,6 @@ export function createPaintedSkillRenderer(gl) {
     const A = smooth(0, cfg.cycloneRise, e.age) * clamp((e.life ?? 1) / cfg.cycloneFade), r = e.r, seed = hash(e.x * .1 + (e.id || 0)), grow = smooth(.05, .45, e.age), h = r * 1.7 * (.25 + .75 * grow);
     const g0 = [e.x, .02, e.z], W = u => r * 1.05 * (.18 + .62 * Math.pow(smooth(.3, .9, u), 1.3) + .5 * Math.pow(1 - smooth(-.05, .35, u), 2)), at_u = u => addv(g0, cam.u, u / 1.25 * 2 * h); // the tornado's width and axis point at height u, matching its shader
     glowDecal(e.x, e.z, r * 1.7, P.fire, .7 * A);
-    disc(SPIRAL, e.x, e.z, W(0) * 1.3, P.scorch, {alpha: .35 * A, p: [1.2, 4, -e.age * 6, .35], layer: 0, seed, rag: .2, edge: .5}); // a scorched whirl on the ground under it
     const c = addv([e.x, .02, e.z], cam.u, h * .68); at([e.x, h * .5, e.z]);
     glow([e.x, h * .55, e.z], r * 1.5, P.fire, .45 * A, {bias: -.06, lift: r * 2});
     bb(TORNADO, c, r * 1.05, h, P.blaze, {alpha: A, p: [1, r * 1.05 * Math.abs(cam.f[1]) / (2 * h) * 1.25, 0, 0], seed, lift: .1, edge: .6});
