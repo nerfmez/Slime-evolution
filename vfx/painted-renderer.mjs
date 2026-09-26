@@ -401,18 +401,18 @@ export function createPaintedSkillRenderer(gl) {
       if (a < .3) { const k = a / .3, h = .55 * (1 - k * k) + .06 * Math.abs(Math.sin(k * Math.PI * 2)) * (1 - k), c = [q.x, .04 + h, q.z]; at(c); shadow(q.x, q.z, .08, .3); mote(c, .06, P.toxinDeep, 1, {p: [1, .3, 0, 0], seed: sd, bias: .01}); return; } // the seed drops and bounces
       const grow = 1 - Math.pow(1 - smooth(.3, .7, a), 2), open = 1 - Math.pow(1 - smooth(.55, 1, a), 3), beat = Math.exp(-((a - .9) % .55 + .55) % .55 * 6);
       if (a < .55) { const k = (a - .3) / .25; disc(RING, q.x, q.z, .1 + .35 * k, P.dust, {alpha: (1 - k) * .6, p: [.84, .1, .6, 0], layer: 2, seed: sd, soft: .4}); } // soil breaking as it sprouts
-      glowDecal(q.x, q.z, r * .9 * grow, P.acid, (.18 + .2 * beat * open) * A);
-      disc(RING, q.x, q.z, r * grow, P.toxinDeep, {alpha: .45 * A * grow, p: [.9, .025, .6, .03], layer: 1, seed: sd, rag: .8, soft: .3}); // the reach of its pollen
-      for (let j = 0; j < 3; j++) { const an = j * TAU / 3 + sd * 5, L = .28 * grow; decal(DROP, q.x + Math.cos(an) * L * .5, q.z + Math.sin(an) * L * .5, Math.cos(an), Math.sin(an), L * .5, L * .22, P.stem, {alpha: A, layer: 2, seed: sd + j}); } // leaves
-      const fr = r * .66 * (.15 + .85 * open) * (1 + .06 * beat * open) * (1 - .35 * wilt);
-      if (open > .02) {
-        disc(FLOWER, q.x + .04, q.z - .03, fr * 1.08, P.toxinShade, {alpha: .55 * A, p: [6, 1.7, .28, sd * 6 + .26], layer: 3, seed: sd, wobble: .1});
-        disc(FLOWER, q.x, q.z, fr, P.petal, {alpha: .95 * A, p: [6, 1.7, .28, sd * 6], layer: 4, seed: sd, rag: .3, wobble: .1, dissolve: wilt * .8});
-        disc(GLOW, q.x, q.z, fr * .45, P.acid, {alpha: (.5 + .5 * beat) * A * open, layer: 5, edge: 0, soft: 1});
-        disc(BLOB, q.x, q.z, fr * .22, P.acid, {alpha: A, p: [1, .3, 0, 0], layer: 6, seed: sd, wobble: .08});
-      } else { const c = [q.x, .12 * grow, q.z]; at(c); bb(DROP, c, .1 * grow, .06 * grow, P.petal, {rot: Math.PI / 2, asp: 1.6, seed: sd, lift: .1}); } // a closed bud
+      glowDecal(q.x, q.z, r * .8 * grow, P.acid, (.12 + .15 * beat * open) * A);
+      for (let m = 0; m < 3; m++) { // a clump of small flowers on thin stems, like the meadow's own flowers but taller, swaying like the grass
+        const an = sd * 9 + m * 2.3, o = m ? .12 + .06 * hash(sd + m) : 0, base = [q.x + Math.cos(an) * o, 0, q.z + Math.sin(an) * o * .7], H = (.42 + .16 * hash(sd * 3 + m)) * grow * (1 - .3 * wilt), sway = Math.sin(now * 1.2 + base[0] * .7 + base[2] * .4 + m) * .07;
+        const pts = [], ws = []; for (let k2 = 0; k2 <= 4; k2++) { const h = k2 / 4; pts.push([base[0] + (sway + (m - 1) * .05) * h * h, .01 + H * h, base[2]]); ws.push(.013 * (1 - .4 * h) + .003); }
+        at(base); ribbon(GLOW_R, pts.slice().reverse(), ws.slice().reverse(), P.stem, {alpha: A, seed: sd + m, soft: .2, edge: 0, lift: .05});
+        const lf = pts[1]; bb(DROP, addv(lf, cam.r, (m % 2 ? 1 : -1) * .045), .055 * grow, .025 * grow, P.stem, {rot: (m % 2 ? .5 : Math.PI - .5), asp: 2.2, alpha: A, seed: sd + m, lift: .06}); // a leaf
+        const head = pts[4], hs = (.075 + .025 * hash(sd + m * 5)) * (.3 + .7 * open) * (1 + .12 * beat * open) * (1 - .4 * wilt); at(head);
+        if (open > .05) { bb(FLOWER, head, hs, hs, P.petal, {p: [5, 1.5, .3, sd * 6 + m], alpha: A, seed: sd + m, lift: .08, edge: .4, wobble: 1e-4, dissolve: wilt * .7}); bb(BLOB, head, hs * .3, hs * .3, P.acid, {p: [.6, 0, 0, 0], alpha: A, seed: sd, lift: .09, edge: 0, soft: .3}); glow(head, hs * 1.8, P.acid, (.25 + .3 * beat) * A * open, {lift: .07, bias: -.01}); }
+        else bb(DROP, head, .04 * grow, .025 * grow, P.petal, {rot: Math.PI / 2, asp: 1.6, alpha: A, seed: sd + m, lift: .08}); // a closed bud
+      }
       if (open > .5) for (let j = 0; j < 5; j++) { // glowing pollen puffed out on each beat, drifting up and away
-        const k = ((a - .9) / .55 + j * .2 + hash(sd + j)) % 1, an = j * TAU / 5 + sd * 4 + Math.floor((a - .9) / .55), dist = r * (.1 + .7 * k), c = [q.x + Math.cos(an) * dist, .15 + k * .9, q.z + Math.sin(an) * dist]; at(c);
+        const k = ((a - .9) / .55 + j * .2 + hash(sd + j)) % 1, an = j * TAU / 5 + sd * 4 + Math.floor((a - .9) / .55), dist = r * (.1 + .7 * k), c = [q.x + Math.cos(an) * dist, .45 + k * .8, q.z + Math.sin(an) * dist]; at(c);
         glow(c, .2, P.acid, .6 * A * (1 - k), {lift: .2}); mote(c, .05 + .02 * hash(j + sd), P.spore, A * smooth(0, .1, k) * (1 - smooth(.7, 1, k)), {lift: .2, bias: .01, seed: j});
       }
     });
