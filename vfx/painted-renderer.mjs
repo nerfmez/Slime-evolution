@@ -786,8 +786,8 @@ void main(){
   d=(.14-F)*.55;tone=clamp(.3+(F-.14)*.8+p.y*.18+(n-.5)*.35,0.,1.);
  }else if(k==36){ // billowing fire cloud: a cluster of round puffs, each lit on its own, that cools as it grows (P.x speed, P.y roughness, P.z heat 0..1)
   float t=T*P.x,dm=1e3,lw=.45*1e-3,ws=1e-3;
-  for(int j=0;j<7;j++){float fj=float(j),a=fj*2.39996+seed*6.2831,rad=j==0?.46:.25+.13*h21(vec2(fj,seed));
-   vec2 c=j==0?vec2(0.,-.1):vec2(cos(a),sin(a)*.75+.12)*(.8-rad);
+  for(int j=0;j<9;j++){float fj=float(j),a=fj*2.39996+seed*6.2831,rad=j==0?.4:.23+.13*h21(vec2(fj,seed));
+   vec2 c=j==0?vec2(0.,-.02):vec2(cos(a),sin(a)*.8)*(.8-rad);
    c+=vec2(sin(t*.8+fj*1.7),cos(t*.7+fj*2.3))*.035;
    vec2 pq=(vQ-c)/rad;pq*=1.+(vn(normalize(pq+1e-4)*1.3+vec2(fj*3.7+seed*9.,t*.3))-.5)*.12;float pp=dot(pq,pq),dd=(sqrt(pp)-1.)*rad,h=clamp(.5+.5*(dm-dd)/.1,0.,1.);dm=mix(dm,dd,h)-.1*h*(1.-h);
    float z=sqrt(max(0.,1.-pp))*rad-c.y*.3;
@@ -795,7 +795,7 @@ void main(){
   float lit=lw/ws; // puffs nearer the viewer win, blended so no seam shows between them
   float n=fbm(vQ*2.3+vec2(seed,-t*.5)),fl=fbm(vec2(vQ.x*3.2+seed,vQ.y*2.4-t*1.6));
   d=dm+(n-.5)*P.y*.08;
-  tone=clamp(.46+(lit-.5)*1.05+(fl-.5)*.6+(P.z-.5)*.24-max(0.,-vQ.y-.3)*.35,0.,1.);
+  tone=clamp(.46+(lit-.5)*1.05+(fl-.5)*.6+(P.z-.5)*.24-max(0.,-vQ.y-.4)*.25,0.,1.);
  }else if(k==37){ // a bed of fire: flowing noise rises through a soft mask, so many tongues of different heights lick up and break away (base at -y)
   float t=T*P.x,y01=(vQ.y+1.)*.5,ax=abs(vQ.x);
   float n=fbm(vec2(q.x*1.9+seed,vQ.y*1.5-t*2.3))*.62+fbm(vec2(q.x*3.8-seed,vQ.y*3.1-t*3.7))*.38;
