@@ -12,6 +12,7 @@ import { applyOpeningRandom, OPENING_RANDOM_VERSION } from '../gameplay/opening-
 import { applyDefaultAudioVolume, AUDIO_DEFAULT_VERSION } from '../audio/default-volume.mjs';
 import { applyHudPolish, HUD_POLISH_VERSION } from '../ui/hud-polish.mjs';
 import { applyPaintedVfx, PAINTED_VFX_VERSION } from '../vfx/painted-style.mjs';
+import { applyLazyAssets, LAZY_ASSETS_VERSION } from '../perf/lazy-assets.mjs';
 
 const root = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const digest = (b, algo = 'sha256') => createHash(algo).update(b).digest('hex');
@@ -64,13 +65,16 @@ export async function build() {
   if(digest(paintedStyle)!==c.paintedVfx.moduleSHA256 || digest(paintedRenderer)!==c.paintedVfx.rendererSHA256) throw new Error('Painted skill effects differ from reviewed lock');
   const hudPolishSource=await readFile(join(root,'ui/hud-polish.mjs'));
   if(digest(hudPolishSource)!==c.hudPolish.moduleSHA256) throw new Error('HUD polish patch differs from reviewed lock');
+  const lazyAssetsSource=await readFile(join(root,'perf/lazy-assets.mjs'));
+  if(digest(lazyAssetsSource)!==c.lazyAssets.moduleSHA256 || await treeHash(join(root,'perf/scene'))!==c.lazyAssets.sceneTree) throw new Error('Lazy asset loading patch differs from reviewed lock');
   const speciesBundle=applySpeciesBundle(pacingOutput.bundle);
   const restoredVfx=applyRestoredSkillVfx(speciesBundle);
   const openingBundle=applyOpeningRandom(restoredVfx);
   const speciesHtml=applySpeciesHtml(pacingOutput.html);
   const audioOutput=applyDefaultAudioVolume(openingBundle,speciesHtml);
   const hudOutput=applyHudPolish(audioOutput.bundle,audioOutput.html);
-  const output=applyPaintedVfx(hudOutput.bundle,hudOutput.html);
+  const painted=applyPaintedVfx(hudOutput.bundle,hudOutput.html);
+  const output={...painted,bundle:applyLazyAssets(painted.bundle)};
   await rm(dist,{recursive:true,force:true});
   await cp(game,dist,{recursive:true});
   if(await treeHash(dist)!==hash) throw new Error('Baseline copy changed source bytes');
@@ -78,6 +82,7 @@ export async function build() {
   await writeFile(join(dist,'index.html'),output.html);
   await writeFile(join(dist,'assets/encounter-director.js'),director);
   await cp(join(root,'species'),join(dist,'assets/species'),{recursive:true});
+  await cp(join(root,'perf/scene'),join(dist,'assets/scene'),{recursive:true});
   const expAtlasSource=join(dist,'assets/species/critters-v4/atlas.webp.b64');
   await writeFile(join(dist,'assets/species/critters-v4/atlas.webp'),Buffer.from((await readFile(expAtlasSource,'utf8')).trim(),'base64'));
   await rm(expAtlasSource);
@@ -101,10 +106,10 @@ export async function build() {
   }
   let commit = process.env.GITHUB_SHA;
   if (!commit) commit = execFileSync('git',['rev-parse','HEAD'],{cwd:root,encoding:'utf8'}).trim();
-  await writeFile(join(dist,'release.json'),JSON.stringify({canonicalCommit:c.commit,canonicalTree:c.tree,repositoryCommit:commit,runtimeTree:runtimeHash,pacingVersion:'cozy-10min-v2',speciesVersion:SPECIES_VERSION,vfxVersion:VFX_RESTORE_VERSION,openingRandomVersion:OPENING_RANDOM_VERSION,audioDefaultVersion:AUDIO_DEFAULT_VERSION,hudPolishVersion:HUD_POLISH_VERSION,paintedVfxVersion:PAINTED_VFX_VERSION,runSeconds:600,files:manifest.length},null,2)+'\n');
+  await writeFile(join(dist,'release.json'),JSON.stringify({canonicalCommit:c.commit,canonicalTree:c.tree,repositoryCommit:commit,runtimeTree:runtimeHash,pacingVersion:'cozy-10min-v2',speciesVersion:SPECIES_VERSION,vfxVersion:VFX_RESTORE_VERSION,openingRandomVersion:OPENING_RANDOM_VERSION,audioDefaultVersion:AUDIO_DEFAULT_VERSION,hudPolishVersion:HUD_POLISH_VERSION,paintedVfxVersion:PAINTED_VFX_VERSION,lazyAssetsVersion:LAZY_ASSETS_VERSION,runSeconds:600,files:manifest.length},null,2)+'\n');
   await writeFile(join(dist,'asset-manifest.json'),JSON.stringify(manifest,null,2)+'\n');
   await mkdir(join(root,'test-results'),{recursive:true});
-  await writeFile(join(root,'test-results/integrity.json'),JSON.stringify({canonicalTree:hash,repositoryCommit:commit,files:manifest.length,bytes:manifest.reduce((s,f)=>s+f.bytes,0),runtimeTree:runtimeHash,baselineSourceUnchanged:true,changedRuntimeFiles:['index.html','assets/main-critter-v4.js','assets/encounter-director.js','assets/species/**'],vfxVersion:VFX_RESTORE_VERSION,openingRandomVersion:OPENING_RANDOM_VERSION,audioDefaultVersion:AUDIO_DEFAULT_VERSION,hudPolishVersion:HUD_POLISH_VERSION,paintedVfxVersion:PAINTED_VFX_VERSION},null,2));
+  await writeFile(join(root,'test-results/integrity.json'),JSON.stringify({canonicalTree:hash,repositoryCommit:commit,files:manifest.length,bytes:manifest.reduce((s,f)=>s+f.bytes,0),runtimeTree:runtimeHash,baselineSourceUnchanged:true,changedRuntimeFiles:['index.html','assets/main-critter-v4.js','assets/encounter-director.js','assets/species/**'],vfxVersion:VFX_RESTORE_VERSION,openingRandomVersion:OPENING_RANDOM_VERSION,audioDefaultVersion:AUDIO_DEFAULT_VERSION,hudPolishVersion:HUD_POLISH_VERSION,paintedVfxVersion:PAINTED_VFX_VERSION,lazyAssetsVersion:LAZY_ASSETS_VERSION},null,2));
   console.log(`CANON VERIFIED: tree=${hash}, ${manifest.length} files, source preserved; runtime=${runtimeHash} hash-locked`);
 }
 export function serve(dir = join(root,'dist'), port = 4173) {
@@ -130,7 +135,7 @@ export async function audit(url) {
       const item = manifest[next++];
       try {
         const r = await fetch(new URL(item.path,base),{signal:AbortSignal.timeout(45000)});
-        if (!r.ok) throw new Error(`HTTP ${r.status()}`);
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
         const data = Buffer.from(await r.arrayBuffer()), actual = digest(data);
         if (actual !== item.sha256) throw new Error(`different bytes: expected ${item.sha256}, got ${actual}`);
         results.push(item.path);

@@ -5,7 +5,7 @@ Current rules only; history lives in Git (this file was consolidated on 2026-09-
 ## How the game is built
 
 - `game/` is the locked engine and art input: a **minified** bundle (`game/assets/main-critter-v4.js`) plus assets. Never edit it. Never import an older release, the obsolete Vite root, a published directory or the abandoned elephant build.
-- All changes are **build-time patches** applied in order by `scripts/canon.mjs build`: `pacing/assemble.mjs` → `species/assemble.mjs` → `vfx/restore-godot-style.mjs` → `gameplay/opening-random.mjs` → `audio/default-volume.mjs` → `ui/hud-polish.mjs` → `vfx/painted-style.mjs`, then `species/sprite-clarity.mjs` on monster shaders.
+- All changes are **build-time patches** applied in order by `scripts/canon.mjs build`: `pacing/assemble.mjs` → `species/assemble.mjs` → `vfx/restore-godot-style.mjs` → `gameplay/opening-random.mjs` → `audio/default-volume.mjs` → `ui/hud-polish.mjs` → `vfx/painted-style.mjs` → `perf/lazy-assets.mjs`, then `species/sprite-clarity.mjs` on monster shaders.
 - Patches replace exact minified snippets and must fail loudly if the snippet is not found exactly once. No runtime patching, eval or remote wrappers.
 - `CANON.json` hash-locks the `game/` tree, every patch module, the `species/` tree and the assembled runtime tree. When you intentionally change a patch, update its hash and `runtimeTree` in the same commit, and review why the hash changed. Never accept a new hash silently.
 - Deploy `dist/` (from `npm run build`), never `game/` directly.
@@ -67,6 +67,7 @@ Source of truth: `pacing/encounter-director.js`; details in `docs/COZY-PACING.md
   - Skill details (v4): tapping an equipped skill chip opens a panel (level, branch levels, mods, current stats, DPS over the last 10 s) and pauses the round. The card choice shows what each card changes (before → after; a mod lists every equipped skill, "no effect" when nothing changes), read with the game's own formulas. Mouse: hover shows it, click picks. Touch: first tap shows it, a second tap or the confirm button picks.
   - Skill names and the test menu stay English. The boss banner sits in the top row on screens 960px and wider.
 - **Evolutions keep the base upgrades** (owner rule): whatever a base skill was upgraded into keeps showing the same way after it evolves (more shots, echoes, pools, embers, chain length, orbs as Gravity Mace moons). Never fold another branch into bonus damage. See `docs/PAINTED-VFX.md`.
+- **Loading** (`perf/lazy-assets.mjs`, owner request for 2 Mbps players): play starts after the scene, slime and Moss Frog; later monsters, then the boss models and old fire textures, load in the background. Scene textures ship as pixel-identical lossless WebP. Never make a background asset block the first frame again. See `docs/LOADING.md`.
 - **Scope:** do not add absorption skills or Mod sockets unless asked.
 
 ## Verification before merge or deploy
