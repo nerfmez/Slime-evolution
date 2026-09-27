@@ -1,5 +1,5 @@
 // Build-time HUD polish. Presentation only: no combat, pacing, art or save data changes.
-export const HUD_POLISH_VERSION='hud-polish-v6';
+export const HUD_POLISH_VERSION='hud-polish-v7';
 
 const ELITE_OLD='for(let e of J.enemies){if(!e.elite||e.hp<=0)continue;let a=({thorn:1.95,spark:1.08,turtle:1.25,water:1.38}[e.type]||1.15)*(e.scale||1),[o,s]=proj(e.x,a,e.z),c=Math.max(66,Math.min(104,74*(e.scale||1))),l=7,u=s-16,d=Math.max(0,Math.min(1,e.hp/Math.max(1,e.maxHP||e.hp)));r.font=`700 12px system-ui`,r.lineWidth=3,r.strokeStyle=`rgba(54,37,26,.9)`,r.fillStyle=`#fff4d7`,r.strokeText(pt(e).name,o,u-5),r.fillText(pt(e).name,o,u-5),r.fillStyle=`rgba(45,31,25,.88)`,r.fillRect(o-c/2-2,u-2,c+4,l+4),r.fillStyle=`#f1dfbb`,r.fillRect(o-c/2,u,c,l),r.fillStyle=d>.35?`#e74e47`:`#d43d3d`,r.fillRect(o-c/2,u,c*d,l),r.strokeStyle=`rgba(86,50,32,.9)`,r.lineWidth=1,r.strokeRect(o-c/2,u,c,l)}';
 // Compact paper tags sized from measured text (fonts differ per OS; left-aligned from m.width because WebKit reports ink left/right differently under center alignment): star + roster name, HP only once damaged, stacked instead of overlapping, faded over the player.
@@ -28,6 +28,8 @@ const BUNDLE_EDITS=[
   ['card two-tap','a.onclick=()=>{e.choose(r,t)&&(n(),c())},p.append(a)}','a.dataset.card=r,a.onpointerdown=ev=>{a.__pt=ev.pointerType},a.onpointerenter=ev=>{ev.pointerType==="mouse"&&__hudPreview(pv,r,e,t,null)},a.onfocus=()=>{a.__pt!=="touch"&&a.__pt!=="pen"&&__hudPreview(pv,r,e,t,null)},a.onclick=()=>{if(a.__pt==="touch"||a.__pt==="pen"){a.__pt="";if(!a.classList.contains("picked")){a.classList.add("picked"),__hudPreview(pv,r,e,t,a);return}}a.__pt="",e.choose(r,t)&&(n(),c())},p.append(a)}'],
   ['skill info pauses','let n=ei.open?0:','let n=ei.open||document.getElementById("skill-info")?.open?0:'],
   // HELL flag: the normal-round button starts Hell when asked (then clears the request); a test round is never Hell; retry keeps it.
+  // Joystick side: the stick starts where the chosen side allows (left 55% by default, as before).
+  ['joystick side','e.clientX>innerWidth*.55||Un!==null||','(globalThis.__joyBlocked?globalThis.__joyBlocked(e.clientX):e.clientX>innerWidth*.55)||Un!==null||'],
   ['hell flag','B(`normal-run`).onclick=()=>{','B(`normal-run`).onclick=()=>{J.hell=!!globalThis.__slimeHellNext,globalThis.__slimeHellNext=!1,document.body.classList.toggle(`hell`,J.hell),'],
   ['test round is not hell','B(`restart`).onclick=()=>{ai(),ti(!1)}','B(`restart`).onclick=()=>{J.hell=!1,document.body.classList.remove(`hell`),ai(),ti(!1)}'],
 ];
@@ -70,6 +72,7 @@ const STYLE='<style id="hud-polish">'+
   '#skill-info h3{display:flex;align-items:center;gap:8px;margin:0 0 10px;font-size:17px}#skill-info h3 img{width:32px;height:32px;object-fit:contain}'+
   '.si-branches{display:grid;gap:4px;margin-bottom:8px;font-size:13px}.si-branches span{display:flex;justify-content:space-between;gap:10px}.si-branches i{font-style:normal}.si-branches b{color:#b9713d;letter-spacing:.04em;white-space:nowrap}'+
   '.si-mods,.si-dps{margin:6px 0;font-size:13px}.si-dps{font-weight:800;color:#2f6f78}.si-close{margin-top:12px;width:100%;padding:9px}'+
+  'body.joy-right #joystick{left:auto;right:42px}body.joy-any #joystick{left:calc(50% - 52px);opacity:.45}body.joy-right #cast{right:auto;left:30px}'+
   '@media (min-width:960px){#boss-health{top:max(16px,env(safe-area-inset-top));width:clamp(220px,calc(100vw - 760px),420px)}}'+
   '@media (min-width:601px) and (max-width:959px){#boss-health{top:calc(max(16px,env(safe-area-inset-top)) + 174px);width:min(360px,50vw)}}'+
   // Start menu.
@@ -98,6 +101,7 @@ const STYLE='<style id="hud-polish">'+
   '#fire-slot{flex-wrap:nowrap;align-items:center}'+
   '#boss-health{top:calc(max(10px,env(safe-area-inset-top)) + 134px);left:max(10px,env(safe-area-inset-left));transform:none;width:calc(100vw - 132px)}'+ // under the panel, clear of the button column (buttons, clock, FPS)
   '#clock{order:3;min-width:78px;padding:4px 10px 6px}#clock b{font-size:18px}'+
+  'body.joy-right #joystick{left:auto;right:24px}body.joy-any #joystick{left:calc(50% - 47px)}body.joy-right #cast{right:auto;left:12px}'+
   '.equipped-skill{font-size:11px;padding-right:8px;white-space:nowrap}.equipped-skill img{width:26px;height:26px}.equipped-skill.empty{width:30px;height:30px}'+
   '}</style>';
 
@@ -110,7 +114,7 @@ const MENU='<div id="start-menu" role="dialog" aria-modal="true" aria-labelledby
   '<button id="start-play" type="button">เริ่มเกม</button>'+
   '<button id="start-hell" type="button">โหมด HELL · มอนสูงสุด 100</button>'+
   '<details id="start-howto"><summary>วิธีเล่น</summary><ul>'+
-  '<li>ลากนิ้วฝั่งซ้ายของจอเพื่อเดิน หรือใช้ WASD / ปุ่มลูกศร</li>'+
+  '<li id="howto-move">ลากนิ้วฝั่งซ้ายของจอเพื่อเดิน หรือใช้ WASD / ปุ่มลูกศร</li>'+
   '<li>สกิลร่ายเองอัตโนมัติ เลเวลขึ้นแล้วเลือกการ์ดอัปเกรด ใส่ได้ 3 สกิล</li>'+
   '<li>เก็บ EXP จากสัตว์ที่ล้ม ระวัง Elite ที่มีดาว ★ และ Bamboo Panda</li>'+
   '<li>อยู่รอดครบ 10 นาที แล้วล้ม Ancient Bloom Colossus เพื่อชนะ</li>'+
@@ -138,6 +142,17 @@ const MENU_SCRIPT='<script>(()=>{const m=document.getElementById("start-menu");i
   'document.getElementById("start-settings").onclick=()=>document.getElementById("settings").click();'+
   'play.focus({preventScroll:true})})()</script>';
 
+// Joystick side (owner request 2026-09-27): Settings > กราฟิก > ปุ่มเดิน picks left (default), right, or anywhere on the
+// screen. Saved per device. The game's own pointerdown asks __joyBlocked(x) whether a touch may start the stick; in the skill
+// lab (its panel covers one side) a drag anywhere walks.
+const JOY_SCRIPT='<script>(()=>{const K="slime.joystick.v1",modes={left:["ฝั่งซ้าย","ลากฝั่งซ้ายเพื่อเดิน","ลากนิ้วฝั่งซ้ายของจอเพื่อเดิน"],right:["ฝั่งขวา","ลากฝั่งขวาเพื่อเดิน","ลากนิ้วฝั่งขวาของจอเพื่อเดิน"],any:["ตรงไหนก็ได้","ลากตรงไหนก็ได้เพื่อเดิน","ลากนิ้วตรงไหนก็ได้บนจอเพื่อเดิน"]};'+
+  'let mode="left";try{mode=localStorage.getItem(K)||"left"}catch{}if(!modes[mode])mode="left";'+
+  'globalThis.__joyBlocked=x=>document.body.classList.contains("lab-active")?false:mode==="right"?x<innerWidth*.45:mode==="any"?false:x>innerWidth*.55;'+
+  'const apply=()=>{document.body.classList.remove("joy-left","joy-right","joy-any");document.body.classList.add("joy-"+mode);'+
+  'const h=document.getElementById("hint");if(h&&h.firstChild)h.firstChild.textContent=modes[mode][1]+" · WASD / ปุ่มลูกศร";'+
+  'const m=document.getElementById("howto-move");if(m)m.textContent=modes[mode][2]+" หรือใช้ WASD / ปุ่มลูกศร";const sel=document.getElementById("joy-mode");if(sel)sel.value=mode};'+
+  'apply();document.getElementById("joy-mode")?.addEventListener("change",e=>{mode=modes[e.target.value]?e.target.value:"left";try{localStorage.setItem(K,mode)}catch{}apply()})})()</script>';
+
 const HTML_EDITS=[
   ['page title','<title>Slime — ฉากทดลองเว็บ</title>','<title>Slime Evolution</title>'],
   ['header title','<small>SLIME · FIRE & SOULS</small><strong>ทุ่งหญ้า Slime</strong>','<small>ทุ่งหญ้า</small><strong>Slime Evolution</strong><span id="stage-line"></span>'],
@@ -146,7 +161,8 @@ const HTML_EDITS=[
   ['start menu','<body>','<body>'+MENU],
   // HELL mode in Settings, next to the normal round (owner request): the pacing director reads world.hell.
   ['hell run button','<button id="normal-run">เริ่มรอบปกติ · 10 นาที</button>','<button id="normal-run">เริ่มรอบปกติ · 10 นาที</button><button id="hell-run" class="hell-button" onclick="globalThis.__slimeHellNext=true;document.getElementById(\'normal-run\').click()">โหมด HELL · มอนสูงสุด 100</button>'],
-  ['start menu script','<div id="error" class="paper" hidden></div></body>','<div id="error" class="paper" hidden></div>'+MENU_SCRIPT+'</body>'],
+  ['joystick setting','<label class="check"><input id="show-fps" type="checkbox">แสดง FPS ขณะเล่น</label>','<label class="check"><input id="show-fps" type="checkbox">แสดง FPS ขณะเล่น</label><label for="joy-mode">ปุ่มเดิน (จอสัมผัส)<select id="joy-mode"><option value="left">ฝั่งซ้าย</option><option value="right">ฝั่งขวา</option><option value="any">แตะตรงไหนก็ได้</option></select></label>'],
+  ['start menu script','<div id="error" class="paper" hidden></div></body>','<div id="error" class="paper" hidden></div>'+JOY_SCRIPT+MENU_SCRIPT+'</body>'],
 ];
 
 function replaceOne(source,[label,from,to]){

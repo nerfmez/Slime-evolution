@@ -51,6 +51,19 @@ try{
     await page.evaluate(()=>document.getElementById('restart').click());
     assert.equal(await page.evaluate(()=>__slimeGameQA.world.hell),false,'a test round is never Hell');
     console.log('HELL MODE VERIFIED',engine,JSON.stringify(alive));
+    // Joystick side (v7): with "right" a drag on the right half starts the stick and the left half does not; saved per device.
+    await page.locator('.skill-card').first().click({timeout:60000});await page.waitForFunction(()=>!__slimeGameQA.combat.choosing,null,{timeout:30000});
+    const box=await page.locator('#world').boundingBox(),y=box.y+box.height*.72;
+    const press=async fx=>{await page.mouse.move(box.x+box.width*fx,y);await page.mouse.down();const on=await page.evaluate(()=>document.getElementById('joystick').style.left!=='');await page.mouse.up();await page.evaluate(()=>{document.getElementById('joystick').style.left=''});return on};
+    const pick=v=>page.evaluate(v=>{const sel=document.getElementById('joy-mode');sel.value=v;sel.dispatchEvent(new Event('change'))},v);
+    await pick('right');const right={rightHalf:await press(.8),leftHalf:await press(.2),...await page.evaluate(()=>({saved:localStorage.getItem('slime.joystick.v1'),hint:document.getElementById('hint').textContent}))};
+    await pick('any');const any={rightHalf:await press(.8),leftHalf:await press(.2)};
+    await pick('left');const left={rightHalf:await press(.8),leftHalf:await press(.2)};
+    const joy={right,any,left};
+    assert.deepEqual([joy.right.rightHalf,joy.right.leftHalf,joy.right.saved],[true,false,'right'],JSON.stringify(joy));
+    assert.match(joy.right.hint,/ฝั่งขวา/);
+    assert.deepEqual([joy.any.rightHalf,joy.any.leftHalf,joy.left.rightHalf,joy.left.leftHalf],[true,true,false,true],JSON.stringify(joy));
+    console.log('JOYSTICK SIDE VERIFIED',engine);
     await page.close();
   }
   for(const [label,options] of [['desktop',{viewport:{width:1280,height:720}}],['phone',{viewport:{width:390,height:844},isMobile:engine==='chromium',hasTouch:true}]]){

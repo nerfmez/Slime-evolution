@@ -44,7 +44,9 @@ test('HUD polish is presentation-only and applies to the exact assembled runtime
   for(const marker of ['id="start-load"','กำลังโหลด ','location.reload()'])assert.ok(after.html.includes(marker),marker);
   for(const marker of ['id="start-hell"','id="hell-run"'])assert.ok(after.html.includes(marker),marker);
   assert.ok(after.bundle.includes('J.hell=!!globalThis.__slimeHellNext'));
-  assert.equal(HUD_POLISH_VERSION,'hud-polish-v6');
+  for(const marker of ['id="joy-mode"','slime.joystick.v1','id="howto-move"'])assert.ok(after.html.includes(marker),marker);
+  assert.ok(after.bundle.includes('globalThis.__joyBlocked(e.clientX)'));
+  assert.equal(HUD_POLISH_VERSION,'hud-polish-v7');
 });
 
 test('HUD polish module matches the reviewed lock',async()=>{

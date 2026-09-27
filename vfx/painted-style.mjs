@@ -108,7 +108,7 @@ export function applyPaintedVfx(bundle, html) {
   // (poison seeds, the pressure jet, orbit) can be tried as in play. Skills are cast from where the slime stands.
   b = replaceOne(b, 'a=Z.active?0:Math.hypot(r,i)', 'a=Math.hypot(r,i)', 'lab walking input');
   b = replaceOne(b, 'Z.active?Z.sync():(J.playerRadius=_r()', 'Z.active?(Z.lab.player[0]=W.player[0],Z.lab.player[2]=W.player[2],Z.sync()):(J.playerRadius=_r()', 'lab follows the slime');
-  b = replaceOne(b, 'V.addEventListener(`pointerdown`,e=>{Z.active||e.clientX>innerWidth*.55', 'V.addEventListener(`pointerdown`,e=>{e.clientX>innerWidth*.55', 'lab joystick');
+  b = replaceOne(b, 'V.addEventListener(`pointerdown`,e=>{Z.active||(globalThis.__joyBlocked', 'V.addEventListener(`pointerdown`,e=>{(globalThis.__joyBlocked', 'lab joystick'); // after the HUD's joystick-side hook
   // Owner request (2026-09-26): every toxin skill withers the grass and flowers it touches. Toxin stamps the game's own burnt-
   // grass map only up to its first, lightest layer (brown dead grass, shorter blades, a khaki-brown ground), never deep enough
   // to char or remove the grass the way fire does. It is refreshed while the poison lasts and grows back about a second after.
