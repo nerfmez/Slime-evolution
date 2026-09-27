@@ -36,7 +36,12 @@ test('HUD polish is presentation-only and applies to the exact assembled runtime
   // Combat/stat data untouched: only the listed UI segments differ.
   for(const keep of ['xp:28,scale:1.6','{thorn:1,spark:2,turtle:3,water:4,panda:8}','name:`Ancient Bloom Colossus`'])assert.ok(after.bundle.includes(keep),keep);
   assert.equal(after.bundle.length-before.bundle.length>0,true);
-  assert.equal(HUD_POLISH_VERSION,'hud-polish-v1');
+  // Round clock and stage line (v2): #status keeps its full text, the clock shows the time.
+  for(const marker of ['id="clock"','id="stage-line"'])assert.ok(after.html.includes(marker),marker);
+  assert.ok(after.bundle.includes('B(`clock`).firstChild.textContent=t'));
+  // Skill details and card preview (v4): chip panel, before/after rows from the game's own formulas, touch two-tap, pause.
+  for(const marker of ['function __hudStats(k,s,m)','function __hudCard(c,e,w)','__d.id="skill-info"','pv.id="card-preview"','a.__pt==="touch"||a.__pt==="pen"','let n=ei.open||document.getElementById("skill-info")?.open?0:'])assert.ok(after.bundle.includes(marker),marker);
+  assert.equal(HUD_POLISH_VERSION,'hud-polish-v4');
 });
 
 test('HUD polish module matches the reviewed lock',async()=>{

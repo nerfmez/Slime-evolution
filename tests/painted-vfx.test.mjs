@@ -108,13 +108,16 @@ test('effects keep the gameplay sizes (rings, cones, lines and waves match their
   items = ground(vfx.plan({abilities: [ability('frost', 'cone', {dx: 0, dz: -1, length: 4.4, angle: .55, age: .5, life: .9})]}, {}, 1, () => true, {vp: VP}));
   const fan = items.find(it => it.v[3] === 12), len = Math.hypot(fan.v[4], fan.v[6]) * 2;
   assert.ok(Math.abs(len - 4.4) < .01 && Math.abs(fan.v[12] - .55) < 1e-6, 'cone ' + len);
-  // Aqua Railgun: the stream runs the whole line once extended.
-  items = vfx.plan({abilities: [ability('water', 'beam', {dx: 1, dz: 0, r: .6, length: 12, age: .15, life: .3})]}, {}, 1, () => true, {vp: VP});
-  const reach = Math.max(...items.filter(it => it.v[3] === 30 && it.v[35] === 1 && it.v[38] > 5).flatMap(it => [it.v[0], it.v[4], it.v[8], it.v[32]]));
-  assert.ok(Math.abs(reach - 12) < .01, 'railgun reach ' + reach);
+  // Aqua Railgun: the giant water ball is where the game's hit reach is (60% of the life to fly the line), then bursts where the line ends.
+  items = vfx.plan({abilities: [ability('water', 'beam', {dx: 1, dz: 0, r: .6, length: 12, age: .24, life: .8})]}, {}, 1, () => true, {vp: VP});
+  const ball = items.find(it => it.v[3] === 48);
+  assert.ok(ball && Math.abs(ball.v[0] - 6) < .6, 'railgun ball at half the line ' + ball?.v[0]);
+  items = vfx.plan({abilities: [ability('water', 'beam', {dx: 1, dz: 0, r: .6, length: 12, age: .6, life: .8})]}, {}, 1, () => true, {vp: VP});
+  const burst = items.find(it => it.v[3] === 26);
+  assert.ok(burst && Math.abs(burst.v[0] - 12) < .01, 'railgun bursts at the end of the line ' + burst?.v[0]);
   // Tidal Surge: the rushing water spans the full gameplay width.
   items = vfx.plan({abilities: [ability('water', 'wave', {dx: 0, dz: -1, r: 1.6, age: .3, life: .8})]}, {}, 1, () => true, {vp: VP});
-  const wave = items.find(it => it.v[3] === 29), half = Math.hypot(wave.v[4], wave.v[5], wave.v[6]);
+  const body = items.filter(it => it.v[3] === 34), half = Math.max(...body.flatMap(it => [it.v[0], it.v[4], it.v[8], it.v[32]].map(Math.abs)));
   assert.ok(half >= 1.6, 'wave half width ' + half);
 });
 

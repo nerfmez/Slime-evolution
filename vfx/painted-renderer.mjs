@@ -21,26 +21,27 @@ export function createPaintedSkillRenderer(gl) {
   const BLOB = 0, RING = 1, DROP = 2, SHARD = 4, SPIRAL = 9, BOLT = 11, FAN = 12, FLOWER = 13, RIBBON = 17, DOME = 18,
     DRILL = 19, COLUMN = 20, LIQUID = 26, SURF = 29,
     WATER_R = 30, FIRE_R = 31, GLOW_R = 32, GOO_R = 33, FOG = 35, FIRELINE = 37, GLOW = 38, ROCK = 39,
-    FLAMEBALL = 40, SUN = 41, EXPLODE = 42, TORNADO = 43, PUFF = 44, DOME_FIRE = 45, CRATER = 46;
+    FLAMEBALL = 40, SUN = 41, EXPLODE = 42, TORNADO = 43, PUFF = 44, DOME_FIRE = 45, CRATER = 46, WATERBALL = 48, SHEET = 34, ICE = 49, CRYSTAL = 50, STAR = 51, SPARK_R = 36;
   // Palettes: light / mid / dark wash. The pigment edge is derived from the dark wash.
   const P = {
     shadow: tones('#6f8a4c', '#5f7a40', '#4c6533'),
-    water: tones('#f1fbff', '#a9ddf4', '#5aa6da'), waterDeep: tones('#c4e8f8', '#74c0e8', '#3d88c6'), foam: tones('#ffffff', '#eaf7fd', '#b2dbef'),
-    tide: tones('#f5eeff', '#d2baf5', '#9f7bdb'), tideDeep: tones('#e0cdf9', '#ae8ee8', '#7753c2'),
+    water: tones('#f1fbff', '#a9ddf4', '#5aa6da'), waterDeep: tones('#c4e8f8', '#74c0e8', '#3d88c6'), foam: tones('#ffffff', '#eaf7fd', '#b2dbef'), jet: tones('#ffffff', '#d3f0fd', '#94cdef'),
+    tide: tones('#f5eeff', '#d2baf5', '#9f7bdb'), tideDeep: tones('#e0cdf9', '#ae8ee8', '#7753c2'), tideFoam: tones('#fdfaff', '#ece0ff', '#b99ce9'), field: tones('#fbf4ff', '#c294f0', '#7c4ed0'),
     fire: tones('#ffdc7a', '#ff9838', '#e4502a'), flame: tones('#ffcd6a', '#f7853a', '#d4422a'), ember: tones('#ffa45c', '#b93a2b', '#5e1d1a'),
     hot: tones('#fffbe6', '#fff0b0', '#ffc860'), dust: tones('#eadfce', '#bfa98f', '#86705c'), stone: tones('#d8c6ad', '#a68e74', '#76604c'), dustLight: tones('#f6efe4', '#dccbb4', '#ad977e'), blaze: tones('#fff3b8', '#ffb22e', '#f0561e'), smoke: tones('#f7f1e8', '#ddd1c3', '#b4a292'), scorch: tones('#cda57e', '#9d6c4d', '#6d4433'),
-    toxin: tones('#eef8a2', '#b9d64c', '#6d9a26'), toxinDeep: tones('#cfe274', '#8aae34', '#4a6e1d'), toxinShade: tones('#ecdcf6', '#be9fdc', '#7c58a8'),
-    petal: tones('#f3daf7', '#cc93e2', '#8a4fae'), spore: tones('#fdfbe0', '#eef3a4', '#b3c455'),
-    frost: tones('#f7f9ff', '#c8d5f8', '#8fa0e8'), frostDeep: tones('#dfe6fb', '#a3b2ee', '#6b7cd2'),
-    chain: tones('#ffffff', '#e8e2fc', '#aa9de6'), chainBlue: tones('#e5ecff', '#a8baf6', '#627ad8'),
-    orbit: tones('#f2fbff', '#a6dff8', '#58b0e6'), orbitDeep: tones('#c8e9fb', '#70bbea', '#3c84c8'),
+    toxin: tones('#f1d6ff', '#b25ae6', '#5e1f8f'), toxinDeep: tones('#d7a3f4', '#8633c2', '#5a2a8a'), toxinShade: tones('#dcb8f2', '#9a55cc', '#5a2488'), acid: tones('#f6ffd0', '#bdf545', '#62a818'), stem: tones('#dff2a0', '#8fbf45', '#4f7a22'),
+    petal: tones('#e2b6f7', '#9a45cf', '#4c1478'), spore: tones('#f8ffd8', '#c8f55a', '#6fb21e'),
+    frost: tones('#f6fdff', '#c2ecf8', '#72c3e3'), frostDeep: tones('#e2f7fd', '#8fd6ef', '#3f9ccb'), ice: tones('#fbfeff', '#cdeff9', '#7fc9e6'),
+    chain: tones('#fffef4', '#ffe35c', '#e8a51c'), chainGlow: tones('#fff8cf', '#ffd84a', '#e39a17'),
+    orbit: tones('#f2fbff', '#a6dff8', '#58b0e6'), orbitDeep: tones('#c8e9fb', '#70bbea', '#3c84c8'), star: tones('#ffffff', '#9fd8f5', '#4ea8e0'),
   };
   const Z4 = [0, 0, 0, 0], NO_RIBBON = [0, 0, 0, 0, 0, 0, 0, 0];
   let items = [], seq = 0, depth = 0, cfg = {}, now = 0;
   const cam = {f: [0, .6247, .7809], r: [1, 0, 0], u: [0, .7809, -.6247]};
   const diagnostics = {version: 'painted-watercolor-v2', instances: 0, calls: 0, kinds: {}, invalid: 0};
   const note = tag => { diagnostics.kinds[tag] = (diagnostics.kinds[tag] || 0) + 1; };
-  const impactStates = new WeakMap(), history = new WeakMap();
+  const impactStates = new WeakMap(), history = new WeakMap(), freezeStates = new WeakMap();
+  const seeds = new WeakMap(), seedOf = (t, v) => { if (!seeds.has(t)) seeds.set(t, v); return seeds.get(t); }; // a Tide field moves with the slime, so its look is seeded once, not from its position each frame
 
   function setCamera(vp) {
     const a = [vp[0], vp[4], vp[8]], b = [vp[1], vp[5], vp[9]];
@@ -113,7 +114,7 @@ export function createPaintedSkillRenderer(gl) {
     for (let i = 0; i < n - 1; i++) {
       const p0 = Q[i], p1 = Q[i + 1], s0 = side[i], s1 = side[i + 1], w0 = widths[i], w1 = widths[i + 1];
       const key = ((pts[i][0] + pts[i + 1][0]) * cam.f[0] + (pts[i][1] + pts[i + 1][1]) * cam.f[1] + (pts[i][2] + pts[i + 1][2]) * cam.f[2]) / 2;
-      put(style, addv(p0, s0, -w0), addv(p1, s1, -w1), addv(p0, s0, w0), pal, o, [...addv(p1, s1, w1), 1, acc[i] / total, acc[i + 1] / total, total, 0], key);
+      put(style, addv(p0, s0, -w0), addv(p1, s1, -w1), addv(p0, s0, w0), pal, o, [...addv(p1, s1, w1), 1, acc[i] / total, acc[i + 1] / total, total, 0], o.key ?? key);
     }
   }
   // A straight tail behind `head` that flutters sideways like cloth in the wind.
@@ -180,15 +181,18 @@ export function createPaintedSkillRenderer(gl) {
   function waterImpacts(combat, time, visible) { // a drop landing: rings on the ground and a few drops thrown up
     const clock = combat.clock ?? time; let st = impactStates.get(combat);
     if (!st || clock < st.clock) { st = {clock, prev: new Map(), events: []}; impactStates.set(combat, st); }
-    for (const [t, n] of st.prev) if ((t.hit?.size || 0) > n && t.kind === 'bolt') st.events.push({x: t.x, z: t.z, dx: t.dx, dz: t.dz, born: clock, seed: hash(t.x * 7 + t.z)});
-    st.prev = new Map((combat.abilities || []).filter(t => t.family === 'water' && t.kind === 'bolt').map(t => [t, t.hit?.size || 0]));
+    for (const [t, n] of st.prev) if ((t.hit?.size || 0) > n) { // a railgun hit lands where its ball is now
+      const q = t.kind === 'beam' ? Math.max(.45, t.length * clamp(t.age / t.life / .6)) : 0;
+      st.events.push({x: t.x + t.dx * q, z: t.z + t.dz * q, dx: t.dx, dz: t.dz, born: clock, seed: hash(t.x * 7 + t.z + q), s: t.kind === 'beam' ? 2.6 : 1});
+    }
+    st.prev = new Map((combat.abilities || []).filter(t => t.family === 'water' && (t.kind === 'bolt' || t.kind === 'beam')).map(t => [t, t.hit?.size || 0]));
     st.events = st.events.filter(e => clock - e.born < .45).slice(-48); st.clock = clock;
     for (const e of st.events) {
       if (!visible(e.x, e.z, .8)) continue; note('water:impact');
-      const age = clock - e.born, p = clamp(age / .45), A = 1 - smooth(.5, 1, p);
-      disc(RING, e.x, e.z, .22 + smooth(0, 1, p) * .6, P.water, {alpha: A, p: [.85, .07, .6, .02], layer: 2, seed: e.seed, soft: .3});
-      disc(LIQUID, e.x, e.z, .28, P.water, {alpha: .55 * A, p: [.5, 2.2, 0, 0], layer: 1, seed: e.seed, dissolve: smooth(.4, 1, p), edge: .5});
-      for (let j = 0; j < 5; j++) { const an = j * TAU / 5 + e.seed * 6, sp = .9 + .6 * hash(j + e.seed); thrown([e.x, .28, e.z], [Math.cos(an) * sp + e.dx * .6, 2.2 + hash(j * 3 + e.seed), Math.sin(an) * sp + e.dz * .6], age, P.water, .045, WATER_R, {alpha: A, seed: j, g: 10, tail: .07, lift: .3, rp: [0, .9, 0, 0]}); }
+      const age = clock - e.born, p = clamp(age / .45), A = 1 - smooth(.5, 1, p), S = e.s || 1;
+      disc(RING, e.x, e.z, (.22 + smooth(0, 1, p) * .6) * S, P.water, {alpha: A, p: [.85, .07, .6, .02], layer: 2, seed: e.seed, soft: .3});
+      disc(LIQUID, e.x, e.z, .28 * S, P.water, {alpha: .55 * A, p: [.5, 2.2, 0, 0], layer: 1, seed: e.seed, dissolve: smooth(.4, 1, p), edge: .5});
+      for (let j = 0; j < (S > 1 ? 9 : 5); j++) { const an = j * TAU / (S > 1 ? 9 : 5) + e.seed * 6, sp = (.9 + .6 * hash(j + e.seed)) * Math.sqrt(S); thrown([e.x, .28, e.z], [Math.cos(an) * sp + e.dx * .6 * S, 2.2 + hash(j * 3 + e.seed) + (S - 1) * .6, Math.sin(an) * sp + e.dz * .6 * S], age, P.water, .045 * Math.sqrt(S), WATER_R, {alpha: A, seed: j, g: 10, tail: .07, lift: .3, rp: [0, .9, 0, 0]}); }
     }
   }
   function beamLine(t, from, to, w, pulse, sd) { // points and widths along a stream, gently wavering
@@ -200,142 +204,257 @@ export function createPaintedSkillRenderer(gl) {
     }
     return {pts, ws};
   }
-  function waterBeam(t) { // AQUA RAILGUN: one straight, pressurised stream that pierces the whole line
-    const p = clamp(t.age / t.life), d = [t.dx, 0, t.dz], w = t.r, A = 1 - smooth(.7, 1, p), dis = smooth(.62, 1, p), sd = hash(t.x + t.z * 3);
-    const L = Math.max(w, t.length * smooth(0, .25, p)), a = [t.x + d[0] * .25, .48, t.z + d[2] * .25], b = [t.x + d[0] * L, .48, t.z + d[2] * L];
-    decal(RIBBON, (a[0] + b[0]) / 2, (a[2] + b[2]) / 2, d[0], d[2], L / 2, w * 1.3, P.water, {alpha: .35 * A, p: [.9, 1, 0, .08], layer: 1, seed: sd, soft: .6, edge: .3});
-    at([(a[0] + b[0]) / 2, .48, (a[2] + b[2]) / 2]);
-    const m = beamLine(t, a, b, w * .62, .04, sd), mist = beamLine(t, a, b, w * 1.05, 0, sd + 1);
-    ribbon(GLOW_R, mist.pts, mist.ws, P.foam, {alpha: .35 * A, seed: sd + 2, lift: .5, bias: -.01, soft: .6, edge: 0});
-    ribbon(WATER_R, m.pts, m.ws, P.water, {alpha: A, seed: sd, lift: .5, dissolve: dis, p: [1.4, 1.2, 0, 0]});
-    for (const [x, z, k] of [[a[0], a[2], 0], [b[0], b[2], 1]]) {
-      disc(RING, x, z, w * (.8 + p * 1.4), P.water, {alpha: A * (1 - p), p: [.85, .07, .6, .02], layer: 2, seed: sd + k, soft: .3});
-      if (k) for (let j = 0; j < 6; j++) { const an = j * TAU / 6 + sd * 5, sp = 1.1 + .7 * hash(j + sd), tt = (p * 1.3 + j * .11) % .55; thrown([x, .45, z], [Math.cos(an) * sp + d[0] * 1.2, 2.2 + hash(j + sd * 3), Math.sin(an) * sp + d[2] * 1.2], tt, P.water, .05, WATER_R, {alpha: A * (1 - tt / .55), seed: j, g: 10, tail: .07, lift: .3, rp: [0, .9, 0, 0]}); }
+  function waterBeam(t) { // AQUA RAILGUN: a giant, glassy ball of water blasted down the line (it flies in the first 60% of the shot; the game hits each foe as the ball reaches it): a splash at the muzzle, spray thrown aside like a bow wave, a wet track behind it, a big burst where the line ends
+    const p = clamp(t.age / t.life), d = [t.dx, 0, t.dz], side = [-t.dz, 0, t.dx], w = t.r, sd = hash(t.x + t.z * 3), R = w * 1.5, L = t.length, fly = clamp(p / .6);
+    const dist = Math.max(.45, L * fly), pos = [t.x + d[0] * dist, R * .9 + .08, t.z + d[2] * dist], A = 1 - smooth(.85, 1, p);
+    { const k = clamp(p / .35); if (k < 1) { // the kick at the muzzle
+      disc(RING, t.x + d[0] * .5, t.z + d[2] * .5, R * (.7 + 1.8 * k), P.water, {alpha: (1 - k) * .9, p: [.85, .07, .6, .02], layer: 2, seed: sd, soft: .3});
+      for (let j = 0; j < 6; j++) { const an = (j / 5 - .5) * 2.4, sp = 2 + hash(j + sd) * 1.5; thrown([t.x + d[0] * .5, .3, t.z + d[2] * .5], [(-d[0] * .4 + side[0] * Math.sin(an)) * sp, 2.4 + hash(j * 5 + sd), (-d[2] * .4 + side[2] * Math.sin(an)) * sp], k * .35, P.water, .05, WATER_R, {alpha: 1 - k, seed: j, g: 11, tail: .07, lift: .3, rp: [0, .9, 0, 0]}); }
+    } }
+    const trail = Math.max(.01, dist - .45); // a wet, churned track left on the ground
+    decal(RIBBON, t.x + d[0] * (.45 + trail / 2), t.z + d[2] * (.45 + trail / 2), d[0], d[2], trail / 2, R * .6, P.water, {alpha: .35 * (1 - smooth(.45, 1, p)), p: [.88, 3, 0, .12], layer: 1, seed: sd, soft: .6, edge: .2});
+    if (fly < 1) { // the ball in flight
+      at(pos); shadow(pos[0], pos[2], R * 1.05, .3);
+      for (let j = 0; j < 16; j++) { const s = j % 2 ? 1 : -1, k = (now * 5 + j / 16 + hash(j + sd) * .1) % 1, q = Math.max(.45, dist - R * (.4 + 3.2 * k)); // spray thrown out to both sides as it plows along
+        const pt = [t.x + d[0] * q + side[0] * s * R * (.55 + 1.3 * k), .08 + R * 1.6 * k * (1.2 - k), t.z + d[2] * q + side[2] * s * R * (.55 + 1.3 * k)]; at(pt); mote(pt, R * .13 * (1 - .6 * k), P.foam, A * (1 - k) * .95, {lift: .2}); }
+      const tl = Math.min(trail, R * 5), fp = [], fw = [];
+      for (let i = 0; i <= 10; i++) { const u = i / 10; fp.push(addv(pos, d, -tl * u)); fw.push(R * .5 * Math.pow(1 - u, 1.2) + .01); }
+      at(pos); ribbon(GLOW_R, fp, fw, P.foam, {alpha: .4 * A, seed: sd + 2, soft: .7, edge: 0, bias: -.03});
+      for (let j = 0; j < 2; j++) { const hp = [], hw = []; // two currents twisting round its path
+        for (let i = 0; i <= 12; i++) { const u = i / 12, an = u * 7 - now * 30 + j * Math.PI, rr = R * .78 * (1 - .45 * u); hp.push([pos[0] - d[0] * tl * .8 * u + side[0] * Math.cos(an) * rr, pos[1] + Math.sin(an) * rr - R * .3 * u, pos[2] - d[2] * tl * .8 * u + side[2] * Math.cos(an) * rr]); hw.push(R * .16 * (1 - u) + .006); }
+        ribbon(GLOW_R, hp, hw, P.foam, {alpha: .8 * A, seed: sd + j, soft: .4, edge: 0, bias: Math.sin(-now * 30 + j * Math.PI) > 0 ? .03 : -.03});
+      }
+      at(pos); glow(pos, R * 1.8, P.foam, .4, {bias: -.02});
+      const sq = 1 + .07 * Math.sin(now * 26 + sd * 5);
+      bb(WATERBALL, pos, R * sq, R / sq, P.waterDeep, {p: [5, 0, 0, 0], seed: sd, edge: .3, bias: .01});
+    } else { // the ball bursts at the end of the line
+      const k = clamp((p - .6) / .4), b = [t.x + d[0] * L, .5, t.z + d[2] * L];
+      disc(LIQUID, b[0], b[2], R * (1.4 + 1.6 * k), P.water, {alpha: .8 * (1 - k), p: [.6, 2.4, 0, 0], layer: 1, seed: sd, shine: .5, dissolve: smooth(.4, 1, k)});
+      for (let j = 0; j < 2; j++) disc(RING, b[0], b[2], R * (1 + 2.8 * k + j * .6), P.water, {alpha: (1 - k) * .9, p: [.85, .07, .6, .02], layer: 2 + j, seed: sd + j, soft: .3});
+      for (let j = 0; j < 14; j++) { const an = j * TAU / 14 + sd * 5, sp = 2.2 + 1.8 * hash(j + sd); thrown([b[0], .6, b[2]], [Math.cos(an) * sp + d[0] * 2.5, 3.2 + 1.8 * hash(j + sd * 3), Math.sin(an) * sp + d[2] * 2.5], k * .5, P.water, .09, WATER_R, {alpha: 1 - k, seed: j, g: 11, tail: .08, lift: .3, rp: [0, .9, 0, 0]}); }
+      if (k < .35) { at(b); glow(b, R * 3, P.foam, .8 * (1 - k / .35), {lift: .5}); }
     }
   }
-  function waterJet(t) { // PRESSURE JET: a thinner stream that throbs with pressure pulses
-    const p = clamp(t.age / t.life), d = [t.dx, 0, t.dz], w = t.r, A = smooth(0, .1, p) * (1 - smooth(.8, 1, p)), sd = hash(t.x * 2 + t.z);
-    const a = [t.x + d[0] * .25, .46, t.z + d[2] * .25], b = [t.x + d[0] * t.length, .46, t.z + d[2] * t.length];
-    decal(RIBBON, (a[0] + b[0]) / 2, (a[2] + b[2]) / 2, d[0], d[2], t.length / 2, w * 2.4, P.water, {alpha: .32 * A, p: [.88, 1.2, 0, .12], layer: 1, seed: sd, soft: .6, edge: .3});
+  function waterJet(t) { // PRESSURE JET: a tight, white-hot core at the nozzle that flares into a roaring stream and a widening fan of mist; streaks race down it, shock rings kick out of the nozzle, spray blows back off the target
+    const p = clamp(t.age / t.life), d = [t.dx, 0, t.dz], side = [-t.dz, 0, t.dx], w = t.r, A = smooth(0, .06, p) * (1 - smooth(.94, 1, p)), sd = hash(t.x * 2 + t.z), L = t.length;
+    const a = [t.x + d[0] * .3, .46, t.z + d[2] * .3], b = [t.x + d[0] * L, .46, t.z + d[2] * L], flare = (ws, k0, k1) => ws.map((x, i) => x * mix(k0, k1, Math.pow(i / (ws.length - 1), .8)));
+    decal(RIBBON, (a[0] + b[0]) / 2, (a[2] + b[2]) / 2, d[0], d[2], L / 2, w * 2.4, P.water, {alpha: .3 * A, p: [.88, 3, 0, .12], layer: 1, seed: sd, soft: .7, edge: .2});
     at([(a[0] + b[0]) / 2, .46, (a[2] + b[2]) / 2]);
-    const m = beamLine(t, a, b, w * 1.15, .22, sd), mist = beamLine(t, a, b, w * 2.1, 0, sd + 1);
-    ribbon(GLOW_R, mist.pts, mist.ws, P.foam, {alpha: .3 * A, seed: sd + 2, lift: .45, bias: -.01, soft: .6, edge: 0});
-    ribbon(WATER_R, m.pts, m.ws, P.water, {alpha: A, seed: sd, lift: .45, p: [2, 1.2, 0, 0]});
-    disc(RING, b[0], b[2], .3 + .25 * ((now * 3) % 1), P.water, {alpha: A * (1 - (now * 3) % 1), p: [.85, .07, .6, .02], layer: 2, seed: sd, soft: .3});
-    for (let j = 0; j < 4; j++) { const an = j * TAU / 4 + sd * 5, tt = (now * 1.6 + j / 4) % .5; thrown([b[0], .42, b[2]], [Math.cos(an) * 1.1 + d[0], 2, Math.sin(an) * 1.1 + d[2]], tt, P.water, .04, WATER_R, {alpha: A * (1 - tt / .5), seed: j, g: 10, tail: .07, lift: .3, rp: [0, .9, 0, 0]}); }
+    const sheath = beamLine(t, a, b, w, .05, sd), core = beamLine(t, a, b, w * .5, 0, sd), mist = beamLine(t, a, b, w, 0, sd + 1);
+    ribbon(GLOW_R, mist.pts, flare(mist.ws, 1.6, 4.2), P.foam, {alpha: .55 * A, seed: sd + 2, lift: .45, bias: -.02, soft: .7, edge: 0});
+    ribbon(WATER_R, sheath.pts, flare(sheath.ws, .75, 1.8), P.jet, {alpha: A, seed: sd, lift: .45, p: [6, 1.2, 0, 0], edge: .1});
+    ribbon(GLOW_R, core.pts, flare(core.ws, 1, .5), P.foam, {alpha: A, seed: sd + 3, lift: .46, bias: .01, soft: .2, edge: 0});
+    for (let j = 0; j < 9; j++) { const k = (now * 2.6 + j / 9) % 1, s0 = k * L, s1 = Math.min(L, s0 + 1.1 + .6 * hash(j + sd)), off = (hash(j * 3 + sd) - .5) * w * (.5 + 1.4 * k), pts = [], ws = []; // white streaks racing down the stream
+      for (let i = 0; i <= 4; i++) { const q = mix(s1, s0, i / 4); pts.push([t.x + d[0] * q + side[0] * off, .47, t.z + d[2] * q + side[2] * off]); ws.push(w * .09 * Math.sin((i / 4) * Math.PI) + .004); }
+      ribbon(GLOW_R, pts, ws, P.foam, {alpha: A * .95, seed: sd + j, lift: .47, bias: .015, soft: .2, edge: 0});
+    }
+    at(a); glow(a, w * 2.2, P.foam, .7 * A, {lift: .5});
+    for (let j = 0; j < 3; j++) { const k = (now * 5 + j / 3) % 1, q = addv(a, d, .15 + k * 1.2); at(q); aim(RING, q, side, w * (1.1 + 1.6 * k), w * (1.1 + 1.6 * k), P.foam, {alpha: A * (1 - k) * .85, p: [.8, .1, .7, 0], seed: sd + j, lift: .45, soft: .3, edge: .2}); } // shock rings kicking out of the nozzle
+    disc(RING, b[0], b[2], w * (1.8 + 1.6 * ((now * 5) % 1)), P.water, {alpha: A * (1 - (now * 5) % 1), p: [.85, .07, .6, .02], layer: 2, seed: sd, soft: .3});
+    at(b); glow(b, w * 4, P.foam, .6 * A, {lift: .5});
+    for (let j = 0; j < 14; j++) { const an = (j / 14 - .5) * 2.8, dir = [d[0] * Math.cos(an) - d[2] * Math.sin(an), 0, d[2] * Math.cos(an) + d[0] * Math.sin(an)], tt = (now * 2.4 + j / 14) % .35, sp = 3 + 2.5 * hash(j + sd); thrown([b[0], .45, b[2]], [-dir[0] * sp * .6 + side[0] * (j % 2 ? 1 : -1) * sp * .5, 2.4 + hash(j * 3 + sd) * 1.8, -dir[2] * sp * .6 + side[2] * (j % 2 ? 1 : -1) * sp * .5], tt, P.water, .05, WATER_R, {alpha: A * (1 - tt / .35), seed: j, g: 10, tail: .06, lift: .4, rp: [0, .9, 0, 0]}); } // spray blown back off the target
   }
-  function waterWave(t) { // TIDAL SURGE: one sheet of water rushing forward with a single white foam lip
-    const p = clamp(t.age / t.life), d = [t.dx, 0, t.dz], sd = [-t.dz, 0, t.dx], w = t.r, A = smooth(0, .1, p) * (1 - smooth(.76, 1, p)), seed = hash(t.x * .3 + t.z * .7);
-    decal(SURF, t.x - d[0] * .55, t.z - d[2] * .55, sd[0], sd[2], w * 1.05, .9, P.water, {alpha: .95 * A, p: [1, 0, 0, 0], layer: 2, seed, dissolve: smooth(.7, 1, p), edge: .6});
+  function waterWave(t) { // TIDAL SURGE: water gathers and swells out of the ground, curls into a giant wave with a rolling foam lip, rushes forward, then the lip crashes down in a flood of foam.
+    // The wave is its cross-section (back slope, crest, curling lip) swept along the crest line as a stack of ribbons, so it keeps its true 3D shape from any camera angle.
+    const p = clamp(t.age / t.life), d = [t.dx, 0, t.dz], side = [-t.dz, 0, t.dx], w = t.r, seed = hash(t.x * .3 + t.z * .7);
+    const rise = smooth(0, .3, p), curl = smooth(.12, .42, p), crash = smooth(.7, 1, p), H = Math.min(w * .95, 1.5 + w * .15) * (.12 + .88 * rise) * (1 - .55 * crash), A = smooth(0, .05, p) * (1 - smooth(.93, 1, p)), base = [t.x, 0, t.z];
+    for (let j = 0; j < 3; j++) { const q = clamp((p - j * .07) / .26); if (q > 0 && q < 1) decal(RING, base[0] + d[0] * .2, base[2] + d[2] * .2, side[0], side[2], w * mix(1.8, 1, q), w * mix(1, .35, q), P.water, {alpha: .8 * Math.sin(q * Math.PI), p: [.85, .06, .6, .02], layer: 2, seed: seed + j, soft: .35, asp: 1}); } // ripples drawn in as the water gathers
+    if (crash > 0) decal(SURF, base[0] + d[0] * (.3 + 1.2 * crash), base[2] + d[2] * (.3 + 1.2 * crash), side[0], side[2], w * 1.15, .6 + 1.3 * crash, P.foam, {alpha: .9 * A, p: [1.4, 0, 0, 0], layer: 3, seed: seed + 3, dissolve: smooth(.82, 1, p), edge: .2, soft: .2}); // the flood of foam it throws forward
+    // the cross-section in (forward, up) units of H: a short back slope, the crest, and a lip that curls over and, when it crashes, reaches the ground
+    const lipF = .15 + .45 * curl + .5 * crash, lipY = mix(1, .55, curl) * (1 - .9 * crash);
+    const prof = [[-.75, .02], [-.5, .36], [-.25, .68], [-.05, .9], [.12, 1], [.12 + lipF * .55, mix(1, .98, curl)], [.12 + lipF * .9, mix(.9, .82, curl) * (1 - .5 * crash)], [.12 + lipF, lipY]];
+    const tones = [.08, .3, .5, .66, .8], n = 19, rows = prof.length, wk = base[0] * cam.f[0] + H * .5 * cam.f[1] + base[2] * cam.f[2]; // one sort key for the whole wave, so its strips never swap order (that flickers)
+    const at3 = (i, u) => { const e = 1 - Math.pow(Math.abs(u), 4), [f, y] = prof[i]; const g = f * H * .8 * (.3 + .7 * e); return [base[0] + side[0] * w * 1.08 * u + d[0] * g, .02 + y * H * e, base[2] + side[2] * w * 1.08 * u + d[2] * g]; };
+    const row = (i0, i1, style, pal, o) => { // one strip of the surface between two points of the cross-section
+      const pts = [], ws = [], a0 = at3(i0, 0), a1 = at3(i1, 0), s = cross3(cam.f, side), dir = Math.sign((a1[0] - a0[0]) * s[0] + (a1[1] - a0[1]) * s[1] + (a1[2] - a0[2]) * s[2]) || 1;
+      for (let m = 0; m < n; m++) { const u = (m / (n - 1) - .5) * 2, q0 = at3(i0, u), q1 = at3(i1, u); pts.push([(q0[0] + q1[0]) / 2, (q0[1] + q1[1]) / 2, (q0[2] + q1[2]) / 2]); ws.push(Math.hypot(q1[0] - q0[0], q1[1] - q0[1], q1[2] - q0[2]) * (o.wide ?? .75) + .02); }
+      ribbon(style, pts, ws, pal, {...o, key: wk, p: o.p || [tones[i0], tones[i1], i0 + .5, dir]});
+    };
+    for (let i = 0; i < 4; i++) row(i, i + 1, SHEET, P.waterDeep, {alpha: A * (1 - smooth(.8, 1, p)), seed, edge: 0, soft: .5, wide: 1, bias: i * .004}); // the body
+    for (let i = 4; i < rows - 1; i++) row(i, i + 1, GLOW_R, P.foam, {alpha: A * (.6 + .4 * curl) * (1 - smooth(.8, 1, p)), seed: seed + i, edge: 0, soft: .35, p: [0, 1, 0, 0], bias: .02 + i * .004}); // the curling lip of foam
+    for (let m = 0; m < 13; m++) { const u = (m / 12 - .5) * 1.9 + .05 * Math.sin(now * 3 + m), q = at3(rows - 2, u); at(q); mote(q, H * (.13 + .05 * Math.sin(now * 6 + m * 2.3)), P.foam, A * curl, {bias: .03}); } // foam boiling along the lip
+    for (let j = 0; j < 18; j++) { const k = (now * 1.7 + j / 18) % 1, u = (hash(j + seed) - .5) * 1.8, c0 = at3(4, u); // spray blown back off the crest
+      const q = [c0[0] - d[0] * k * .9, c0[1] + k * .6 - k * k * .5, c0[2] - d[2] * k * .9]; at(q); mote(q, H * .09 * (1 - .5 * k), P.foam, A * rise * (1 - k), {bias: .02}); }
+    if (crash > 0) for (let j = 0; j < 12; j++) { const u = (j / 11 - .5) * 1.9, q0 = at3(rows - 1, u); puff(q0, [d[0] * 3, -.5, d[2] * 3], (p - .7) * t.life, .5, H * .25, H * .5, P.foam, 0, {drag: 4, seed: seed * 9 + j, erode: .2, lift: .1}); } // the lip crashes down in foam
   }
-  // ---------------------------------------------------------------- Tide: lilac ripples, a bubble dome, a whirlpool
-  function tideRing(t) { // Tide Ring: two soft ripples spreading over the ground
-    const p = clamp(t.age / t.life), R = Math.max(.05, t.r * Math.min(1, p * 3)), A = 1 - smooth(.6, 1, p), seed = hash(t.x + t.z * 1.7);
-    disc(GLOW, t.x, t.z, R * 1.05, P.tide, {alpha: .3 * A, layer: 0, edge: 0, soft: 1});
-    disc(RING, t.x, t.z, R * 1.08, P.tideDeep, {alpha: .9 * A, p: [.86, .08, .7, .03], layer: 2, seed, rag: .4, soft: .15});
-    disc(RING, t.x, t.z, R * 1.08, P.tide, {alpha: .7 * A * smooth(.12, .35, p), p: [.6, .05, .6, .03], layer: 3, seed: seed + 1, rag: .5, soft: .25});
+  // ---------------------------------------------------------------- Tide: a purple force field (owner round 6: energy, not water; the card art
+  // shows rings of force round the slime with glints of light). Energy is drawn as bright strokes (white-hot middle, lilac edges) in a
+  // soft glow, as rings in true perspective, force lines streaking along the field, and glinting points.
+  function fieldRing(x, z, R, A, seed, w = .05, y = .08, wob = .04) { // a ring of force: a glowing band with a bright stroke, gently trembling
+    if (R < .05 || A <= 0) return; const n = Math.max(18, Math.min(48, Math.round(R * 12))), pts = [], ws = [];
+    for (let i = 0; i <= n; i++) { const an = i / n * TAU, rr = R * (1 + wob * Math.sin(an * 6 + now * 9 + seed * 5) * Math.sin(now * 4 + an * 2)); pts.push([x + Math.cos(an) * rr, y, z + Math.sin(an) * rr]); ws.push(w * (.7 + .3 * Math.sin(an * 3 - now * 7 + seed))); }
+    const key = x * cam.f[0] + y * cam.f[1] + z * cam.f[2];
+    ribbon(GLOW_R, pts, ws.map(v => v * 4), P.tideDeep, {alpha: A * .7, seed, soft: .85, edge: 0, key});
+    ribbon(SPARK_R, pts, ws, P.field, {alpha: A, seed, soft: .2, edge: 0, key: key + .01});
   }
-  function tideDome(t) { // REPULSION DOME: a lilac soap-bubble shield that pushes out in pulses
-    const p = clamp(t.age / t.life), r = t.r, A = smooth(0, .1, p) * (1 - smooth(.82, 1, p)), R = r * (.35 + .65 * smooth(0, .16, p)), seed = hash(t.x * 1.3 + t.z);
-    disc(GLOW, t.x, t.z, R, P.tide, {alpha: .35 * A, layer: 0, edge: 0, soft: 1});
+  function forceLines(x, z, R0, R1, n, age, A, seed, inward = false, y = .12) { // short streaks of force racing outward (or inward) across the field
+    for (let j = 0; j < n; j++) { const k = (age * 1.8 + j / n + hash(j + seed) * .3) % 1, f = inward ? 1 - k : k, an = j * TAU / n + seed * 3 + hash(j * 7 + seed) * .5, r0 = mix(R0, R1, f), r1 = r0 + (inward ? -1 : 1) * (R1 - R0) * .18;
+      const a = [x + Math.cos(an) * r0, y, z + Math.sin(an) * r0], b = [x + Math.cos(an) * r1, y, z + Math.sin(an) * r1]; at(a);
+      ribbon(SPARK_R, inward ? [b, a] : [b, a], [.012, .03], P.tideFoam, {alpha: A * Math.sin(k * Math.PI), seed: seed + j, soft: .2, edge: 0}); }
+  }
+  function glints(x, z, R, n, age, A, seed, y = .15) { // glinting points of light riding the field
+    for (let j = 0; j < n; j++) { const an = j * TAU / n + seed * 4 + age * (j % 2 ? .8 : -.8), tw = .5 + .5 * Math.sin(age * 9 + j * 2.3), c = [x + Math.cos(an) * R, y + .1 * Math.sin(age * 3 + j), z + Math.sin(an) * R]; at(c);
+      glow(c, .2 * tw, P.tide, A * .7 * tw); mote(c, .035 + .02 * tw, P.tideFoam, A * tw, {bias: .02}); }
+  }
+  function tideRing(t) { // Tide Ring: a wave of force spreads out from the slime in layered bands, force lines streaking outward, glints riding its front
+    const p = clamp(t.age / t.life), grow = 1 - Math.pow(1 - Math.min(1, p * 3), 2), R = Math.max(.05, t.r * grow), A = 1 - smooth(.55, 1, p), seed = seedOf(t, hash(t.x + t.z * 1.7));
+    disc(GLOW, t.x, t.z, R * 1.05, P.field, {alpha: .45 * A, layer: 0, edge: 0, soft: 1});
+    disc(RING, t.x, t.z, R * 1.08, P.tideDeep, {alpha: .9 * A, p: [.86, .09, .7, .03], layer: 2, seed, rag: .5, soft: .2}); // the band of force on the ground, on the damage radius
+    disc(RING, t.x, t.z, R * .72, P.field, {alpha: .75 * A * smooth(.1, .3, p), p: [.8, .1, .6, .03], layer: 2, seed: seed + 1, rag: .6, soft: .3});
+    disc(RING, t.x, t.z, R * .42, P.tideDeep, {alpha: .55 * A * smooth(.2, .4, p), p: [.75, .12, .6, .03], layer: 2, seed: seed + 2, rag: .6, soft: .35});
+    fieldRing(t.x, t.z, R, A, seed, t.r > 6 ? .07 : .05);
+    fieldRing(t.x, t.z, R * .82, A * .6, seed + 2, .03, .06);
+    if (t.r < 6) { forceLines(t.x, t.z, R * .3, R * 1.1, 12, t.age, A, seed); glints(t.x, t.z, R, 6, t.age, A, seed); }
+  }
+  function tideDome(t) { // REPULSION DOME: a translucent dome of force with a bright rim and rings of light running round it like a cage; each push it flares, a wave of force runs out over the ground and force lines shoot outward
+    const p = clamp(t.age / t.life), r = t.r, A = smooth(0, .1, p) * (1 - smooth(.82, 1, p)), k = (t.age % .5) / .5, kick = Math.exp(-k * 7), R = r * (.35 + .65 * smooth(0, .16, p)) * (1 + .05 * kick), seed = seedOf(t, hash(t.x * 1.3 + t.z));
+    disc(GLOW, t.x, t.z, R * 1.1, P.field, {alpha: (.35 + .3 * kick) * A, layer: 0, edge: 0, soft: 1});
     disc(RING, t.x, t.z, R, P.tideDeep, {alpha: .9 * A, p: [.9, .055, .35, .02], layer: 2, seed, rag: .4, soft: .15});
-    const k = (t.age % .5) / .5; disc(RING, t.x, t.z, R, P.tide, {alpha: A * (1 - k) * .8, p: [mix(.45, .92, k), .04, .8, .02], layer: 3, seed: seed + 2, soft: .3});
+    fieldRing(t.x, t.z, R * (1 + .8 * (1 - Math.pow(1 - k, 2))), A * (1 - k), seed + Math.floor(t.age * 2), .05, .05); // the push running out over the ground
+    if (k < .5) forceLines(t.x, t.z, R, R * 1.9, 14, k * .5, A * (1 - k * 2), seed + Math.floor(t.age * 2));
     at([t.x, 0, t.z]);
-    bb(DOME, [t.x, 0, t.z], R, R, P.tide, {alpha: .92 * A, p: [Math.max(.2, cam.f[1]), 0, 0, 0], seed, rag: .3});
+    bb(DOME, [t.x, 0, t.z], R, R, P.field, {alpha: (.75 + .2 * kick) * A, p: [Math.max(.2, cam.f[1]), 0, 0, 0], seed, rag: .3, lift: R * 1.3});
+    for (let j = 1; j <= 3; j++) { const lat = j / 4 + .06 * Math.sin(t.age * 2 + j), y = R * Math.sin(lat * Math.PI / 2), rr = R * Math.cos(lat * Math.PI / 2); fieldRing(t.x, t.z, rr, A * (.55 + .45 * kick), seed + j * 3, .02, y, .02); } // rings of light round the dome
+    glints(t.x, t.z, R * .98, 8, t.age, A * (.6 + .4 * kick), seed, R * .3);
   }
-  function tideVacuum(t) { // VACUUM COLLAPSE: a whirlpool that swells, pulls everything in and bursts
-    const p = clamp(t.age / t.life), R = Math.max(.08, t.r * Math.sin(p * Math.PI)), A = smooth(0, .06, p) * (1 - smooth(.92, 1, p)), seed = hash(t.x + t.z * 2.1);
-    disc(GLOW, t.x, t.z, R, P.tideDeep, {alpha: .3 * A, layer: 0, edge: 0, soft: 1});
-    disc(SPIRAL, t.x, t.z, R, P.tideDeep, {alpha: .85 * A, p: [1.9, 4, -t.age * 2.4, .44], layer: 1, wobble: .05, seed, rag: .5});
-    disc(RING, t.x, t.z, R * 1.04, P.tide, {alpha: A, p: [.88, .06, .3, .03], layer: 2, seed, rag: .5, soft: .15});
-    for (let j = 0; j < 10; j++) {
-      const k = (t.age * 1.3 + j / 10) % 1, an = j * 2.4 + t.age * 3 + k * 2.6, rr = R * (1 - k), c = [t.x + Math.cos(an) * rr, .08 + k * .06, t.z + Math.sin(an) * rr];
-      mote(c, .06 * (1 - k * .5), P.tide, A * smooth(0, .2, k) * (1 - smooth(.85, 1, k)), {p: [.8, .3, .4, 0]});
-    }
-    if (p > .8) {
-      const k = smooth(.8, 1, p);
-      glowDecal(t.x, t.z, .6 + k * t.r * 1.2, P.tide, (1 - k) * .7);
-      disc(RING, t.x, t.z, .4 + k * t.r * .95, P.tideDeep, {alpha: 1 - k, p: [.85, .07, .6, .03], layer: 3, seed: seed + 3, soft: .3});
-    }
+  function tideVacuum(t) { // VACUUM COLLAPSE: a ring of force swells out, then contracts, dragging force lines and motes to a gravity core that grows at the centre; it implodes in a flash and bursts outward
+    const p = clamp(t.age / t.life), A = smooth(0, .06, p) * (1 - smooth(.94, 1, p)), R = Math.max(.08, t.r * Math.sin(p * Math.PI)), seed = seedOf(t, hash(t.x + t.z * 2.1)), pull = smooth(.4, .85, p);
+    disc(GLOW, t.x, t.z, R, P.field, {alpha: .45 * A, layer: 0, edge: 0, soft: 1});
+    disc(RING, t.x, t.z, R * 1.04, P.tideDeep, {alpha: .9 * A, p: [.88, .08, .3, .03], layer: 2, seed, rag: .5, soft: .2});
+    disc(SPIRAL, t.x, t.z, R * .95, P.field, {alpha: .55 * A * pull, p: [1.9, 4, t.age * 4, .44], layer: 1, wobble: .05, seed, rag: .5}); // the field winding in as it pulls
+    fieldRing(t.x, t.z, R, A, seed, .06);
+    fieldRing(t.x, t.z, R * .6, A * .5, seed + 1, .03, .05, .08);
+    forceLines(t.x, t.z, R * .15, R * 1.05, 16, t.age, A * (.4 + .6 * pull), seed, true); // everything dragged inward
+    for (let j = 0; j < 12; j++) { const k = (t.age * 1.4 + j / 12) % 1, an = j * 2.4 + k * 1.5, rr = R * (1 - k), c = [t.x + Math.cos(an) * rr, .12 + .1 * Math.sin(j), t.z + Math.sin(an) * rr]; at(c); mote(c, .05 * (1 - k * .5), P.tideFoam, A * smooth(0, .2, k) * (1 - smooth(.85, 1, k)), {bias: .02}); }
+    const core = [t.x, .55, t.z], cs = (.15 + .45 * smooth(.2, .85, p)) * (1 - smooth(.86, .9, p)); // the gravity core
+    if (cs > .02) { at(core); glow(core, cs * 3, P.tide, .6 * A, {lift: .4}); bb(BLOB, core, cs, cs, P.tideDeep, {p: [1, .2, 0, 0], seed, lift: .45, bias: .02, edge: .5}); fieldRing(t.x, t.z, cs * 1.5, A, seed + 7, .025, .55, .08); }
+    if (p > .86) { const q = smooth(.86, 1, p), tt = (p - .86) * t.life; // implosion flash, then the burst
+      if (tt < .08) { at(core); glow(core, t.r * .9, P.tideFoam, 1 - tt / .08, {lift: .6, bias: .5}); }
+      glowDecal(t.x, t.z, .6 + q * t.r * 1.2, P.tide, (1 - q) * .8);
+      fieldRing(t.x, t.z, .3 + t.r * 1.05 * (1 - Math.pow(1 - q, 2)), 1 - q * q, seed + 3, .09);
+      forceLines(t.x, t.z, .3, t.r * 1.3, 18, tt * 1.5, 1 - q, seed + 5); }
   }
-  function tideResonance(t) { // RESONANCE CHAIN: rhythmic sound-wave rings
-    const p = clamp(t.age / t.life), A = 1 - smooth(.62, 1, p), seed = hash(t.x * 2.3 + t.z);
+  function tideResonance(t) { // RESONANCE CHAIN: layered, trembling rings of force spreading in rhythm, bright points racing round each one
+    const p = clamp(t.age / t.life), A = 1 - smooth(.62, 1, p), seed = seedOf(t, hash(t.x * 2.3 + t.z));
+    disc(GLOW, t.x, t.z, t.r * .9, P.tide, {alpha: .3 * A * (1 - p), layer: 0, edge: 0, soft: 1});
     for (let j = 0; j < 3; j++) {
-      const q = clamp(p * 1.6 - j * .18), R = Math.max(.05, t.r * smooth(0, .6, q));
-      if (q > 0) disc(RING, t.x, t.z, R * 1.08, j ? P.tide : P.tideDeep, {alpha: A * (1 - smooth(.7, 1, q) * .6), p: [.86, .065 - j * .014, .7, .03], layer: 2 + j, seed: seed + j, rag: .4, soft: .2});
+      const q = clamp(p * 1.6 - j * .18), R = Math.max(.05, t.r * (1 - Math.pow(1 - smooth(0, .6, q), 2))); if (q <= 0) continue; const a = A * (1 - smooth(.7, 1, q) * .6);
+      disc(RING, t.x, t.z, R * 1.04, j ? P.tide : P.tideDeep, {alpha: a * .6, p: [.86, .04, .7, .03], layer: 2 + j, seed: seed + j, rag: .4, soft: .3});
+      fieldRing(t.x, t.z, R, a, seed + j, .045 - j * .01, .08, .09); // trembling like a struck bell
+      for (let m = 0; m < 4; m++) { const an = m * TAU / 4 + t.age * (j % 2 ? -6 : 6) + j, c = [t.x + Math.cos(an) * R, .1, t.z + Math.sin(an) * R]; at(c); glow(c, .18, P.tide, a * .6); mote(c, .045, P.tideFoam, a, {bias: .02}); }
     }
   }
-  // ---------------------------------------------------------------- Toxin: lime goo on purple shadows, a plague flower, acid fog
-  function toxinLob(t) { // a ball of goo arcing through the air, stretching a sticky strand behind it
-    const p = clamp(t.age / t.life), r = .28, sd = hash(t.tx * 1.3 + t.tz), pos = q => [mix(t.x, t.tx, q), .32 + Math.sin(q * Math.PI) * 1.1, mix(t.z, t.tz, q)], c = pos(p);
-    decal(BLOB, c[0] + .05, c[2] - .04, 1, 0, r * (1.25 - .45 * Math.sin(p * Math.PI)), r * .8, P.toxinShade, {alpha: .4, asp: 1, layer: 0, edge: 0, soft: .6});
-    at(c);
-    const pts = [], ws = [];
-    for (let i = 0; i <= 6; i++) { pts.push(pos(Math.max(0, p - .05 * i))); ws.push(r * .55 * (1 - i / 6 * .8)); }
-    ribbon(GOO_R, pts, ws, P.toxin, {seed: sd, bias: -.01});
-    bb(BLOB, c, r * 1.05, r * (1.05 + .1 * Math.sin(t.age * 18)), P.toxin, {p: [1, .3, 0, 0], seed: sd, bias: .01, wobble: .05});
-  }
-  function toxinPool(t) { // a lime puddle on a purple shadow, bubbles rising and popping
-    const p = clamp(t.age / t.life), r = t.r || .8, g = .35 + .65 * smooth(0, .12, p), A = 1 - smooth(.8, 1, p), seed = hash(t.x * 1.9 + t.z * .7), dis = smooth(.8, 1, p);
-    disc(LIQUID, t.x + .1, t.z - .08, r * 1.12 * g, P.toxinShade, {alpha: .7 * A, p: [.45, 2, 0, 0], layer: 0, seed, dissolve: dis, edge: .4});
-    disc(LIQUID, t.x, t.z, r * g, P.toxin, {alpha: .95 * A, p: [.45, 2.2, 0, 0], layer: 1, seed, dissolve: dis, shine: .5});
-    for (let j = 0; j < 4; j++) {
-      const k = (t.age * 1.1 + j * .27 + hash(seed + j)) % 1, an = hash(seed * 3 + j) * TAU, rr = r * .6 * hash(seed + j * 7);
-      mote([t.x + Math.cos(an) * rr, .05 + k * .1, t.z + Math.sin(an) * rr], .05 + .06 * Math.sin(k * Math.PI), P.toxin, A * (1 - smooth(.8, 1, k)), {p: [.7, .35, .5, 0], lift: .3, seed: j});
+  // ---------------------------------------------------------------- Toxin: deep purple venom lit by glowing acid green (owner round 4:
+  // the old lime goo vanished into the grass). Venom is glossy and heavy; the acid glows, bubbles, pops and gives off thin vapour.
+  function acidBubbles(x, z, r, n, age, A, seed, h = .12) { // acid-green bubbles rising out of venom and popping with a little ring
+    for (let j = 0; j < n; j++) {
+      const k = (age * (1 + .4 * hash(seed + j * 2)) + hash(seed + j)) % 1, an = hash(seed * 3 + j) * TAU, rr = r * .65 * Math.sqrt(hash(seed + j * 7)), x0 = x + Math.cos(an) * rr, z0 = z + Math.sin(an) * rr;
+      if (k < .8) mote([x0, .04 + k * h, z0], (.035 + .05 * hash(j + seed)) * (.4 + .6 * k / .8), P.acid, A, {p: [.7, .35, .5, 0], lift: .3, seed: j, shine: .6});
+      else disc(RING, x0, z0, .05 + (k - .8) * .6, P.acid, {alpha: A * (1 - (k - .8) / .2), p: [.8, .12, .6, 0], layer: 3, seed: j, soft: .3});
     }
   }
-  function toxinInfection(t) { // NEUROTOXIN INJECTION: a pulsing poison drop hangs over the target, then pops
-    const p = clamp(t.age / t.life), A = smooth(0, .1, p) * (1 - smooth(.9, 1, p)), beat = 1 + (.08 + .14 * p) * Math.sin(t.age * (6 + p * 18)), seed = hash(t.x + t.z);
-    disc(RING, t.x, t.z, t.r, P.toxinShade, {alpha: .8 * A, p: [.86, .07, .4, .04], layer: 2, seed, rag: .4, soft: .2});
-    disc(LIQUID, t.x, t.z, t.r * .62, P.toxin, {alpha: .5 * A, p: [.5, 2.2, 0, 0], layer: 1, seed, shine: .4});
-    const top = [t.x, 1.55 + Math.sin(t.age * 4) * .06, t.z]; at(top);
-    glow(top, .5 * beat, P.toxin, .35 * A, {lift: .8, bias: -.01});
-    bb(DROP, [top[0], top[1] + .05, top[2]], .3 * beat, .19 * beat, P.toxin, {alpha: A, rot: Math.PI / 2, asp: .3 / .19, lift: .8, seed, shine: .6});
-    for (let j = 0; j < 3; j++) { const an = t.age * 2.4 + j * TAU / 3, c = [t.x + Math.cos(an) * .6, .45 + .2 * Math.sin(t.age * 3 + j), t.z + Math.sin(an) * .6]; mote(c, .07, P.toxin, A, {p: [.7, .35, .45, 0], lift: .35, seed: j}); }
+  function vapour(x, z, r, n, age, A, seed) { // thin acid vapour curling up off the venom
+    for (let j = 0; j < n; j++) { const k = (age * .5 + j / n + hash(seed + j)) % 1, an = hash(seed + j * 5) * TAU, rr = r * .5 * hash(seed * 2 + j), c = [x + Math.cos(an) * rr, .1 + k * .9, z + Math.sin(an) * rr]; at(c);
+      fog(c, .18 + .3 * k, .28 + .35 * k, P.acid, A * .38 * smooth(0, .2, k) * (1 - smooth(.5, 1, k)), {seed: seed + j, lift: .2, dissolve: smooth(.4, 1, k), p: [.6, .9, .35, 0]}); }
   }
-  function toxinBurst(t) { // the injected poison bursts: a splash of goo, drops flung out and a puff of toxic fog
-    const p = clamp(t.age / t.life), r = t.r, A = 1 - smooth(.55, 1, p), g = smooth(0, .35, p), seed = hash(t.x * 3 + t.z);
-    disc(LIQUID, t.x + .1, t.z - .08, r * (.5 + g * 1.05), P.toxinShade, {alpha: .6 * A, p: [.55, 2.4, 0, 0], layer: 0, seed, dissolve: smooth(.5, 1, p), edge: .4});
-    disc(LIQUID, t.x, t.z, r * (.4 + g), P.toxin, {alpha: .95 * A, p: [.55, 2.6, 0, 0], layer: 1, seed, dissolve: smooth(.5, 1, p), shine: .5});
-    for (let j = 0; j < 6; j++) { const an = j * TAU / 6 + seed * 5, sp = 1.4 + .8 * hash(j + seed); thrown([t.x, .3, t.z], [Math.cos(an) * sp, 2.4 + hash(j * 3 + seed), Math.sin(an) * sp], t.age, P.toxin, .06, GOO_R, {alpha: A, seed: j, g: 10, tail: .08}); }
-    const c = [t.x, .55 + p * .5, t.z]; at(c); fog(c, r * (.8 + p * .7), r * (.6 + p * .5), P.toxinShade, .75 * (1 - smooth(.3, 1, p)), {seed, dissolve: smooth(.4, 1, p), lift: .3});
+  function venomStain(x, z, r, A, seed, dis = 0) { // venom soaking into the ground like wet watercolour: translucent, a darker bloom where it dries at the rim, no hard edge, no gloss
+    disc(FOG, x, z, r * 1.08, P.toxinShade, {alpha: .55 * A, edge: 0, soft: .8, layer: 0, seed, dissolve: dis, p: [.45, .7, 0, 0]}); // the wet halo bleeding into the soil
+    disc(RING, x, z, r * .9, P.toxinDeep, {alpha: .45 * A, p: [.86, .09, .75, .05], layer: 1, seed: seed + 1, rag: .7, soft: .5}); // pigment gathering at the drying rim
+    disc(FOG, x, z, r * .7, P.toxin, {alpha: .5 * A, edge: 0, soft: .8, layer: 1, seed: seed + 2, dissolve: dis, p: [.35, .6, 0, 0]});
   }
-  function toxinBloom(t) { // PLAGUE BLOOM: a poison flower that puffs clouds of spores in rhythm
-    const p = clamp(t.age / t.life), r = t.r, A = smooth(0, .08, p) * (1 - smooth(.86, 1, p)), open = smooth(0, .22, p), seed = hash(t.x * .9 + t.z * 1.3);
-    disc(GLOW, t.x, t.z, r, P.toxin, {alpha: .3 * A, layer: 0, edge: 0, soft: 1});
-    disc(RING, t.x, t.z, r, P.toxinShade, {alpha: .7 * A, p: [.9, .025, .6, .03], layer: 1, seed, rag: .8, soft: .2});
-    const fr = 1.5 * (.35 + .65 * open), pulse = 1 + .06 * Math.sin(t.age * TAU / .45);
-    disc(FLOWER, t.x + .08, t.z - .06, fr * 1.06 * pulse, P.toxinShade, {alpha: .45 * A, p: [6, 1.7, .28, seed * 6 + .26], layer: 2, seed, wobble: .1});
-    disc(FLOWER, t.x, t.z, fr * pulse, P.petal, {alpha: .85 * A, p: [6, 1.7, .28, seed * 6], layer: 3, seed, rag: .3, wobble: .1});
-    disc(BLOB, t.x, t.z, fr * .24, P.toxin, {alpha: A, p: [1, .3, 0, 0], layer: 4, seed, wobble: .08});
-    const k = (t.age % .45) / .45, wave = Math.floor(t.age / .45);
-    for (let j = 0; j < 4; j++) { // a cloud of spores rising from the flower each beat
-      const an = j * TAU / 4 + wave * .9, dist = r * k * .55, c = [t.x + Math.cos(an) * dist, .3 + k * .8, t.z + Math.sin(an) * dist], s = .25 + .35 * k; at(c);
-      fog(c, s, s * .8, P.spore, A * smooth(0, .15, k) * (1 - smooth(.55, 1, k)) * .85, {seed: j + wave * 3, lift: .2, dissolve: smooth(.6, 1, k)});
+  function toxinLob(t) { // Toxin Spit (owner round 5): a cluster of venom droplets tumbling round each other as they arc over, trailing thin acid vapour
+    const p = clamp(t.age / t.life), sd = hash(t.tx * 1.3 + t.tz), pos = q => [mix(t.x, t.tx, q), .3 + Math.sin(q * Math.PI) * 1.2, mix(t.z, t.tz, q)], c = pos(p);
+    shadow(c[0], c[2], .32, .3); at(c);
+    for (let j = 0; j < 5; j++) { const q = Math.max(0, p - .08 - j * .07), d0 = pos(q), fall = (p - q) * t.life, dq = [d0[0], d0[1] - 6 * fall * fall, d0[2]]; if (dq[1] > .05) { at(dq); mote(dq, .05 - j * .006, j % 2 ? P.acid : P.toxin, 1 - j * .15, {bias: .01, seed: j, p: [.8, .3, 0, 0]}); } } // drips shaken loose, falling away
+    for (let j = 0; j < 3; j++) { const an = t.age * 14 + j * TAU / 3, q = [c[0] + Math.cos(an) * .17 * cam.r[0], c[1] + Math.sin(an) * .15, c[2] + Math.cos(an) * .17 * cam.r[2]], rr = [.2, .16, .13][j]; at(q);
+      bb(BLOB, q, rr, rr * 1.12, P.toxin, {p: [1, .35, 0, 0], seed: sd + j, bias: .01 + Math.sin(an) * .005, shine: .6}); }
+    glow(c, .6, P.acid, .5, {bias: -.01});
+  }
+  function toxinPool(t) { // the droplets land: a crown of venom splashes up, then a stain soaks into the ground, breathing out thin acid vapour and the odd bubble
+    const p = clamp(t.age / t.life), r = t.r || .8, g = .35 + .65 * (1 - Math.pow(1 - smooth(0, .2, p), 2)), A = 1 - smooth(.72, 1, p), seed = hash(t.x * 1.9 + t.z * .7);
+    if (t.age < .45) { const k = t.age / .45; // the splash crown
+      disc(RING, t.x, t.z, r * (.3 + .8 * k), P.toxin, {alpha: (1 - k) * .9, p: [.84, .1, .6, .03], layer: 2, seed, soft: .3});
+      for (let j = 0; j < 9; j++) { const an = j * TAU / 9 + seed * 4, sp = 1.2 + .7 * hash(j + seed); thrown([t.x + Math.cos(an) * r * .25, .05, t.z + Math.sin(an) * r * .25], [Math.cos(an) * sp, 2.6 + hash(j * 3 + seed), Math.sin(an) * sp], t.age, j % 3 ? P.toxin : P.acid, .05, WATER_R, {alpha: 1 - k, seed: j, g: 11, tail: .07, rp: [0, .9, 0, 0]}); }
     }
+    venomStain(t.x, t.z, r * g, A, seed, smooth(.75, 1, p));
+    acidBubbles(t.x, t.z, r * g * .8, 3, t.age, A, seed);
+    vapour(t.x, t.z, r * g, 3, t.age, A, seed);
   }
-  function toxinArc(t) { // a spore drifting to a new victim
+  function toxinInfection(t) { // NEUROTOXIN INJECTION: a venom mark over the foe (a heavy pulsing drop ringed by orbiting droplets); acid veins creep out over the ground under it
+    const p = clamp(t.age / t.life), A = smooth(0, .1, p) * (1 - smooth(.9, 1, p)), beat = 1 + (.08 + .16 * p) * Math.sin(t.age * (6 + p * 18)), seed = hash(t.x + t.z);
+    glowDecal(t.x, t.z, t.r * 1.1, P.acid, .35 * A * beat);
+    disc(RING, t.x, t.z, t.r, P.toxinDeep, {alpha: .85 * A, p: [.86, .07, .4, .04], layer: 2, seed, rag: .4, soft: .2});
+    for (let j = 0; j < 5; j++) { const an = j * TAU / 5 + seed * 3, len = t.r * (.4 + .6 * smooth(0, .6, p)) * (.7 + .3 * hash(j + seed)), pts = [], ws = []; // acid veins spreading over the ground
+      for (let m = 0; m <= 5; m++) { const f = m / 5, a2 = an + Math.sin(f * 5 + j) * .25; pts.push([t.x + Math.cos(a2) * len * f, .03, t.z + Math.sin(a2) * len * f]); ws.push(.035 * (1 - f * .8) + .004); }
+      ribbon(GLOW_R, pts, ws, P.acid, {alpha: .85 * A, seed: seed + j, soft: .35, edge: 0, lift: .05}); }
+    const fall = smooth(.86, 1, p), top = [t.x, (1.55 + Math.sin(t.age * 4) * .06) * (1 - fall * fall) + .15 * fall, t.z], st = 1 + 1.4 * fall; at(top); // at the end the drop plunges onto the foe, stretching as it falls
+    glow(top, .6 * beat, P.acid, .45 * A, {lift: .8, bias: -.01});
+    bb(DROP, [top[0], top[1] + .05, top[2]], .32 * beat * st, .2 * beat / Math.sqrt(st), P.toxin, {alpha: smooth(0, .1, p), rot: Math.PI / 2, asp: .32 * st / .2, lift: .8, seed, shine: .7});
+    for (let j = 0; j < 4; j++) { const an = t.age * 2.6 + j * TAU / 4, c = [t.x + Math.cos(an) * .5, 1.5 + .12 * Math.sin(t.age * 3 + j), t.z + Math.sin(an) * .35]; at(c); mote(c, .065, j % 2 ? P.acid : P.toxin, A, {p: [.8, .35, .3, 0], lift: .8, seed: j}); }
+  }
+  function toxinBurst(t) { // the venom drop hits: a flash, a tall crown of venom splashing up and falling back, a shock ring, then a column of acid vapour boiling up out of a soaking stain
+    const p = clamp(t.age / t.life), r = t.r, seed = hash(t.x * 3 + t.z), T = t.age;
+    if (T < .07) { const c = [t.x, .45, t.z]; at(c); glow(c, r * 2, P.acid, 1 - T / .07, {lift: .8, bias: .5}); }
+    { const q = clamp(T / .35); if (q < 1) disc(RING, t.x, t.z, r * (.3 + 1.6 * (1 - Math.pow(1 - q, 2))), P.acid, {alpha: 1 - q, p: [.85, .08, .6, .02], layer: 3, seed, soft: .3}); }
+    venomStain(t.x, t.z, r * (.5 + .9 * smooth(0, .25, T)), 1 - smooth(.6, 1, p), seed);
+    for (let j = 0; j < 14; j++) { const an = j * TAU / 14 + seed * 5, sp = 1 + .9 * hash(j + seed); // the crown: drops thrown high and falling back
+      thrown([t.x + Math.cos(an) * r * .2, .1, t.z + Math.sin(an) * r * .2], [Math.cos(an) * sp, 3.4 + 1.2 * hash(j * 3 + seed), Math.sin(an) * sp], T, j % 4 ? P.toxin : P.acid, .06, WATER_R, {alpha: 1 - smooth(.7, 1, p), seed: j, g: 12, tail: .09, rp: [0, .9, 0, 0]}); }
+    for (let j = 0; j < 6; j++) { const k = clamp((T - .06 - j * .04) / .5); if (k <= 0 || k >= 1) continue; // acid vapour boiling up in a turning column
+      const an = j * 2.1 + T * 3, c = [t.x + Math.cos(an) * r * .3 * k, .3 + k * 1.6, t.z + Math.sin(an) * r * .3 * k]; at(c);
+      fog(c, r * (.35 + .5 * k), r * (.45 + .5 * k), j % 2 ? P.spore : P.acid, .7 * (1 - k), {seed: seed + j, lift: .3, dissolve: smooth(.35, 1, k), p: [.6, .9, .3, 0]}); }
+  }
+  function toxinBloom(t) { // PLAGUE BLOOM: a dark venom flower with a glowing acid heart opens on a stained patch and breathes out glowing spores in rhythm
+    const p = clamp(t.age / t.life), r = t.r, A = smooth(0, .08, p) * (1 - smooth(.86, 1, p)), open = 1 - Math.pow(1 - smooth(0, .25, p), 2), seed = hash(t.x * .9 + t.z * 1.3);
+    const k = (t.age % .45) / .45, wave = Math.floor(t.age / .45), beat = Math.exp(-k * 5);
+    glowDecal(t.x, t.z, r, P.acid, (.2 + .25 * beat) * A);
+    disc(RING, t.x, t.z, r, P.toxinDeep, {alpha: .75 * A, p: [.9, .025, .6, .03], layer: 1, seed, rag: .8, soft: .2});
+    const fr = 1.5 * (.3 + .7 * open), pulse = 1 + .07 * beat;
+    disc(FLOWER, t.x + .08, t.z - .06, fr * 1.08 * pulse, P.toxinShade, {alpha: .6 * A, p: [6, 1.7, .28, seed * 6 + .26], layer: 2, seed, wobble: .1});
+    disc(FLOWER, t.x, t.z, fr * pulse, P.petal, {alpha: .95 * A, p: [6, 1.7, .28, seed * 6], layer: 3, seed, rag: .3, wobble: .1, shine: .4});
+    disc(GLOW, t.x, t.z, fr * .45, P.acid, {alpha: (.6 + .4 * beat) * A, layer: 4, edge: 0, soft: 1});
+    disc(BLOB, t.x, t.z, fr * .22, P.acid, {alpha: A, p: [1, .3, 0, 0], layer: 5, seed, wobble: .08});
+    for (let j = 0; j < 7; j++) { // glowing spores breathed out each beat, drifting up and out
+      const an = j * TAU / 7 + wave * .9, dist = r * (.15 + k * .6), c = [t.x + Math.cos(an) * dist, .3 + k * 1.1 + .1 * Math.sin(j + wave), t.z + Math.sin(an) * dist]; at(c);
+      glow(c, .16, P.acid, .5 * A * (1 - smooth(.6, 1, k)), {lift: .2}); mote(c, .05 + .02 * hash(j + wave), P.spore, A * smooth(0, .1, k) * (1 - smooth(.7, 1, k)), {lift: .2, bias: .01, seed: j});
+    }
+    { const c = [t.x, .5 + k * .6, t.z]; at(c); fog(c, fr * (.5 + .6 * k), fr * (.35 + .4 * k), P.spore, A * .45 * beat, {seed: seed + wave, lift: .2, dissolve: smooth(.3, 1, k), p: [.6, .9, .3, 0]}); } // the breath itself
+  }
+  function toxinArc(t) { // a glowing spore drifting to a new victim
     const p = clamp(t.age / t.life), pos = q => [mix(t.x, t.tx, q), .35 + Math.sin(q * Math.PI) * .8, mix(t.z, t.tz, q)], c = pos(p); at(c);
     const pts = [], ws = []; for (let i = 0; i <= 5; i++) { pts.push(pos(Math.max(0, p - .06 * i))); ws.push(.07 * (1 - i / 5 * .8)); }
-    ribbon(GLOW_R, pts, ws, P.spore, {alpha: .8, soft: .5, edge: 0, lift: .3});
-    mote(c, .09, P.spore, 1, {lift: .3, bias: .01});
+    ribbon(GLOW_R, pts, ws, P.acid, {alpha: .8, soft: .5, edge: 0, lift: .3});
+    glow(c, .22, P.acid, .6, {lift: .3}); mote(c, .08, P.spore, 1, {lift: .3, bias: .01});
   }
-  function toxinMiasma(t) { // CORROSIVE MIASMA: a low, wispy acid fog that creeps after the pack
-    const p = clamp(t.age / t.life), r = t.r, A = smooth(0, .12, p) * (1 - smooth(.8, 1, p)), seed = hash(t.x * .37 + t.z * .11), dis = smooth(.82, 1, p);
-    fogDecal(t.x, t.z, r * 1.25, P.toxinShade, .75 * A, {seed, dissolve: dis});
-    fogDecal(t.x, t.z, r * .85, P.toxin, .45 * A, {seed: seed + 1, dissolve: dis, layer: 1});
-    for (let j = 0; j < 3; j++) {
-      const an = j * TAU / 3 + t.age * .4, rr = r * .35, c = [t.x + Math.cos(an) * rr, .45 + .1 * Math.sin(t.age * 1.3 + j), t.z + Math.sin(an) * rr]; at(c);
-      fog(c, r * .95, r * .55, j ? P.toxinShade : P.toxin, .6 * A, {seed: seed + j * 2, dissolve: dis, lift: .2, p: [.5, .8, .15, 0]});
-    }
-    for (let j = 0; j < 3; j++) { const k = (t.age * 1.3 + j / 3) % 1, an = hash(seed + j * 4) * TAU, rr = r * .7 * hash(j + seed); mote([t.x + Math.cos(an) * rr, .06 + k * .12, t.z + Math.sin(an) * rr], .05 + .05 * Math.sin(k * Math.PI), P.toxin, A * (1 - smooth(.8, 1, k)), {p: [.7, .35, .5, 0], lift: .3, seed: j}); }
+  function toxinMiasma(t) { // CORROSIVE MIASMA as a trail of poison flowers (owner request): the slime sows seeds as it walks; each seed drops and bounces, sprouts, opens into a small venom flower that puffs glowing poison pollen, then wilts
+    const puffs = t.puffs || [{x: t.x, z: t.z, t: 0}], r = t.r;
+    puffs.forEach((q, i) => {
+      const L = t.plife || 3, a = t.age - q.t; if (a < 0 || a >= L) return; const sd = hash(q.x * 3.1 + q.z * 1.7 + i), wilt = smooth(L - .5, L, a), A = 1 - wilt;
+      if (a < .3) { const k = a / .3, h = .55 * (1 - k * k) + .06 * Math.abs(Math.sin(k * Math.PI * 2)) * (1 - k), c = [q.x, .04 + h, q.z]; at(c); shadow(q.x, q.z, .08, .3); mote(c, .06, P.toxinDeep, 1, {p: [1, .3, 0, 0], seed: sd, bias: .01}); return; } // the seed drops and bounces
+      const grow = 1 - Math.pow(1 - smooth(.3, .7, a), 2), open = 1 - Math.pow(1 - smooth(.55, 1, a), 3), beat = Math.exp(-((a - .9) % .55 + .55) % .55 * 6);
+      if (a < .55) { const k = (a - .3) / .25; disc(RING, q.x, q.z, .1 + .35 * k, P.dust, {alpha: (1 - k) * .6, p: [.84, .1, .6, 0], layer: 2, seed: sd, soft: .4}); } // soil breaking as it sprouts
+      glowDecal(q.x, q.z, r * .8 * grow, P.acid, (.12 + .15 * beat * open) * A);
+      for (let m = 0; m < 3; m++) { // a clump of small flowers on thin stems, like the meadow's own flowers but taller, swaying like the grass
+        const an = sd * 9 + m * 2.3, o = m ? .12 + .06 * hash(sd + m) : 0, base = [q.x + Math.cos(an) * o, 0, q.z + Math.sin(an) * o * .7], H = (.42 + .16 * hash(sd * 3 + m)) * grow * (1 - .3 * wilt), sway = Math.sin(now * 1.2 + base[0] * .7 + base[2] * .4 + m) * .07;
+        const pts = [], ws = []; for (let k2 = 0; k2 <= 4; k2++) { const h = k2 / 4; pts.push([base[0] + (sway + (m - 1) * .05) * h * h, .01 + H * h, base[2]]); ws.push(.013 * (1 - .4 * h) + .003); }
+        at(base); ribbon(GLOW_R, pts.slice().reverse(), ws.slice().reverse(), P.stem, {alpha: A, seed: sd + m, soft: .2, edge: 0, lift: .05});
+        const lf = pts[1]; bb(DROP, addv(lf, cam.r, (m % 2 ? 1 : -1) * .045), .055 * grow, .025 * grow, P.stem, {rot: (m % 2 ? .5 : Math.PI - .5), asp: 2.2, alpha: A, seed: sd + m, lift: .06}); // a leaf
+        const head = pts[4], hs = (.075 + .025 * hash(sd + m * 5)) * (.3 + .7 * open) * (1 + .12 * beat * open) * (1 - .4 * wilt); at(head);
+        if (open > .05) { bb(FLOWER, head, hs, hs, P.petal, {p: [5, 1.5, .3, sd * 6 + m], alpha: A, seed: sd + m, lift: .08, edge: .4, wobble: 1e-4, dissolve: wilt * .7}); bb(BLOB, head, hs * .3, hs * .3, P.acid, {p: [.6, 0, 0, 0], alpha: A, seed: sd, lift: .09, edge: 0, soft: .3}); glow(head, hs * 1.8, P.acid, (.25 + .3 * beat) * A * open, {lift: .07, bias: -.01}); }
+        else bb(DROP, head, .04 * grow, .025 * grow, P.petal, {rot: Math.PI / 2, asp: 1.6, alpha: A, seed: sd + m, lift: .08}); // a closed bud
+      }
+      if (open > .5) for (let j = 0; j < 5; j++) { // glowing pollen puffed out on each beat, drifting up and away
+        const k = ((a - .9) / .55 + j * .2 + hash(sd + j)) % 1, an = j * TAU / 5 + sd * 4 + Math.floor((a - .9) / .55), dist = r * (.1 + .7 * k), c = [q.x + Math.cos(an) * dist, .45 + k * .8, q.z + Math.sin(an) * dist]; at(c);
+        glow(c, .2, P.acid, .6 * A * (1 - k), {lift: .2}); mote(c, .05 + .02 * hash(j + sd), P.spore, A * smooth(0, .1, k) * (1 - smooth(.7, 1, k)), {lift: .2, bias: .01, seed: j});
+      }
+    });
   }
   // ---------------------------------------------------------------- Frost: faceted crystals, a spinning drill, snowy breath
   function frostCrystal(t) { // Frost Spike: a faceted ice shard drawing a trail of cold mist
     const d = [t.dx, 0, t.dz], c = [t.x, .44, t.z], A = clamp((t.life - t.age) * 6) * smooth(0, .05, t.age), sd = hash(t.x * 5 + t.z);
     at(c); shadow(t.x, t.z, .2, .2 * A);
     streak(GLOW_R, addv(c, d, -.1), [-d[0], .03, -d[2]], Math.min(.9, (t.speed || 9) * t.age), .1, P.frost, {alpha: .8 * A, seed: sd, soft: .5, edge: 0, flutter: .3, lift: .2});
-    aim(SHARD, c, d, .34, .14, P.frost, {alpha: A, p: [.36, 1, 0, 0], seed: sd, bias: .02, lift: .25});
+    glow(c, .45, P.frost, .35 * A, {bias: -.01, lift: .2});
+    aim(CRYSTAL, c, d, .42, .17, P.ice, {alpha: A, p: [.3, .7, 0, 0], seed: sd, bias: .02, lift: .25, edge: .5});
   }
   function frostBorer(t) { // GLACIAL BORER: a spinning ice drill wrapped in a spiral of frosty wind
     const d = [t.dx, 0, t.dz], p = [t.x, .55, t.z], A = clamp((t.life - t.age) * 5) * smooth(0, .06, t.age), sd = hash(t.x + t.z * 3), R = t.r;
@@ -363,17 +482,23 @@ export function createPaintedSkillRenderer(gl) {
       mote([t.x + Math.sin(yaw + a) * dist, .2 + .5 * hash(j * 3) + k * .2, t.z + Math.cos(yaw + a) * dist], .03 + .03 * hash(j + 5), j % 3 ? P.foam : P.frost, A * smooth(0, .1, k) * (1 - smooth(.75, 1, k)), {lift: .25, bias: .03});
     }
   }
-  function frostCluster(t) { // CRYSTAL CHAINBURST: crystals erupt from a patch of frost, then shatter
-    const p = clamp(t.age / t.life), r = t.r, A = 1 - smooth(.8, 1, p), grow = smooth(0, .4, p), seed = hash(t.x * 1.7 + t.z * .3), g = t.generation || 0;
-    disc(LIQUID, t.x, t.z, r * (.5 + .6 * grow), P.frost, {alpha: .6 * A, p: [.6, 3, 0, 0], layer: 1, seed, shine: .6, edge: .5});
-    const n = g > 0 ? 4 : 6;
-    for (let j = 0; j < n; j++) {
-      const an = hash(j * 5.1 + seed) * TAU, dist = j ? r * (.22 + .38 * hash(j * 2.3 + seed)) : 0, h = r * (j ? .6 + .3 * hash(j * 1.7 + seed) : 1.15) * grow, w = Math.max(.01, h * .25);
-      const base = [t.x + Math.cos(an) * dist, 0, t.z + Math.sin(an) * dist]; at(base);
-      const tilt = (hash(j + seed) - .5) * .7, u = screenDir(Math.PI / 2 + tilt);
-      bb(COLUMN, addv(base, u, h / 2), h / 2, w, j % 2 ? P.frost : P.frostDeep, {rot: Math.PI / 2 + tilt, asp: h / 2 / w, alpha: A * (1 - smooth(.72, .95, p)), p: [.3, 0, 0, 0], seed: j, lift: .15});
+  function frostCluster(t) { // CRYSTAL CHAINBURST, a thicket of ice spikes (owner request): the spikes stab up out of the ground one at a time, a clump at each spot the game hits, slowly pushing up, then crumbling into shards and cold mist
+    const seed = t.seed ?? hash(t.x * 1.7 + t.z * .3), N = t.spikes || 9, every = t.every || .16, sr = t.sr || t.r * .42;
+    disc(LIQUID, t.x, t.z, t.r * (.55 + .5 * smooth(0, N * every, t.age)), P.frost, {alpha: .55 * (1 - smooth(t.life - .4, t.life, t.age)), p: [.6, 3, 0, 0], layer: 1, seed, shine: .7, edge: .4});
+    for (let i = 0; i < N; i++) {
+      const a = t.age - i * every; if (a < 0) break;
+      const j = i * 5 % N, f = j ? Math.sqrt(j / (N - 1)) : 0, g = j * 2.39996 + seed, x = t.x + Math.cos(g) * t.r * .8 * f, z = t.z + Math.sin(g) * t.r * .8 * f; // the same spot the game hits (painted-style.mjs)
+      const rise = 1 - Math.pow(1 - smooth(0, .3, a), 3), crumble = smooth(.75, 1, a), A = 1 - crumble;
+      if (a < .45) { const q = a / .45; disc(RING, x, z, sr * (.4 + .9 * q), P.frost, {alpha: (1 - q) * .8, p: [.84, .08, .6, .03], layer: 2, seed: seed + i, soft: .3}); } // the ground cracks as it breaks through
+      disc(LIQUID, x, z, sr * .75, P.frost, {alpha: .6 * A, p: [.6, 3, 0, 0], layer: 1, seed: seed + i, shine: .6, edge: .4});
+      if (A > 0) for (let m = 0; m < 4; m++) { // one tall spike and three smaller ones leaning out round it
+        const an = m ? g + m * 2.1 + hash(i * 3 + m) : 0, o = m ? sr * .38 : 0, h = sr * (m ? .95 + .3 * hash(i + m * 7) : 2) * rise * (m ? smooth(.05, .3, a) : 1), w = Math.max(.01, h * (m ? .2 : .15)), base = [x + Math.cos(an) * o, 0, z + Math.sin(an) * o]; at(base);
+        const tilt = m ? Math.cos(an) * .7 : (hash(i) - .5) * .2, u = screenDir(Math.PI / 2 + tilt);
+        bb(CRYSTAL, addv(base, u, h / 2), h / 2, w, (i + m) % 3 ? P.ice : P.frostDeep, {rot: Math.PI / 2 + tilt, asp: h / 2 / w, alpha: A, p: [.4, .35, 0, 0], seed: i * 4 + m, lift: .15, edge: .5});
+      }
+      if (crumble > 0 && crumble < 1) { const k = crumble; at([x, .4, z]); fog([x, .35, z], sr * (.5 + .6 * k), sr * (.35 + .35 * k), P.frost, .55 * (1 - k), {seed: seed + i, lift: .3, dissolve: smooth(.3, 1, k)});
+        for (let m = 0; m < 4; m++) { const an = m * TAU / 4 + i, c = [x + Math.cos(an) * sr * (.2 + k * .9), .2 + Math.sin(k * Math.PI) * .5, z + Math.sin(an) * sr * (.2 + k * .9)]; at(c); aim(CRYSTAL, c, [Math.cos(an), .5, Math.sin(an)], .14, .06, P.ice, {alpha: 1 - k, p: [.35, .5, 0, 0], seed: m, lift: .2}); } }
     }
-    if (p > .6) { const k = smooth(.6, 1, p); for (let j = 0; j < 5; j++) { const an = j * TAU / 5 + seed * 4, c = [t.x + Math.cos(an) * r * (.3 + k * .8), .25 + Math.sin(k * Math.PI) * .5, t.z + Math.sin(an) * r * (.3 + k * .8)]; at(c); aim(SHARD, c, [Math.cos(an), .5, Math.sin(an)], .15, .07, P.frost, {alpha: 1 - k, p: [.4, 1, 0, 0], seed: j, lift: .2}); } }
   }
   function frostBurst(t) { // a frozen foe shattering: a puff of frost and a few shards
     const p = clamp(t.age / t.life), r = t.r, A = 1 - smooth(.55, 1, p), q = 1 - (1 - p) ** 2, seed = hash(t.x + t.z * 5);
@@ -381,57 +506,89 @@ export function createPaintedSkillRenderer(gl) {
     for (let j = 0; j < 4; j++) { const an = j * TAU / 4 + seed * 3, s = [t.x + Math.cos(an) * r * (.1 + q * .6), .15 + Math.sin(p * Math.PI) * .45, t.z + Math.sin(an) * r * (.1 + q * .6)]; at(s); aim(SHARD, s, [Math.cos(an), .3, Math.sin(an)], .14, .06, j % 2 ? P.frost : P.frostDeep, {alpha: A, p: [.4, 1, 0, 0], seed: j, lift: .3}); }
   }
   // ---------------------------------------------------------------- Chain: painted lightning with a soft glow
-  function bolt(a, b, wide, alpha, seed, rate = 24, branch = 1, lift = 0) {
-    span(BOLT, a, b, wide * 3, P.chainBlue, {alpha: alpha * .5, p: [.5, .5, branch, rate], seed, lift, soft: .8, edge: 0});
-    span(BOLT, a, b, wide * .6, P.chain, {alpha, p: [.5, .5, branch, rate], seed, lift, bias: .01});
+  // A lightning bolt from a to b: a jagged path that re-strikes rate times a second, drawn as a white-hot stroke with yellow edges
+  // inside a soft golden glow, with forks splitting off it. Kinks are strongest mid-way, so both ends stay pinned.
+  function bolt(a, b, wide, alpha, seed, rate = 24, fork = 1, lift = 0) {
+    const v = [b[0] - a[0], b[1] - a[1], b[2] - a[2]], L = Math.hypot(v[0], v[1], v[2]); if (L < .02 || alpha <= 0) return;
+    const d = [v[0] / L, v[1] / L, v[2] / L], side = norm(cross3(d, cam.f)) || cam.u, key = Math.floor(now * rate), n = Math.max(5, Math.min(14, Math.round(L * 3.2)));
+    const pts = [], ws = [];
+    for (let i = 0; i <= n; i++) { const f = i / n, k = i && i < n ? (hash(key * 7.13 + i * 3.31 + seed) - .5) * 2 * Math.min(L * .12, .5) * Math.sqrt(Math.sin(f * Math.PI)) : 0; pts.push(addv(addv(a, d, L * f), side, k)); ws.push(wide * (.55 + .45 * Math.sin(f * Math.PI)) + .004); }
+    ribbon(GLOW_R, pts, ws.map(x => x * 4), P.chainGlow, {alpha: alpha * .4, seed, soft: .85, edge: 0, lift, bias: -.01});
+    ribbon(SPARK_R, pts, ws, P.chain, {alpha, seed, soft: .15, edge: 0, lift});
+    for (let j = 0; j < fork; j++) { // forks split off and die out
+      const i0 = 1 + Math.floor(hash(key * 1.7 + j * 9 + seed) * (n - 2)), s0 = hash(key * 3.9 + j + seed) > .5 ? 1 : -1, fl = L * (.18 + .14 * hash(key + j * 5 + seed)), fp = [pts[i0]], fw = [ws[i0] * .6];
+      const fd = norm(addv(d, side, s0 * .9)) || d;
+      for (let m = 1; m <= 3; m++) { fp.push(addv(addv(pts[i0], fd, fl * m / 3), side, (hash(key * 5.3 + m + j * 7 + seed) - .5) * fl * .5)); fw.push(ws[i0] * .6 * (1 - m / 3.4)); }
+      ribbon(SPARK_R, fp, fw, P.chain, {alpha: alpha * .9, seed: seed + j, soft: .15, edge: 0, lift});
+    }
   }
-  function chainArc(t) { // Chain Spark: a jagged bolt hopping between foes, a flash where it lands
+  function sparks(c, n, speed, t, alpha, seed, lift = .3) { // yellow sparks flung out from a strike, slowing as they fly
+    for (let j = 0; j < n; j++) { const an = j * TAU / n + seed * 5, up = .4 + hash(j * 3 + seed), sp = speed * (.6 + .6 * hash(j + seed)), k = 2.8, s = (1 - Math.exp(-k * t)) / k;
+      const q = [c[0] + Math.cos(an) * sp * s, c[1] + up * sp * s - 3 * t * t, c[2] + Math.sin(an) * sp * s]; if (q[1] < .02) continue; at(q);
+      mote(q, .035 + .02 * hash(j * 7 + seed), P.chain, alpha * (1 - smooth(.2, .45, t)), {lift, bias: .02}); }
+  }
+  function chainArc(t) { // Chain Spark: a jagged bolt jumping between foes, a flash and a spray of sparks where it lands
     const p = clamp(t.age / t.life), A = 1 - smooth(.55, 1, p), a = [t.x, .6, t.z], b = [t.tx, .6, t.tz], seed = hash(t.x * 3 + t.tz); if (Math.hypot(b[0] - a[0], b[2] - a[2]) < .05) return;
     at([(a[0] + b[0]) / 2, .6, (a[2] + b[2]) / 2]);
-    const w = (t.r || .07) >= .06 ? .26 : .17; bolt(a, b, w, A, seed, 26, 1, .5);
-    at(b); glow(b, .5, P.chainBlue, .7 * A, {lift: .6});
-    glowDecal(t.tx, t.tz, .5, P.chainBlue, .5 * A);
+    const w = (t.r || .07) >= .06 ? .1 : .075; bolt(a, b, w, A, seed, 26, 1, .5);
+    at(b); glow(b, .55, P.chainGlow, .8 * A, {lift: .6}); sparks(b, 6, 3.2, t.age, A, seed, .5);
+    glowDecal(t.tx, t.tz, .55, P.chainGlow, .5 * A);
   }
-  function chainStrike(t) { // JUDGMENT BOLT: lightning from the sky onto the strongest foe
-    const p = clamp(t.age / t.life), A = 1 - smooth(.55, 1, p), seed = hash(t.x + t.z * 9), top = [t.x + .25, 5.4, t.z - .35], bot = [t.x, .12, t.z];
-    glowDecal(t.x, t.z, 1.3, P.chainBlue, .7 * A);
-    disc(RING, t.x, t.z, .5 + p * .9, P.chainBlue, {alpha: A * (1 - p), p: [.86, .07, .5, .04], layer: 2, seed, soft: .3});
-    at([t.x, 1.5, t.z]); bolt(top, bot, .36, A, seed, 30, 1, .5);
-    at(bot); glow([t.x, .45, t.z], .9 + p * .5, P.chain, .8 * A, {lift: .7});
+  function chainStrike(t) { // JUDGMENT BOLT: a thick bolt from the sky with forks, a white flash, a shock ring, arcs crawling over the ground and a burst of sparks
+    const p = clamp(t.age / t.life), A = 1 - smooth(.55, 1, p), seed = hash(t.x + t.z * 9), top = [t.x + .3, 6, t.z - .4], bot = [t.x, .1, t.z];
+    glowDecal(t.x, t.z, 1.5, P.chainGlow, .8 * A);
+    disc(RING, t.x, t.z, .4 + p * 1.6, P.chainGlow, {alpha: A * (1 - p), p: [.86, .07, .5, .04], layer: 2, seed, soft: .3});
+    at([t.x, 1.5, t.z]); bolt(top, bot, .12, A, seed, 30, 3, .5);
+    for (let j = 0; j < 4; j++) { const an = j * TAU / 4 + seed * 3 + Math.floor(now * 20) * .7, e = [t.x + Math.cos(an) * (.7 + .5 * p), .06, t.z + Math.sin(an) * (.7 + .5 * p)]; at(e); bolt([t.x, .08, t.z], e, .04, A * .9, seed + j * 3, 30, 0, .3); } // arcs crawling over the ground
+    if (t.age < .08) { const g = [t.x, .6, t.z]; at(g); glow(g, 1.6, P.chain, 1 - t.age / .08, {lift: 1, bias: 1}); }
+    at(bot); glow([t.x, .45, t.z], .9 + p * .5, P.chain, .8 * A, {lift: .7}); sparks([t.x, .3, t.z], 10, 4, t.age, A, seed, .6);
   }
-  function chainNetwork(t) { // LIGHTNING NETWORK: the caster glows as the first node of the web
-    const p = clamp(t.age / t.life), A = smooth(0, .08, p) * (1 - smooth(.8, 1, p));
-    glowDecal(t.x, t.z, 1.2, P.chainBlue, .5 * A);
-    glow([t.x, .5, t.z], .7 + .1 * Math.sin(now * 20), P.chainBlue, .45 * A, {lift: .3});
+  function chainNetwork(t) { // LIGHTNING NETWORK: the caster is the first node of the web, humming with little arcs
+    const p = clamp(t.age / t.life), A = smooth(0, .08, p) * (1 - smooth(.8, 1, p)), seed = hash(t.x + t.z * 2);
+    glowDecal(t.x, t.z, 1.2, P.chainGlow, .5 * A);
+    glow([t.x, .5, t.z], .7 + .1 * Math.sin(now * 20), P.chainGlow, .45 * A, {lift: .3});
+    const key = Math.floor(now * 14); for (let j = 0; j < 2; j++) { const an = hash(key * 2.3 + j * 7) * TAU, e = [t.x + Math.cos(an) * .7, .5, t.z + Math.sin(an) * .7]; at(e); bolt([t.x, .5, t.z], e, .03, A * .8, key + j * 5 + seed, 30, 0, .3); }
   }
-  function chainTesla(t) { // TESLA DOMAIN: an electric field round the slime, crackling at its rim
+  function chainTesla(t) { // TESLA DOMAIN: an electric field round the slime; arcs crawl round its rim and jump in from the middle
     const p = clamp(t.age / t.life), r = t.r, A = smooth(0, .1, p) * (1 - smooth(.85, 1, p)), seed = hash(t.x + t.z);
-    glowDecal(t.x, t.z, r, P.chain, .35 * A);
-    disc(RING, t.x, t.z, r, P.chainBlue, {alpha: .8 * A, p: [.92, .03, .4, .04], layer: 1, seed, rag: .6, soft: .3});
+    glowDecal(t.x, t.z, r, P.chainGlow, .3 * A);
+    disc(RING, t.x, t.z, r, P.chainGlow, {alpha: .8 * A, p: [.92, .03, .4, .04], layer: 1, seed, rag: .6, soft: .3});
     const key = Math.floor(now * 12);
-    for (let j = 0; j < 4; j++) {
-      const a0 = hash(key * 3.1 + j * 1.7) * TAU, a1 = a0 + .45 + hash(key + j) * .4, rr = r * .95;
-      const a = [t.x + Math.cos(a0) * rr, .25, t.z + Math.sin(a0) * rr], b = [t.x + Math.cos(a1) * rr, .35, t.z + Math.sin(a1) * rr]; at(a);
-      bolt(a, b, .15, A * .95, key + j, 30, 0, .2);
+    for (let j = 0; j < 4; j++) { // arcs following the curve of the rim
+      const a0 = hash(key * 3.1 + j * 1.7) * TAU, len = .5 + hash(key + j) * .5, rr = r * .96, pts = [];
+      for (let m = 0; m <= 3; m++) { const an = a0 + len * m / 3; pts.push([t.x + Math.cos(an) * rr, .25, t.z + Math.sin(an) * rr]); }
+      at(pts[1]); for (let m = 0; m < 3; m++) bolt(pts[m], pts[m + 1], .045, A * .95, key * 7 + j * 3 + m, 30, 0, .2);
     }
-    for (let j = 0; j < 2; j++) { const an = hash(key * 1.3 + j * 5) * TAU, b = [t.x + Math.cos(an) * r * .9, .3, t.z + Math.sin(an) * r * .9]; at(b); bolt([t.x, .5, t.z], b, .13, A * .8, key * 2 + j, 30, 0, .2); }
+    for (let j = 0; j < 2; j++) { const an = hash(key * 1.3 + j * 5) * TAU, e = [t.x + Math.cos(an) * r * .9, .3, t.z + Math.sin(an) * r * .9]; at(e); bolt([t.x, .5, t.z], e, .05, A * .85, key * 2 + j, 30, 1, .2); sparks(e, 4, 2, (now * 12) % 1 / 12 * 3, A, key + j, .3); }
   }
-  function chainRing(t) { // stun crackle round a foe
+  function chainRing(t) { // stun: little arcs crackling round the foe and a ring of static
     const p = clamp(t.age / t.life), A = 1 - smooth(.5, 1, p), seed = hash(t.x * 4 + t.z), R = (t.r || 1) * (.6 + .4 * smooth(0, .4, p));
-    glowDecal(t.x, t.z, R, P.chainBlue, .45 * A);
-    disc(RING, t.x, t.z, R, P.chainBlue, {alpha: .85 * A, p: [.85, .06, .5, .06], layer: 2, seed, rag: .6, soft: .2});
+    glowDecal(t.x, t.z, R, P.chainGlow, .45 * A);
+    disc(RING, t.x, t.z, R, P.chainGlow, {alpha: .85 * A, p: [.85, .06, .5, .06], layer: 2, seed, rag: .6, soft: .2});
+    const key = Math.floor(now * 16); for (let j = 0; j < 3; j++) { const an = hash(key * 1.9 + j * 4 + seed) * TAU, a = [t.x + Math.cos(an) * R * .7, .3 + .4 * hash(key + j), t.z + Math.sin(an) * R * .7], e = [t.x + Math.cos(an + .9) * R * .7, .35 + .4 * hash(key * 2 + j), t.z + Math.sin(an + .9) * R * .7]; at(a); bolt(a, e, .03, A, key * 3 + j + seed, 30, 0, .4); }
   }
   // ---------------------------------------------------------------- Orbit: glossy cores whose tails follow the path they fly
   function orbitOrbs(combat) {
     const style = combat.skills?.orbit?.evo || '';
     for (const o of combat.orbs || []) {
       if (!Number.isFinite(o.x + o.z + o.r) || !cfg.visible(o.x, o.z, o.r + 1)) continue; note('orbit:orb');
-      const big = style === 'power', R = big ? o.r * 1.15 : Math.max(.22, o.r * 1.4), y = (big ? .7 : .55) + .05 * Math.sin(now * 5.4 + (o.angle || 0)), c = [o.x, y, o.z];
-      const pal = big ? P.orbitDeep : P.orbit, trail = pathBehind(track(o, c), big ? .28 : .32, 12), seed = hash(o.angle || 0);
+      const big = style === 'power', R = big ? o.r : Math.max(.22, o.r), // drawn exactly at the game's hit radius (painted-style.mjs widened it to the old drawn size)
+         y = (big ? .7 : .55) + .05 * Math.sin(now * 5.4 + (o.angle || 0)), c = [o.x, y, o.z];
+      const pal = big ? P.orbitDeep : P.orbit, trail = pathBehind(track(o, c), big ? .28 : .32, 12), seed = big ? .37 : hash(o.angle || 0); // the mace keeps one seed: seeding from its orbit angle re-rolled its surface and moons every frame (it looked like it spun fast)
       at(c); shadow(o.x, o.z, R * .85, .2);
-      if (trail.length > 2) ribbon(GLOW_R, trail, trail.map((_, i) => R * .8 * Math.pow(1 - i / (trail.length - 1), .8) + .005), pal, {alpha: .8, seed, soft: .35, edge: .2, bias: -.02});
-      glow(c, R * 1.9, pal, big ? .5 : .4, {bias: -.03});
-      bb(BLOB, c, R, R, pal, {p: [1, .3, big ? 0 : .2, 0], seed, bias: .01, wobble: big ? .05 : 0});
+      if (!big && trail.length > 2) ribbon(GLOW_R, trail, trail.map((_, i) => R * .8 * Math.pow(1 - i / (trail.length - 1), .8) + .005), pal, {alpha: .8, seed, soft: .35, edge: .2, bias: -.02});
+      if (!big) glow(c, R * 1.9, pal, .4, {bias: -.03});
+      if (big) { // GRAVITY MACE (owner round 2): a clean, round star with no aura, and moons circling close to it, slowly, on tilted orbits
+        bb(STAR, c, R, R, P.orbitDeep, {p: [10, 0, 0, 0], seed, bias: .02, lift: R * 2, edge: .45}); // a shaded sphere with a turning surface
+        for (let k = 0; k < (o.moonN ?? 3); k++) { // one moon per orb the base skill had beyond the first; the game strikes with them, at these same spots
+          const rad = R * (1.3 + .18 * k), tl = [.45, -.6, .9, -.25][k], sp = [1.5, -1.1, .8, -1.3][k], ph = k * 2.1 + seed * 5, e1 = [Math.cos(k * 1.3), 0, Math.sin(k * 1.3)], e2 = norm([-e1[2] * Math.cos(tl), Math.sin(tl), e1[0] * Math.cos(tl)]);
+          const pt = a => [c[0] + (e1[0] * Math.cos(a) + e2[0] * Math.sin(a)) * rad, c[1] + e2[1] * Math.sin(a) * rad, c[2] + (e1[2] * Math.cos(a) + e2[2] * Math.sin(a)) * rad], a0 = (o.moonT ?? now) * sp + ph, m = pt(a0), mr = R * [.3, .24, .19, .22][k];
+          const tp = [], tw = []; for (let i = 0; i <= 10; i++) { tp.push(pt(a0 - Math.sign(sp) * i * .09)); tw.push(mr * .6 * (1 - i / 10) + .004); }
+          const dm = [m[0] - c[0], m[1] - c[1], m[2] - c[2]], zb = dm[0] * cam.f[0] + dm[1] * cam.f[1] + dm[2] * cam.f[2], lat = Math.hypot(dm[0] - cam.f[0] * zb, dm[1] - cam.f[1] * zb, dm[2] - cam.f[2] * zb), vis = zb > 0 ? smooth(R * .75, R * 1.05, lat) : 1; // hidden while it passes behind the star
+          at(m); ribbon(GLOW_R, tp, tw, k % 2 ? P.foam : P.orbit, {alpha: .55 * vis, seed: seed + k, soft: .4, edge: 0, lift: R * 2});
+          bb(BLOB, m, mr, mr, k % 2 ? P.orbit : P.foam, {p: [1, .3, 0, 0], seed: seed + k, bias: .01, lift: R * 2, wobble: 1e-4, alpha: vis});
+        }
+      } else bb(BLOB, c, R, R, pal, {p: [1, .3, .2, 0], seed, bias: .01});
     }
   }
   function orbitArc(t) { // ARC HALO: twisting strands of light linking the cores
@@ -609,13 +766,23 @@ export function createPaintedSkillRenderer(gl) {
       if (!(e.hp > 0) || !cfg.visible(e.x, e.z, 1)) continue;
       const rad = e.radius || .5;
       if (e.poisonTime > 0) {
-        note('status:poison'); glowDecal(e.x, e.z, rad * 1.1, P.toxin, .4);
-        for (let j = 0; j < 2; j++) { const k = (now * .9 + j * .5 + hash(e.id || 0)) % 1; mote([e.x + (j - .5) * rad * .8, .35 + k * .7, e.z], .05 + .02 * j, P.toxin, (1 - smooth(.7, 1, k)) * smooth(0, .15, k), {p: [.7, .35, .5, 0], lift: .5, seed: j}); }
+        note('status:poison'); glowDecal(e.x, e.z, rad * 1.1, P.acid, .4);
+        for (let j = 0; j < 2; j++) { const k = (now * .9 + j * .5 + hash(e.id || 0)) % 1; mote([e.x + (j - .5) * rad * .8, .35 + k * .7, e.z], .05 + .02 * j, j ? P.acid : P.toxin, (1 - smooth(.7, 1, k)) * smooth(0, .15, k), {p: [.7, .35, .5, 0], lift: .5, seed: j}); }
       }
-      if (e.chill > 0 || e.frozen > 0) {
+      if (e.frozen > 0 && !(e.chill > 0)) { // stunned by lightning (the game uses the same frozen timer): yellow arcs crackle over it
+        note('status:stun'); const key = Math.floor(now * 16), h = rad * 2.2;
+        glowDecal(e.x, e.z, rad * 1.1, P.chainGlow, .5);
+        for (let j = 0; j < 3; j++) { const an = hash(key * 1.7 + j * 5 + (e.id || 0)) * TAU, a = [e.x + Math.cos(an) * rad * .8, h * (.25 + .6 * hash(key + j * 3)), e.z + Math.sin(an) * rad * .5], b = [e.x + Math.cos(an + 1.3) * rad * .8, h * (.25 + .6 * hash(key * 2 + j)), e.z + Math.sin(an + 1.3) * rad * .5]; at(a); bolt(a, b, .03, .95, key * 3 + j, 30, 0, rad * 1.4); }
+      } else if (e.chill > 0 || e.frozen > 0) {
         note('status:frost'); const fr = e.frozen > 0;
-        if (fr) disc(LIQUID, e.x, e.z, rad * 1.2, P.frost, {alpha: .6, p: [.6, 3, 0, 0], layer: 2, seed: e.id || 0, shine: .6, edge: .5});
-        for (let j = 0; j < 3; j++) { const an = j * 2.094 + (e.id || 0), base = [e.x + Math.cos(an) * rad, 0, e.z + Math.sin(an) * rad * .6], h = fr ? .4 : .22, w = h * .3; at(base); bb(COLUMN, addv(base, cam.u, h / 2), h / 2, w, j % 2 ? P.frost : P.frostDeep, {rot: Math.PI / 2 + (j - 1) * .35, asp: h / 2 / w, p: [.3, 0, 0, 0], lift: .2, seed: j}); }
+        let st = freezeStates.get(e); if (fr && (!st || now < st.seen - 1e-6 || now - st.seen > .25)) { st = {since: now}; freezeStates.set(e, st); } if (st) st.seen = now;
+        if (fr) { // frozen solid: frost spreads over the ground and a block of ice grows up around the foe
+          const g = smooth(0, .22, now - st.since);
+          disc(LIQUID, e.x, e.z, rad * (1 + .5 * g), P.frost, {alpha: .75, p: [.6, 3, 0, 0], layer: 2, seed: e.id || 0, shine: .7, edge: .4});
+          const c = [e.x, rad * 1.3, e.z]; at(c);
+          bb(ICE, c, rad * 1.5, rad * 1.5, P.ice, {alpha: .95, p: [g, 0, 0, 0], seed: e.id || 0, lift: rad * 1.4, shine: .6, edge: .4});
+          for (let j = 0; j < 4; j++) { const an = j * 1.7 + (e.id || 0), base = [e.x + Math.cos(an) * rad * 1.05, 0, e.z + Math.sin(an) * rad * .7], h = rad * (.55 + .2 * hash(j + (e.id || 0))) * g, w = h * .32, tilt = Math.cos(an) * .6; at(base); bb(CRYSTAL, addv(base, screenDir(Math.PI / 2 + tilt), h / 2), h / 2, w, j % 2 ? P.ice : P.frostDeep, {rot: Math.PI / 2 + tilt, asp: h / 2 / w, p: [.25, .6, 0, 0], lift: rad * 1.5, seed: j, edge: .5}); }
+        } else for (let j = 0; j < 3; j++) { const an = j * 2.094 + (e.id || 0), base = [e.x + Math.cos(an) * rad, 0, e.z + Math.sin(an) * rad * .6], h = .24, w = h * .3; at(base); bb(CRYSTAL, addv(base, cam.u, h / 2), h / 2, w, j % 2 ? P.ice : P.frostDeep, {rot: Math.PI / 2 + (j - 1) * .35, asp: h / 2 / w, p: [.25, .6, 0, 0], lift: .2, seed: j}); } // chilled: a few ice crystals at its feet
       }
     }
   }
@@ -647,7 +814,7 @@ export function createPaintedSkillRenderer(gl) {
         case 'chain:arc': chainArc(t); break; case 'chain:strike': chainStrike(t); break;
         case 'chain:network': chainNetwork(t); break; case 'chain:tesla': chainTesla(t); break;
         case 'chain:ring': chainRing(t); break;
-        case 'orbit:arc': orbitArc(t); break; case 'orbit:ring': orbitRing(t); break;
+        case 'orbit:arc': orbitArc(t); break; case 'orbit:ring': if (combat.skills?.orbit?.evo !== 'power') orbitRing(t); break; // Gravity Mace draws no ring round it (owner)
         default: diagnostics.kinds[k]--; if (!diagnostics.kinds[k]) delete diagnostics.kinds[k];
       }
     }
@@ -701,6 +868,14 @@ void main(){
    float F=(1.-a)*(1.-u*.8)+(n-.5)*.35*(.3+u);
    if(P.x>0.)F*=smoothstep(0.,P.x,ul); // optional soft start (P.x world units), so a beam never shows a flat end
    d=(.1-F)*.5;tone=clamp(.35+F*.7,0.,1.);
+  }else if(k==36){ // an electric stroke: an even line, white-hot down its middle and yellow toward its edges, flickering along its length (no tail fade)
+   float n=vn(vec2(ul*7.-t*40.,seed*3.));
+   d=(a-(.8+.2*n))*.5;tone=clamp(1.08-a*.95,0.,1.);
+  }else if(k==34){ // a sheet of water built from rows (a wave's body): tone runs from P.x to P.y across the row, and the noise is shared with the neighbouring rows so they read as one body (P.z row position, P.w signed row span)
+   float row=P.z+v*P.w,n=fbm(vec2(ul*.35-t*.5,row*.8)),n2=fbm(vec2(ul*1.8+t*.5,row*2.6-t*.8));
+   d=(a-1.)*.5;tone=clamp(mix(P.x,P.y,clamp(v*sign(P.w)+.5,0.,1.))+(n-.5)*.2,0.,1.);
+   fill=smoothstep(.05,.9,row+(fbm(vec2(ul*1.3,t*.7))-.5)*.5); // the foot melts into the ground
+   hd=(abs(n2-.5)-.025)*1.4+(1.-smoothstep(.5,.75,tone))*.5; // thin light currents running over its lighter parts
   }else{ // goo: a sticky strand that thins and beads toward the tail
    float bead=.2*sin(ul*9.-t*4.)*u;
    d=(a-(1.-u*.45)*(1.+bead))*.5;tone=clamp(.62-a*.4,0.,1.);hd=abs(v+.35)-.12*(1.-u);fill=1.-smoothstep(.75,1.,u);
@@ -857,6 +1032,36 @@ void main(){
   d=w-.92;float bands=floor(w*P.x)/P.x;
   tone=clamp(.05+bands*.85+(fbm(q*2.4+seed*3.)-.5)*.15,0.,1.);
   hd=P.y>0.?abs(w-.86)-.035*P.y:9.;
+ }else if(k==49){ // a block of ice around a frozen foe: an uneven faceted shell, clear in the middle, frosted toward its rim, bright facet ridges; it grows from the ground up (P.x grow 0..1)
+  vec2 V0=vec2(-.78,-.96),V1=vec2(.84,-.96),V2=vec2(.99,-.08),V3=vec2(.72,.9),V4=vec2(-.08,.99),V5=vec2(-.92,.52),C=vec2(.08+.1*sin(seed*5.),.16);
+  d=max(max(max(edge(q,V0,V1),edge(q,V1,V2)),max(edge(q,V2,V3),edge(q,V3,V4))),max(edge(q,V4,V5),edge(q,V5,V0)));
+  d=max(d,q.y-mix(-1.2,1.1,P.x));
+  float sa=atan(q.y-C.y,q.x-C.x),fc=floor((sa+3.1416)/1.0472);
+  tone=clamp(.55+.12*sin(fc*2.3+seed*3.)+.25*dot(normalize(q-C+1e-4),vec2(-.6,.8))*.5+(fbm(q*2.+seed)-.5)*.15,0.,1.);
+  hd=min(min(min(seg(q,C,V2),seg(q,C,V4)),min(seg(q,C,V0),seg(q,C,V5)))-.018,length((q-vec2(-.45,.45))/vec2(.5,1.4))-.12);
+  fill=mix(.38,.95,smoothstep(-.3,0.,d));
+ }else if(k==50){ // an ice crystal: a six-sided prism with a pointed tip (tip at +x); three faces in cold tones, bright ridges, clear inside with faint cracks (P.x tip length, P.y base width 0..1)
+  float tl=asp*2.*P.x,sx=asp-tl,bw=mix(.55,.95,P.y);
+  vec2 v0=vec2(asp,0.),v1=vec2(sx,.95),v2=vec2(-asp,bw),v3=vec2(-asp,-bw),v4=vec2(sx,-.95);
+  d=max(max(max(edge(q,v0,v1),edge(q,v1,v2)),max(edge(q,v2,v3),edge(q,v3,v4))),edge(q,v4,v0));
+  float wy=q.y/max(.05,q.x>sx?.95*(asp-q.x)/max(tl,.01):mix(bw,.95,clamp((q.x+asp)/max(sx+asp,.01),0.,1.)));
+  float face=wy>.3?.93:wy>-.3?.64:.36,cr=abs(vn(q*vec2(1.2,3.)+seed*3.)-.5);
+  tone=clamp(face+(q.x>sx?(q.y>0.?.05:-.08):0.)+(fbm(q*1.3+seed)-.5)*.14-(1.-smoothstep(0.,.04,cr))*.22,0.,1.);
+  hd=min(abs(wy-.3)-.05+(q.x>sx?.4:0.),seg(q,vec2(-asp*.55,.7),vec2(sx-.15,.72))-.05);
+  fill=.7+.3*smoothstep(-asp,asp*.5,q.x);
+ }else if(k==51){ // a small star seen as a lit sphere: a clean round edge, light from the upper left, a darker night side, slow bands and swirls turning across its face, a bright rim (P.x spin)
+  d=r-.92;vec3 n=vec3(q/.92,sqrt(max(0.,1.-r*r/.8464)));
+  float lt=clamp(dot(n,normalize(vec3(-.45,.55,.7))),0.,1.);
+  vec2 uv=vec2(atan(n.x,n.z)+T*P.x*.12,n.y*2.2);
+  float band=fbm(vec2(uv.x*1.3,uv.y*2.4+sin(uv.x*2.)*.3)),sw=fbm(uv*vec2(2.,4.)+seed);
+  tone=clamp(.06+.78*lt+(band-.5)*.4+(sw-.5)*.15+pow(1.-n.z,3.)*.22,0.,1.);
+  hd=length((q-vec2(-.34,.38))/vec2(1.2,.8))-.12;
+ }else if(k==48){ // a giant ball of water: a glassy sphere, deep at the rim, bright inside, currents swirling through it (P.x swirl speed)
+  float rr=r+(vn(dir*2.+seed+T*3.)-.5)*.05;d=rr-.9;
+  vec3 n=vec3(q/.9,sqrt(max(0.,1.-rr*rr/.81)));
+  float lt=clamp(dot(n,normalize(vec3(-.4,.55,.73))),0.,1.),cur=fbm(vec2(an*1.6+rr*2.5-T*P.x*.5,rr*3.-T*P.x));
+  tone=clamp(.12+.45*n.z+.3*lt+(cur-.5)*.6,0.,1.);
+  hd=min(length((q-vec2(-.3,.36))/vec2(1.35,.8))-.17,abs(rr-.74)-.022+(1.-smoothstep(.25,.6,dot(dir,vec2(-.6,.8))))*.6);
  }else if(k==38){ // soft glow: light without edges
   float lr=length(vQ);d=lr-.98;tone=clamp(1.-lr*1.15,0.,1.);fill=pow(clamp(1.-lr,0.,1.),1.5);
  }else if(k==39){ // meteor rock: a lumpy stone with glowing cracks

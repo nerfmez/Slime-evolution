@@ -14,9 +14,10 @@ try{
     assert.deepEqual(menu,{title:'Slime Evolution',visible:true,top:true});
     await page.locator('#start-howto summary').click();
     assert.equal(await page.locator('#start-howto').evaluate(e=>e.open),true);
-    await page.locator('#start-play').click();
-    await page.waitForFunction(()=>!document.getElementById('start-menu'),null,{timeout:10000});
-    await page.locator('.skill-card').first().click();
+    // Under software GL (CI, xvfb) the game renders ~4 fps behind the blurred menu, so closing it can take 5-15 s on main too.
+    await page.locator('#start-play').click({timeout:60000});
+    await page.waitForFunction(()=>!document.getElementById('start-menu'),null,{timeout:60000});
+    await page.locator('.skill-card').first().click({timeout:60000});
     await page.waitForFunction(()=>__slimeGameQA.world.time>0,null,{timeout:60000});
     assert.deepEqual(errors,[]);
     console.log('START MENU VERIFIED',engine);
@@ -27,8 +28,30 @@ try{
     assert.ok((await page.goto(base.href,{waitUntil:'load',timeout:60000}))?.ok());
     await page.waitForFunction(()=>globalThis.__slimeGameQA&&document.querySelector('.skill-card'),null,{timeout:90000});
     assert.equal(await page.title(),'Slime Evolution');
-    await page.locator('.skill-card').first().click({force:true});
+    // Card preview (v4): mouse hover shows the before/after rows and a click picks; on touch the first tap only shows them
+    // (the card stays open, highlighted, with a confirm button) and a second tap on the same card picks it.
+    if(options.hasTouch){
+      await page.locator('.skill-card').first().tap({timeout:60000});
+      const first=await page.evaluate(()=>({choosing:__slimeGameQA.combat.choosing,picked:!!document.querySelector('.skill-card.picked'),rows:document.querySelectorAll('#card-preview .pv-row').length,confirm:!!document.querySelector('.pv-confirm')}));
+      assert.ok(first.choosing&&first.picked&&first.confirm&&first.rows>0,`${label}: first tap previews only ${JSON.stringify(first)}`);
+      await page.locator('.skill-card').first().tap();
+    }else{
+      await page.locator('.skill-card').first().hover({timeout:60000});
+      await page.waitForFunction(()=>document.querySelectorAll('#card-preview .pv-row').length>0,null,{timeout:10000});
+      await page.locator('.skill-card').first().click({force:true});
+    }
     await page.waitForFunction(()=>document.querySelector('#fire-slot .equipped-skill.empty'),null,{timeout:30000});
+    // Skill details (v4): tapping the equipped chip opens the panel and pauses the round; closing it resumes.
+    await page.locator('#fire-slot .equipped-skill:not(.empty)').first().click({timeout:30000});
+    await page.waitForFunction(()=>document.getElementById('skill-info').open,null,{timeout:10000});
+    const info=await page.evaluate(()=>document.querySelector('#skill-info .si-body').innerText);
+    assert.match(info,/LV 1\/10/);assert.match(info,/DPS/);
+    const paused=await page.evaluate(async()=>{const a=__slimeGameQA.world.time;await new Promise(r=>setTimeout(r,700));return __slimeGameQA.world.time===a});
+    assert.ok(paused,`${label}: the round pauses while skill details are open`);
+    // Pressed from the page: under CI's software GL a synthetic mouse click on the modal can stall for the full timeout.
+    await page.evaluate(()=>document.querySelector('#skill-info .si-close').click());
+    await page.waitForFunction(()=>!document.getElementById('skill-info').open,null,{timeout:10000});
+    await page.waitForFunction(t=>__slimeGameQA.world.time>t,await page.evaluate(()=>__slimeGameQA.world.time),{timeout:30000});
     const slots=await page.evaluate(()=>[...document.querySelectorAll('#fire-slot .equipped-skill.empty')].map(e=>[e.textContent,e.getAttribute('aria-label')]));
     assert.deepEqual(slots,[['+','ช่องสกิลว่าง'],['+','ช่องสกิลว่าง']]);
     await page.evaluate(()=>{const q=__slimeGameQA,w=q.world,p=q.state.player;w.enemies.length=0;w.spawnClock=w.nextElite=1e6;w.spawn(p,'panda',false)});
