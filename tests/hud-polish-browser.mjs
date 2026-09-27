@@ -23,6 +23,12 @@ try{
     await page.locator('.skill-card').first().click({timeout:60000});
     await page.waitForFunction(()=>__slimeGameQA.world.time>0,null,{timeout:60000});
     assert.deepEqual(errors,[]);
+    // Back to the start menu (v8): two taps in Settings reload the page and the menu shows again.
+    await page.evaluate(()=>document.getElementById('settings').click());
+    await page.evaluate(()=>document.getElementById('to-menu').click());
+    assert.equal(await page.evaluate(()=>!!document.getElementById('to-menu').dataset.armed),true,'first tap only arms it');
+    await Promise.all([page.waitForNavigation({timeout:60000}),page.evaluate(()=>document.getElementById('to-menu').click())]);
+    await page.waitForFunction(()=>document.getElementById('start-menu')&&document.getElementById('start-play'),null,{timeout:60000});
     console.log('START MENU VERIFIED',engine);
     await page.close();
   }

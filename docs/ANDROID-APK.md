@@ -4,6 +4,9 @@ Owner request (2026-09-27): an installable Android build, so testers whose phone
 
 `android/` is a small wrapper app. It is a full-screen WebView that plays the built game from the APK itself, so no network is needed. `MainActivity.serve` serves the files under the reserved `https://appassets.androidplatform.net` origin, because WebView blocks the game's relative `fetch` calls on `file://`. The system bars are hidden, the screen stays on, and both orientations work.
 
+- **Android back button:** opens the game's Settings (the round pauses). Back again closes Settings. It no longer closes the app.
+- **Starting over:** Settings → "กลับเมนูหลัก" (tap twice) returns to the start menu. The app has no browser reload, so this is the way back.
+
 The game files are copied from `dist/` at build time (the `copyGame` task). Two things are left out:
 - `review/`: review material, 61 MB.
 - The six scene PNGs that the game now loads as WebP.

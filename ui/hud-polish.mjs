@@ -1,5 +1,5 @@
 // Build-time HUD polish. Presentation only: no combat, pacing, art or save data changes.
-export const HUD_POLISH_VERSION='hud-polish-v7';
+export const HUD_POLISH_VERSION='hud-polish-v8';
 
 const ELITE_OLD='for(let e of J.enemies){if(!e.elite||e.hp<=0)continue;let a=({thorn:1.95,spark:1.08,turtle:1.25,water:1.38}[e.type]||1.15)*(e.scale||1),[o,s]=proj(e.x,a,e.z),c=Math.max(66,Math.min(104,74*(e.scale||1))),l=7,u=s-16,d=Math.max(0,Math.min(1,e.hp/Math.max(1,e.maxHP||e.hp)));r.font=`700 12px system-ui`,r.lineWidth=3,r.strokeStyle=`rgba(54,37,26,.9)`,r.fillStyle=`#fff4d7`,r.strokeText(pt(e).name,o,u-5),r.fillText(pt(e).name,o,u-5),r.fillStyle=`rgba(45,31,25,.88)`,r.fillRect(o-c/2-2,u-2,c+4,l+4),r.fillStyle=`#f1dfbb`,r.fillRect(o-c/2,u,c,l),r.fillStyle=d>.35?`#e74e47`:`#d43d3d`,r.fillRect(o-c/2,u,c*d,l),r.strokeStyle=`rgba(86,50,32,.9)`,r.lineWidth=1,r.strokeRect(o-c/2,u,c,l)}';
 // Compact paper tags sized from measured text (fonts differ per OS; left-aligned from m.width because WebKit reports ink left/right differently under center alignment): star + roster name, HP only once damaged, stacked instead of overlapping, faded over the player.
@@ -88,6 +88,7 @@ const STYLE='<style id="hud-polish">'+
   '#start-play:active{transform:translateY(2px);box-shadow:0 2px #733d1e}'+
   '#start-hell,.hell-button{max-width:none;min-height:44px;font-size:15px;font-weight:800;color:#ffe7d6;background:#7a2318;border:2px solid #d9653f;border-radius:12px;box-shadow:0 3px #4a130d}#start-hell:disabled{opacity:.45}'+
   'body.hell #clock{background:#6b1f16;border-color:#d9653f}body.hell #clock b{color:#ffe1cf}body.hell #clock s{background:linear-gradient(90deg,#ff8a4c,#ff3b1f)}'+
+  '.to-menu{width:100%;margin:10px 0 4px;min-height:44px;font-weight:700}.to-menu[data-armed]{background:#bd551c;color:#fff2d0;border-color:#efc579}'+
   '#start-play:disabled{background:#a7896a;color:#f6ead0;box-shadow:0 4px #6b5540;cursor:progress}'+
   '.start-load{margin:0;min-height:1.2em;font-size:13px;color:#5b6a52;text-align:center}.start-load.start-error{color:#8a2f22;font-weight:700}'+
   '.start-secondary{max-width:none;min-height:44px;font-size:15px;color:#233c36;background:#efe4c8;border:1px solid #b6b699;border-radius:12px}'+
@@ -162,6 +163,9 @@ const HTML_EDITS=[
   // HELL mode in Settings, next to the normal round (owner request): the pacing director reads world.hell.
   ['hell run button','<button id="normal-run">เริ่มรอบปกติ · 10 นาที</button>','<button id="normal-run">เริ่มรอบปกติ · 10 นาที</button><button id="hell-run" class="hell-button" onclick="globalThis.__slimeHellNext=true;document.getElementById(\'normal-run\').click()">โหมด HELL · มอนสูงสุด 100</button>'],
   ['joystick setting','<label class="check"><input id="show-fps" type="checkbox">แสดง FPS ขณะเล่น</label>','<label class="check"><input id="show-fps" type="checkbox">แสดง FPS ขณะเล่น</label><label for="joy-mode">ปุ่มเดิน (จอสัมผัส)<select id="joy-mode"><option value="left">ฝั่งซ้าย</option><option value="right">ฝั่งขวา</option><option value="any">แตะตรงไหนก็ได้</option></select></label>'],
+  // Back to the start menu (owner request: the Android app has no browser reload). Two taps, since it ends the round; it
+  // reloads the page, which shows the start menu again. No confirm() dialog: the app's WebView does not show one.
+  ['menu button','<button id="graphics-reset">คืนค่ากราฟิก</button><button id="fullscreen">เต็มจอ</button></div>','<button id="graphics-reset">คืนค่ากราฟิก</button><button id="fullscreen">เต็มจอ</button></div><button id="to-menu" class="to-menu" type="button" onclick="if(this.dataset.armed){location.reload()}else{this.dataset.armed=1;this.textContent=\'แตะอีกครั้งเพื่อกลับเมนูหลัก (รอบนี้จะจบ)\';setTimeout(()=>{delete this.dataset.armed;this.textContent=\'กลับเมนูหลัก\'},4000)}">กลับเมนูหลัก</button>'],
   ['start menu script','<div id="error" class="paper" hidden></div></body>','<div id="error" class="paper" hidden></div>'+JOY_SCRIPT+MENU_SCRIPT+'</body>'],
 ];
 

@@ -100,6 +100,14 @@ public class MainActivity extends Activity {
         if (hasFocus) hideSystemBars();
     }
 
+    // Android back opens the game's Settings (the round pauses there, and "กลับเมนูหลัก" returns to the start menu)
+    // instead of closing the app; back again closes Settings.
+    @Override
+    public void onBackPressed() {
+        web.evaluateJavascript("(()=>{const p=document.getElementById('panel');if(p&&p.open){document.getElementById('close').click();return}"
+                + "document.getElementById('settings')?.click()})()", null);
+    }
+
     @Override
     protected void onSaveInstanceState(Bundle out) {
         super.onSaveInstanceState(out);
