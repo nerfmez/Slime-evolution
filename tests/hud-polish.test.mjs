@@ -41,7 +41,8 @@ test('HUD polish is presentation-only and applies to the exact assembled runtime
   assert.ok(after.bundle.includes('B(`clock`).firstChild.textContent=t'));
   // Skill details and card preview (v4): chip panel, before/after rows from the game's own formulas, touch two-tap, pause.
   for(const marker of ['function __hudStats(k,s,m)','function __hudCard(c,e,w)','__d.id="skill-info"','pv.id="card-preview"','a.__pt==="touch"||a.__pt==="pen"','let n=ei.open||document.getElementById("skill-info")?.open?0:'])assert.ok(after.bundle.includes(marker),marker);
-  assert.equal(HUD_POLISH_VERSION,'hud-polish-v4');
+  for(const marker of ['id="start-load"','กำลังโหลด ','location.reload()'])assert.ok(after.html.includes(marker),marker);
+  assert.equal(HUD_POLISH_VERSION,'hud-polish-v5');
 });
 
 test('HUD polish module matches the reviewed lock',async()=>{

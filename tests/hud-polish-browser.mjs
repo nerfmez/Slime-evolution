@@ -12,6 +12,8 @@ try{
     await page.waitForFunction(()=>globalThis.__slimeGameQA&&document.querySelector('.skill-card'),null,{timeout:90000});
     const menu=await page.evaluate(()=>({title:document.getElementById('start-title')?.textContent,visible:!!document.getElementById('start-menu')?.getBoundingClientRect().width,top:document.elementFromPoint(innerWidth/2,innerHeight/2)?.closest('#start-menu')!==null}));
     assert.deepEqual(menu,{title:'Slime Evolution',visible:true,top:true});
+    // Start waits for the game (v5): once the cards exist the button reads Start and is enabled.
+    await page.waitForFunction(()=>{const b=document.getElementById('start-play');return b.textContent==='เริ่มเกม'&&!b.disabled},null,{timeout:10000});
     await page.locator('#start-howto summary').click();
     assert.equal(await page.locator('#start-howto').evaluate(e=>e.open),true);
     // Under software GL (CI, xvfb) the game renders ~4 fps behind the blurred menu, so closing it can take 5-15 s on main too.
@@ -21,6 +23,18 @@ try{
     await page.waitForFunction(()=>__slimeGameQA.world.time>0,null,{timeout:60000});
     assert.deepEqual(errors,[]);
     console.log('START MENU VERIFIED',engine);
+    await page.close();
+  }
+  {
+    // A failed start-up is shown in the menu with a reload button instead of hiding behind it (Android report, v5).
+    const page=await browser.newPage({viewport:{width:390,height:844}});
+    await page.route('**/assets/scene/meadow-pigment-cache.webp',r=>r.abort());
+    const menuUrl=new URL(base.href);menuUrl.searchParams.set('menu','1');
+    await page.goto(menuUrl.href,{waitUntil:'load',timeout:60000});
+    await page.waitForFunction(()=>document.getElementById('start-play').textContent==='โหลดใหม่',null,{timeout:90000});
+    const shown=await page.evaluate(()=>({note:document.getElementById('start-load').textContent,disabled:document.getElementById('start-play').disabled}));
+    assert.ok(shown.note.includes('เปิดฉากไม่สำเร็จ')&&!shown.disabled,JSON.stringify(shown));
+    console.log('START MENU ERROR VERIFIED',engine);
     await page.close();
   }
   for(const [label,options] of [['desktop',{viewport:{width:1280,height:720}}],['phone',{viewport:{width:390,height:844},isMobile:engine==='chromium',hasTouch:true}]]){

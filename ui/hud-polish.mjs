@@ -1,5 +1,5 @@
 // Build-time HUD polish. Presentation only: no combat, pacing, art or save data changes.
-export const HUD_POLISH_VERSION='hud-polish-v4';
+export const HUD_POLISH_VERSION='hud-polish-v5';
 
 const ELITE_OLD='for(let e of J.enemies){if(!e.elite||e.hp<=0)continue;let a=({thorn:1.95,spark:1.08,turtle:1.25,water:1.38}[e.type]||1.15)*(e.scale||1),[o,s]=proj(e.x,a,e.z),c=Math.max(66,Math.min(104,74*(e.scale||1))),l=7,u=s-16,d=Math.max(0,Math.min(1,e.hp/Math.max(1,e.maxHP||e.hp)));r.font=`700 12px system-ui`,r.lineWidth=3,r.strokeStyle=`rgba(54,37,26,.9)`,r.fillStyle=`#fff4d7`,r.strokeText(pt(e).name,o,u-5),r.fillText(pt(e).name,o,u-5),r.fillStyle=`rgba(45,31,25,.88)`,r.fillRect(o-c/2-2,u-2,c+4,l+4),r.fillStyle=`#f1dfbb`,r.fillRect(o-c/2,u,c,l),r.fillStyle=d>.35?`#e74e47`:`#d43d3d`,r.fillRect(o-c/2,u,c*d,l),r.strokeStyle=`rgba(86,50,32,.9)`,r.lineWidth=1,r.strokeRect(o-c/2,u,c,l)}';
 // Compact paper tags sized from measured text (fonts differ per OS; left-aligned from m.width because WebKit reports ink left/right differently under center alignment): star + roster name, HP only once damaged, stacked instead of overlapping, faded over the player.
@@ -80,6 +80,8 @@ const STYLE='<style id="hud-polish">'+
   '.start-tagline{margin:0 0 6px;color:#596953;font-size:14px}'+
   '#start-play{max-width:none;min-height:56px;font-size:20px;font-weight:700;color:#fff2d0;background:#bd551c;border:2px solid #efc579;border-radius:14px;box-shadow:0 4px #733d1e}'+
   '#start-play:active{transform:translateY(2px);box-shadow:0 2px #733d1e}'+
+  '#start-play:disabled{background:#a7896a;color:#f6ead0;box-shadow:0 4px #6b5540;cursor:progress}'+
+  '.start-load{margin:0;min-height:1.2em;font-size:13px;color:#5b6a52;text-align:center}.start-load.start-error{color:#8a2f22;font-weight:700}'+
   '.start-secondary{max-width:none;min-height:44px;font-size:15px;color:#233c36;background:#efe4c8;border:1px solid #b6b699;border-radius:12px}'+
   '#start-howto{text-align:left;background:#efe4c8;border:1px solid #b6b699;border-radius:12px;padding:10px 14px;font-size:14px;color:#233c36}'+
   '#start-howto summary{cursor:pointer;font-weight:700;text-align:center;list-style-position:inside}'+
@@ -114,9 +116,18 @@ const MENU_SCRIPT='<script>(()=>{const m=document.getElementById("start-menu");i
   'document.body.classList.add("start-open");'+
   'const close=()=>{m.classList.add("start-leaving");document.body.classList.remove("start-open");setTimeout(()=>m.remove(),260);'+
   'setTimeout(()=>document.querySelector(".skill-card")?.focus({preventScroll:true}),280)};'+
-  'document.getElementById("start-play").onclick=close;'+
+  // Loading state (owner report: on an Android phone the menu appeared but Start led to an empty screen). The menu shows
+  // before the game has loaded, so Start waits, counting the scene textures, until the first cards exist; an init error is
+  // shown in the menu (it used to sit behind it) with a reload button, and a slow load says it is still going.
+  'const play=document.getElementById("start-play"),note=document.createElement("p");note.id="start-load";note.className="start-load";play.after(note);'+
+  'const scene=/assets\\/scene\\/|grass-original/,t0=Date.now(),tick=()=>{if(!m.isConnected)return;'+
+  'const err=document.getElementById("error");if(err&&!err.hidden&&err.textContent){play.disabled=false;play.textContent="โหลดใหม่";play.onclick=()=>location.reload();note.textContent=err.textContent+" (ลองโหลดใหม่ หรือเปิดด้วย Chrome หรือ Safari รุ่นล่าสุด)";note.classList.add("start-error");return}'+
+  'if(document.querySelector(".skill-card")){play.disabled=false;play.textContent="เริ่มเกม";note.textContent="";return}'+
+  'const done=performance.getEntriesByType("resource").filter(e=>scene.test(e.name)).length;play.disabled=true;play.textContent="กำลังโหลด "+Math.min(7,done)+"/7";'+
+  'note.textContent=Date.now()-t0>20000?"เน็ตช้า กำลังโหลดต่อ… รอสักครู่":"";setTimeout(tick,250)};tick();'+
+  'play.onclick=()=>play.disabled||close();'+
   'document.getElementById("start-settings").onclick=()=>document.getElementById("settings").click();'+
-  'document.getElementById("start-play").focus({preventScroll:true})})()</script>';
+  'play.focus({preventScroll:true})})()</script>';
 
 const HTML_EDITS=[
   ['page title','<title>Slime — ฉากทดลองเว็บ</title>','<title>Slime Evolution</title>'],

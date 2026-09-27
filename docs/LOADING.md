@@ -14,3 +14,12 @@ Owner report (2026-09-27): players on about 2 Mbps could not get into the game. 
 - Art bytes are unchanged: the atlases, sprites and boss models are the same files, only fetched later.
 
 Hosting: Vercel serves static files with revalidation, so a file fetched ahead is not downloaded again when its renderer is built. The local test server sends `no-store`, so local runs download those files twice.
+
+## Start menu waits for the game (HUD v5)
+
+Owner report (2026-09-27): on an Android phone the menu showed, but Start led to an empty screen. The menu is plain HTML, so it appears before the game has loaded, and Start could be pressed while the scene was still downloading. With the whole 58.7 MB download that could take minutes on a phone, with nothing on screen. A start-up error (for example a failed download or missing WebGL) was drawn behind the menu.
+
+- Start is disabled and reads "กำลังโหลด n/7" (scene textures finished) until the first cards exist, then reads "เริ่มเกม".
+- After 20 s it adds "เน็ตช้า กำลังโหลดต่อ… รอสักครู่".
+- If start-up fails, the error text shows in the menu, and the button becomes "โหลดใหม่" (reload).
+- `tests/hud-polish-browser.mjs` covers the ready state and a failed download (a scene texture blocked).
