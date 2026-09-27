@@ -1,0 +1,59 @@
+name: Android APK
+# Builds the Android wrapper (android/, docs/ANDROID-APK.md) from the exact tested web build and publishes it as the
+# "android-test" pre-release, so testers can download it from a public link. Manual runs publish too.
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, claude/check-organize-files-vqyx02]
+    paths:
+      - 'android/**'
+      - 'perf/**'
+      - 'ui/**'
+      - 'vfx/**'
+      - 'scripts/canon.mjs'
+      - 'CANON.json'
+      - '.github/workflows/android-apk.yml'
+permissions:
+  contents: write
+concurrency:
+  group: android-apk
+  cancel-in-progress: true
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.14.3'
+      - run: npm test && npm run build
+      - name: Build the APK
+        env:
+          APK_VERSION_CODE: ${{ github.run_number }}
+          APK_VERSION_NAME: 1.0.${{ github.run_number }}
+        run: |
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses >/dev/null || true
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-35" "build-tools;35.0.0" >/dev/null
+          gradle -p android --no-daemon assembleDebug
+          cp android/app/build/outputs/apk/debug/app-debug.apk SlimeEvolution.apk
+          ls -l SlimeEvolution.apk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: SlimeEvolution-apk
+          path: SlimeEvolution.apk
+      - name: Publish the android-test pre-release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete android-test --yes --cleanup-tag || true
+          gh release create android-test SlimeEvolution.apk --prerelease --target "$GITHUB_SHA" \
+            --title "Slime Evolution Android (test build ${{ github.run_number }})" \
+            --notes "Test APK built from ${GITHUB_REF_NAME} at ${GITHUB_SHA}. Install: allow installing apps from this source. Builds are signed with a test key: if an older test build is installed and the update is refused, uninstall it first."

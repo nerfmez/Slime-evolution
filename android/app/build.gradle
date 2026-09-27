@@ -18,7 +18,7 @@ android {
         release { minifyEnabled false; signingConfig signingConfigs.debug }
     }
     sourceSets { main { assets.srcDirs = [layout.buildDirectory.dir('game-assets')] } }
-    androidResources { noCompress += ['webp', 'png', 'bin', 'mp3', 'ogg', 'wav'] }
+    androidResources { noCompress += ['webp', 'png', 'mp3', 'ogg', 'wav'] }
     compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
 }
 

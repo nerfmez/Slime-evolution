@@ -8,7 +8,7 @@ The game files are copied from `dist/` at build time (the `copyGame` task). Two 
 - `review/`: review material, 61 MB.
 - The six scene PNGs that the game now loads as WebP.
 
-Result: about 65 MB, 148 files. The app uses the same build as the website, lazy loading and all.
+Result: about 53 MB (the boss model data is compressed inside the APK; images and audio are stored as they are). The app uses the same build as the website, lazy loading and all.
 
 ## Build
 
@@ -22,9 +22,16 @@ npm run apk                                # npm run build, then gradle assemble
 
 Set `APK_VERSION_CODE` and `APK_VERSION_NAME` to number a release. A phone only installs an update over an older copy if the version code is higher and the APK is signed with the same key.
 
+## Download
+
+The **Android APK** workflow (`.github/workflows/android-apk.yml`) builds the APK on GitHub from the tested web build. It publishes the APK as the `android-test` pre-release, which anyone can download: https://github.com/nerfmez/Slime-evolution/releases/tag/android-test
+
+- It runs on pushes to `main` that touch the game or the wrapper, and on manual runs (Actions → Android APK → Run workflow).
+- The version code is the run number, so newer builds install as updates when the key matches.
+
 ## Signing
 
-Builds are signed with the Gradle debug key. Each machine and each cloud container has its own debug key, so an APK from a new container cannot install over one from an old container: testers must uninstall first. For a stable key (sideloading updates, or the Play Store), create a release keystore once and keep it outside the repo. `*.keystore` and `*.jks` are ignored. Losing that key means users must uninstall to update.
+Builds are signed with the Gradle debug key. Each machine, cloud container and CI run has its own debug key, so an APK from a new container cannot install over one from an old container: testers must uninstall first. For a stable key (sideloading updates, or the Play Store), create a release keystore once and keep it outside the repo. `*.keystore` and `*.jks` are ignored. Losing that key means users must uninstall to update.
 
 ## Verification
 
