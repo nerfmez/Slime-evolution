@@ -1,0 +1,34 @@
+// Android wrapper for Slime Evolution (owner request 2026-09-27): a full-screen WebView that serves the built game from
+// the APK itself (MainActivity.serve), so play needs no network. The game files are copied from ../dist (run
+// `npm run build` first); dist/review (review material) and the scene PNGs that ship as WebP are left out.
+plugins { id 'com.android.application' }
+
+
+android {
+    namespace 'com.nerfmez.slimeevolution'
+    compileSdk 35
+    defaultConfig {
+        applicationId 'com.nerfmez.slimeevolution'
+        minSdk 24
+        targetSdk 35
+        versionCode((System.getenv('APK_VERSION_CODE') ?: '1') as int)
+        versionName(System.getenv('APK_VERSION_NAME') ?: '1.0')
+    }
+    buildTypes {
+        release { minifyEnabled false; signingConfig signingConfigs.debug }
+    }
+    sourceSets { main { assets.srcDirs = [layout.buildDirectory.dir('game-assets')] } }
+    androidResources { noCompress += ['webp', 'png', 'bin', 'mp3', 'ogg', 'wav'] }
+    compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
+}
+
+def copyGame = tasks.register('copyGame', Sync) {
+    def dist = rootProject.file('../dist')
+    doFirst { if (!new File(dist, 'index.html').exists()) throw new GradleException('Run `npm run build` first: ../dist/index.html is missing') }
+    from(dist) {
+        exclude 'review/**', 'asset-manifest.json'
+        ['meadow-pigment-cache', 'tree-reference-b', 'pond-painted', 'clearing-painted', 'pond-northern', 'grass-painted'].each { exclude "assets/${it}.png" }
+    }
+    into layout.buildDirectory.dir('game-assets')
+}
+tasks.named('preBuild') { dependsOn copyGame }

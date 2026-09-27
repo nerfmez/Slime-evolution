@@ -68,6 +68,7 @@ Source of truth: `pacing/encounter-director.js`; details in `docs/COZY-PACING.md
   - Skill names and the test menu stay English. The boss banner sits in the top row on screens 960px and wider.
 - **Evolutions keep the base upgrades** (owner rule): whatever a base skill was upgraded into keeps showing the same way after it evolves (more shots, echoes, pools, embers, chain length, orbs as Gravity Mace moons). Never fold another branch into bonus damage. See `docs/PAINTED-VFX.md`.
 - **Loading** (`perf/lazy-assets.mjs`, owner request for 2 Mbps players): play starts after the scene, slime and Moss Frog; later monsters, then the boss models and old fire textures, load in the background. Scene textures ship as pixel-identical lossless WebP. Never make a background asset block the first frame again. See `docs/LOADING.md`.
+- **Android APK** (`android/`, owner request): a WebView wrapper that plays `dist/` from inside the APK (`npm run apk`). It is a copy of the website build, not a second game: never patch the game inside `android/`. See `docs/ANDROID-APK.md`.
 - **Scope:** do not add absorption skills or Mod sockets unless asked.
 
 ## Verification before merge or deploy
