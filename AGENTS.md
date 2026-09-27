@@ -18,6 +18,7 @@ Source of truth: `pacing/encounter-director.js`; details in `docs/COZY-PACING.md
 - **Elite events:** Frog 95/150, Spark 205/255, Turtle 395/445, Water 535/570 s (`ELITE_EVENTS`).
 - **Panda:** mini-boss only, never in the random pool. Slots at 300 and 480 s.
 - **Boss:** Ancient Bloom boss becomes eligible at 600 s. Victory requires killing it.
+- **HELL mode** (owner request): the same round as a horde, up to 100 ordinary monsters alive, with faster spawns, 3 Elites and the boss at 40 left. Started from the start menu or Settings; the director reads `world.hell`. See `docs/COZY-PACING.md`.
 - **Manual/training modes:** keep their old behavior.
 - **Retired:** Thorn models/Alpha, Mossback, Petal and Crystal stay in Git history only. Do not bring them back.
 

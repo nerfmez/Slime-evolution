@@ -1,5 +1,5 @@
 // Build-time HUD polish. Presentation only: no combat, pacing, art or save data changes.
-export const HUD_POLISH_VERSION='hud-polish-v5';
+export const HUD_POLISH_VERSION='hud-polish-v6';
 
 const ELITE_OLD='for(let e of J.enemies){if(!e.elite||e.hp<=0)continue;let a=({thorn:1.95,spark:1.08,turtle:1.25,water:1.38}[e.type]||1.15)*(e.scale||1),[o,s]=proj(e.x,a,e.z),c=Math.max(66,Math.min(104,74*(e.scale||1))),l=7,u=s-16,d=Math.max(0,Math.min(1,e.hp/Math.max(1,e.maxHP||e.hp)));r.font=`700 12px system-ui`,r.lineWidth=3,r.strokeStyle=`rgba(54,37,26,.9)`,r.fillStyle=`#fff4d7`,r.strokeText(pt(e).name,o,u-5),r.fillText(pt(e).name,o,u-5),r.fillStyle=`rgba(45,31,25,.88)`,r.fillRect(o-c/2-2,u-2,c+4,l+4),r.fillStyle=`#f1dfbb`,r.fillRect(o-c/2,u,c,l),r.fillStyle=d>.35?`#e74e47`:`#d43d3d`,r.fillRect(o-c/2,u,c*d,l),r.strokeStyle=`rgba(86,50,32,.9)`,r.lineWidth=1,r.strokeRect(o-c/2,u,c,l)}';
 // Compact paper tags sized from measured text (fonts differ per OS; left-aligned from m.width because WebKit reports ink left/right differently under center alignment): star + roster name, HP only once damaged, stacked instead of overlapping, faded over the player.
@@ -27,6 +27,9 @@ const BUNDLE_EDITS=[
   ['card preview box','p.className=`skill-cards`,u.append(p);','p.className=`skill-cards`,u.append(p);let pv=document.createElement("div");pv.id="card-preview",pv.className="card-preview";{let h=document.createElement("span");h.className="pv-hint",h.textContent=matchMedia("(hover: none)").matches?"แตะการ์ด 1 ครั้งเพื่อดูว่าค่าไหนเปลี่ยน แตะซ้ำหรือกดยืนยันเพื่อเลือก":"ชี้เมาส์ที่การ์ดเพื่อดูว่าค่าไหนเปลี่ยน",pv.append(h)}u.append(pv);'],
   ['card two-tap','a.onclick=()=>{e.choose(r,t)&&(n(),c())},p.append(a)}','a.dataset.card=r,a.onpointerdown=ev=>{a.__pt=ev.pointerType},a.onpointerenter=ev=>{ev.pointerType==="mouse"&&__hudPreview(pv,r,e,t,null)},a.onfocus=()=>{a.__pt!=="touch"&&a.__pt!=="pen"&&__hudPreview(pv,r,e,t,null)},a.onclick=()=>{if(a.__pt==="touch"||a.__pt==="pen"){a.__pt="";if(!a.classList.contains("picked")){a.classList.add("picked"),__hudPreview(pv,r,e,t,a);return}}a.__pt="",e.choose(r,t)&&(n(),c())},p.append(a)}'],
   ['skill info pauses','let n=ei.open?0:','let n=ei.open||document.getElementById("skill-info")?.open?0:'],
+  // HELL flag: the normal-round button starts Hell when asked (then clears the request); a test round is never Hell; retry keeps it.
+  ['hell flag','B(`normal-run`).onclick=()=>{','B(`normal-run`).onclick=()=>{J.hell=!!globalThis.__slimeHellNext,globalThis.__slimeHellNext=!1,document.body.classList.toggle(`hell`,J.hell),'],
+  ['test round is not hell','B(`restart`).onclick=()=>{ai(),ti(!1)}','B(`restart`).onclick=()=>{J.hell=!1,document.body.classList.remove(`hell`),ai(),ti(!1)}'],
 ];
 
 const STYLE='<style id="hud-polish">'+
@@ -80,6 +83,8 @@ const STYLE='<style id="hud-polish">'+
   '.start-tagline{margin:0 0 6px;color:#596953;font-size:14px}'+
   '#start-play{max-width:none;min-height:56px;font-size:20px;font-weight:700;color:#fff2d0;background:#bd551c;border:2px solid #efc579;border-radius:14px;box-shadow:0 4px #733d1e}'+
   '#start-play:active{transform:translateY(2px);box-shadow:0 2px #733d1e}'+
+  '#start-hell,.hell-button{max-width:none;min-height:44px;font-size:15px;font-weight:800;color:#ffe7d6;background:#7a2318;border:2px solid #d9653f;border-radius:12px;box-shadow:0 3px #4a130d}#start-hell:disabled{opacity:.45}'+
+  'body.hell #clock{background:#6b1f16;border-color:#d9653f}body.hell #clock b{color:#ffe1cf}body.hell #clock s{background:linear-gradient(90deg,#ff8a4c,#ff3b1f)}'+
   '#start-play:disabled{background:#a7896a;color:#f6ead0;box-shadow:0 4px #6b5540;cursor:progress}'+
   '.start-load{margin:0;min-height:1.2em;font-size:13px;color:#5b6a52;text-align:center}.start-load.start-error{color:#8a2f22;font-weight:700}'+
   '.start-secondary{max-width:none;min-height:44px;font-size:15px;color:#233c36;background:#efe4c8;border:1px solid #b6b699;border-radius:12px}'+
@@ -103,6 +108,7 @@ const MENU='<div id="start-menu" role="dialog" aria-modal="true" aria-labelledby
   '<p class="start-kicker">ทุ่งหญ้า · รอบละ 10 นาที</p><h1 id="start-title">Slime <span>Evolution</span></h1>'+
   '<p class="start-tagline">สไลม์ตัวน้อยเติบโตด้วยสกิลที่คุณเลือก</p>'+
   '<button id="start-play" type="button">เริ่มเกม</button>'+
+  '<button id="start-hell" type="button">โหมด HELL · มอนสูงสุด 100</button>'+
   '<details id="start-howto"><summary>วิธีเล่น</summary><ul>'+
   '<li>ลากนิ้วฝั่งซ้ายของจอเพื่อเดิน หรือใช้ WASD / ปุ่มลูกศร</li>'+
   '<li>สกิลร่ายเองอัตโนมัติ เลเวลขึ้นแล้วเลือกการ์ดอัปเกรด ใส่ได้ 3 สกิล</li>'+
@@ -126,6 +132,9 @@ const MENU_SCRIPT='<script>(()=>{const m=document.getElementById("start-menu");i
   'const done=performance.getEntriesByType("resource").filter(e=>scene.test(e.name)).length;play.disabled=true;play.textContent="กำลังโหลด "+Math.min(7,done)+"/7";'+
   'note.textContent=Date.now()-t0>20000?"เน็ตช้า กำลังโหลดต่อ… รอสักครู่":"";setTimeout(tick,250)};tick();'+
   'play.onclick=()=>play.disabled||close();'+
+  // HELL (owner request): same readiness as Start; starts a fresh normal round with the Hell flag set.
+  'const hell=document.getElementById("start-hell");new MutationObserver(()=>{hell.disabled=play.disabled||play.textContent!=="เริ่มเกม"}).observe(play,{attributes:true,childList:true,characterData:true,subtree:true});hell.disabled=true;'+
+  'hell.onclick=()=>{if(hell.disabled)return;globalThis.__slimeHellNext=true;document.getElementById("normal-run").click();close()};'+
   'document.getElementById("start-settings").onclick=()=>document.getElementById("settings").click();'+
   'play.focus({preventScroll:true})})()</script>';
 
@@ -135,6 +144,8 @@ const HTML_EDITS=[
   ['round clock','<div class="right">','<div class="right"><div id="clock" class="paper" hidden aria-label="เวลาในรอบ"><b>00:00</b><i><s></s></i></div>'],
   ['hud style','</head>',STYLE+'</head>'],
   ['start menu','<body>','<body>'+MENU],
+  // HELL mode in Settings, next to the normal round (owner request): the pacing director reads world.hell.
+  ['hell run button','<button id="normal-run">เริ่มรอบปกติ · 10 นาที</button>','<button id="normal-run">เริ่มรอบปกติ · 10 นาที</button><button id="hell-run" class="hell-button" onclick="globalThis.__slimeHellNext=true;document.getElementById(\'normal-run\').click()">โหมด HELL · มอนสูงสุด 100</button>'],
   ['start menu script','<div id="error" class="paper" hidden></div></body>','<div id="error" class="paper" hidden></div>'+MENU_SCRIPT+'</body>'],
 ];
 

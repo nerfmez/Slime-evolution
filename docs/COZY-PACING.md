@@ -39,3 +39,16 @@ Retain 51 baseline/creature tests; ten added pacing tests cover timeline/unlocks
 The actual-game pacing suite checks rest periods, introductions, cap 28, survivor preservation, isolated guardians, true XP drop/collection, training, 10:00 UI, boss and victory. Field evidence must select the actual opening card, close that UI, step/refresh the real HUD and verify 00:45, 05:00 and 09:00 screenshots; a covered game canvas is not valid evidence. CI runs Chromium/WebKit; original-domain production repeats gameplay and full runtime file hashes. Local browser navigation is blocked, so remote evidence is required before merge. Never infer iPad/Android FPS from CI.
 
 Only production: https://slime-evolution-five.vercel.app .
+
+## HELL mode (owner request, 2026-09-27)
+
+A horde variant of the same 10-minute round. Start it from the start menu ("โหมด HELL · มอนสูงสุด 100") or from Settings, next to "เริ่มรอบปกติ". Retry keeps Hell. The normal round button and the test round turn it off.
+
+- The pacing director reads `world.hell`. See `HELL` and `hellPhase` in `pacing/encounter-director.js`.
+- **Ordinary cap:** climbs from 30 to 100 over the first five minutes. It is never below three times the normal phase cap, and never above 100 (or the settings' mob limit, if lower).
+- **Spawn rate:** five times faster, at least one spawn every 0.2 s, with no per-phase budget. The field fills within seconds.
+- **Elites:** up to three at once (normal: two).
+- **Boss:** arrives once the horde is down to 40 (normal: 8). During the boss fight the horde keeps coming, up to 40.
+- **Unchanged:** unlocks, monster stats, EXP values, the Elite and Panda schedule.
+- **HUD:** the status line reads "HELL · …" and the round clock turns red.
+- **Tests:** `tests/hell-mode.test.mjs` covers the rules. `tests/hud-polish-browser.mjs` starts Hell from the menu.

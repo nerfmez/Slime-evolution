@@ -14,6 +14,7 @@ try{
     assert.deepEqual(menu,{title:'Slime Evolution',visible:true,top:true});
     // Start waits for the game (v5): once the cards exist the button reads Start and is enabled.
     await page.waitForFunction(()=>{const b=document.getElementById('start-play');return b.textContent==='เริ่มเกม'&&!b.disabled},null,{timeout:10000});
+    await page.waitForFunction(()=>!document.getElementById('start-hell').disabled,null,{timeout:10000});
     await page.locator('#start-howto summary').click();
     assert.equal(await page.locator('#start-howto').evaluate(e=>e.open),true);
     // Under software GL (CI, xvfb) the game renders ~4 fps behind the blurred menu, so closing it can take 5-15 s on main too.
@@ -35,6 +36,21 @@ try{
     const shown=await page.evaluate(()=>({note:document.getElementById('start-load').textContent,disabled:document.getElementById('start-play').disabled}));
     assert.ok(shown.note.includes('เปิดฉากไม่สำเร็จ')&&!shown.disabled,JSON.stringify(shown));
     console.log('START MENU ERROR VERIFIED',engine);
+    await page.close();
+  }
+  {
+    // HELL (v6): the menu's Hell button starts a fresh round with the Hell flag, the status says so and the clock turns red.
+    const page=await browser.newPage({viewport:{width:1000,height:695}});
+    const menuUrl=new URL(base.href);menuUrl.searchParams.set('menu','1');
+    await page.goto(menuUrl.href,{waitUntil:'load',timeout:60000});
+    await page.waitForFunction(()=>globalThis.__slimeGameQA&&!document.getElementById('start-hell').disabled,null,{timeout:90000});
+    await page.locator('#start-hell').click({timeout:60000});
+    await page.waitForFunction(()=>__slimeGameQA.world.hell===true&&document.body.classList.contains('hell'),null,{timeout:30000});
+    const alive=await page.evaluate(()=>{const q=__slimeGameQA,w=q.world,p=q.state.player;for(let i=0;i<200;i++){w.hp=100;w.update(.05,p,100);}return {alive:w.enemies.filter(e=>e.hp>0&&!e.elite&&!e.miniBoss&&!e.boss).length,status:document.getElementById('status').textContent}});
+    assert.ok(alive.alive>=25&&/HELL/.test(alive.status),JSON.stringify(alive));
+    await page.evaluate(()=>document.getElementById('restart').click());
+    assert.equal(await page.evaluate(()=>__slimeGameQA.world.hell),false,'a test round is never Hell');
+    console.log('HELL MODE VERIFIED',engine,JSON.stringify(alive));
     await page.close();
   }
   for(const [label,options] of [['desktop',{viewport:{width:1280,height:720}}],['phone',{viewport:{width:390,height:844},isMobile:engine==='chromium',hasTouch:true}]]){

@@ -36,6 +36,18 @@ const rows = [
 ];
 export const PHASES = Object.freeze(rows.map(([start,end,kind,label,cap=0,budget=0,interval=1,focus=null],index)=>
   Object.freeze({index,start,end,kind,label,cap,budget,interval,focus})));
+/** HELL mode (owner request 2026-09-27): the same 10-minute round and roster, but a horde. The ordinary cap climbs from
+ * 30 to 100 over the first five minutes (never below three times the normal phase cap), spawns come five times faster
+ * (at least one every .2 s) with no per-phase budget, up to three Elites share the field, and the boss arrives once the horde is down to 40.
+ * During the boss fight the horde keeps coming, up to 40. Monster stats, unlocks and the Elite/Panda schedule are the
+ * normal ones. The requested cap (the settings' mob limit) still applies. */
+export const HELL = Object.freeze({maxAlive:100,startCap:30,rampSeconds:300,speedup:5,minInterval:.06,maxInterval:.2,elites:3,bossHorde:40,bossInterval:.35});
+export function hellPhase(phase,time) {
+  const t=seconds(time),ramp=Math.min(1,t/HELL.rampSeconds);
+  if(phase.kind==='boss')return {...phase,cap:HELL.bossHorde,budget:Infinity,interval:HELL.bossInterval};
+  return {...phase,cap:Math.min(HELL.maxAlive,Math.max(phase.cap*3,Math.round(HELL.startCap+(HELL.maxAlive-HELL.startCap)*ramp))),
+    budget:Infinity,interval:Math.max(HELL.minInterval,Math.min(HELL.maxInterval,phase.interval/HELL.speedup))};
+}
 const BOSS = Object.freeze({index:PHASES.length,start:600,end:Infinity,kind:'boss',label:'ผู้พิทักษ์ป่า',cap:0,budget:0,interval:1,focus:null});
 const seconds = t => Number.isFinite(t) ? Math.max(0,t) : 0;
 const alive = e => e.hp>0;
@@ -75,7 +87,7 @@ function tickEliteEvents(world,state,phase,player,t,cap,living) {
   if(!event || cap===0 || t+1e-7<event.time || t+1e-7<state.nextEliteAttempt)return;
   if(living.some(guardianAlive)){state.blocked=true;return;}
   const elites=living.filter(eliteAlive).length;
-  if(elites>=2){state.blocked=true;return;}
+  if(elites>=(world.hell?HELL.elites:2)){state.blocked=true;return;}
   if(world.spawn(player,event.type,true)){
     record(world,state,phase,'elite-'+event.type);
     state.eliteIndex++;state.nextEliteAttempt=t+.8;
@@ -85,7 +97,8 @@ function tickEliteEvents(world,state,phase,player,t,cap,living) {
 export function tickEncounter(world,dt,player,requestedCap=100) {
   if(world.mode!=='auto' || !(dt>0) || !(world.hp>0) || world.finished)return;
   if(!world.encounter)resetEncounter(world);
-  const state=world.encounter,t=seconds(world.time),phase=encounterPhase(t);
+  const state=world.encounter,t=seconds(world.time),base=encounterPhase(t);
+  let phase=world.hell?hellPhase(base,t):base;
   const cap=Number.isFinite(requestedCap)?Math.max(0,Math.floor(requestedCap)):100;
   world.initial=false;
   world.spawnClock=0;
@@ -97,10 +110,10 @@ export function tickEncounter(world,dt,player,requestedCap=100) {
   if(phase.kind==='boss'){
     const panda=living.some(e=>e.miniBoss);
     const ordinary=living.filter(e=>!e.boss&&!e.miniBoss&&!e.elite).length;
-    if(!world.bossSpawned && !panda && ordinary<=8 && cap>0){
+    if(!world.bossSpawned && !panda && ordinary<=(world.hell?HELL.bossHorde:8) && cap>0){
       if(world.spawn(player,'boss')){world.bossSpawned=true;record(world,state,phase,'boss');}
     }else if(!world.bossSpawned)state.blocked=true;
-    return;
+    if(!world.hell)return;
   }
 
   tickEliteEvents(world,state,phase,player,t,cap,living);
@@ -122,7 +135,7 @@ export function tickEncounter(world,dt,player,requestedCap=100) {
   state.nextSpawn=t+phase.interval;
 }
 export function encounterStatus(world) {
-  const p=encounterPhase(world.time);
-  if(world.encounter?.blocked)return world.enemies.some(guardianAlive)?'รับมือผู้พิทักษ์':'อีลิทกำลังเข้าพื้นที่';
-  return p.label;
+  const p=encounterPhase(world.time),hell=world.hell?'HELL · ':'';
+  if(world.encounter?.blocked)return hell+(world.enemies.some(guardianAlive)?'รับมือผู้พิทักษ์':'อีลิทกำลังเข้าพื้นที่');
+  return hell+p.label;
 }
