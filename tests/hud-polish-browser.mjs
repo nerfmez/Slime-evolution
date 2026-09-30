@@ -3,10 +3,17 @@ import {chromium,webkit} from 'playwright';
 const base=new URL(process.env.SMOKE_URL||'http://127.0.0.1:4173/');base.searchParams.set('qa','1');
 const engine=process.env.BROWSER||'chromium';
 const browser=await ({chromium,webkit}[engine]).launch({headless:true,...(engine==='chromium'?{args:['--use-gl=angle','--use-angle=swiftshader','--enable-unsafe-swiftshader','--enable-webgl','--ignore-gpu-blocklist']}:{})});
+async function newTestPage(options){
+  const page=await browser.newPage({...options,deviceScaleFactor:1});
+  // Software GPU rendering at the default balanced preset can starve real mouse
+  // input. Set this test device to low before boot, as the creature suites do.
+  await page.addInitScript(()=>localStorage.setItem('slime.graphics.v1',JSON.stringify({preset:'low',showStats:false})));
+  return page;
+}
 try{
   // Start menu (forced on with ?menu=1 because automated browsers skip it by default).
   {
-    const page=await browser.newPage({viewport:{width:1000,height:695}}),errors=[];page.on('pageerror',e=>errors.push(e.message));
+    const page=await newTestPage({viewport:{width:1000,height:695}}),errors=[];page.on('pageerror',e=>errors.push(e.message));
     const menuUrl=new URL(base.href);menuUrl.searchParams.set('menu','1');
     assert.ok((await page.goto(menuUrl.href,{waitUntil:'load',timeout:60000}))?.ok());
     await page.waitForFunction(()=>globalThis.__slimeGameQA&&document.querySelector('.skill-card'),null,{timeout:90000});
@@ -14,7 +21,6 @@ try{
     assert.deepEqual(menu,{title:'Slime Evolution',visible:true,top:true});
     await page.locator('#start-howto summary').click();
     assert.equal(await page.locator('#start-howto').evaluate(e=>e.open),true);
-    // Under software GL (CI, xvfb) the game renders ~4 fps behind the blurred menu, so closing it can take 5-15 s on main too.
     await page.locator('#start-play').click({timeout:60000});
     await page.waitForFunction(()=>!document.getElementById('start-menu'),null,{timeout:60000});
     await page.locator('.skill-card').first().click({timeout:60000});
@@ -24,7 +30,7 @@ try{
     await page.close();
   }
   for(const [label,options] of [['desktop',{viewport:{width:1280,height:720}}],['phone',{viewport:{width:390,height:844},isMobile:engine==='chromium',hasTouch:true}]]){
-    const page=await browser.newPage(options),errors=[];page.on('pageerror',e=>errors.push(e.message));
+    const page=await newTestPage(options),errors=[];page.on('pageerror',e=>errors.push(e.message));
     assert.ok((await page.goto(base.href,{waitUntil:'load',timeout:60000}))?.ok());
     await page.waitForFunction(()=>globalThis.__slimeGameQA&&document.querySelector('.skill-card'),null,{timeout:90000});
     assert.equal(await page.title(),'Slime Evolution');
@@ -48,8 +54,7 @@ try{
     assert.match(info,/LV 1\/10/);assert.match(info,/DPS/);
     const paused=await page.evaluate(async()=>{const a=__slimeGameQA.world.time;await new Promise(r=>setTimeout(r,700));return __slimeGameQA.world.time===a});
     assert.ok(paused,`${label}: the round pauses while skill details are open`);
-    // Pressed from the page: under CI's software GL a synthetic mouse click on the modal can stall for the full timeout.
-    await page.evaluate(()=>document.querySelector('#skill-info .si-close').click());
+    await page.locator('#skill-info .si-close').click();
     await page.waitForFunction(()=>!document.getElementById('skill-info').open,null,{timeout:10000});
     await page.waitForFunction(t=>__slimeGameQA.world.time>t,await page.evaluate(()=>__slimeGameQA.world.time),{timeout:30000});
     const slots=await page.evaluate(()=>[...document.querySelectorAll('#fire-slot .equipped-skill.empty')].map(e=>[e.textContent,e.getAttribute('aria-label')]));
